@@ -21,8 +21,11 @@ export default function StepSuccess({ booking, onReset }: Props) {
       </div>
 
       <h2 className="font-playfair text-3xl sm:text-4xl text-[#f5f0e8] mb-3">¡Turno confirmado!</h2>
-      <p className="text-[#f5f0e8]/50 text-sm mb-8 max-w-sm">
-        Santiago te va a contactar por WhatsApp para confirmar el turno
+      <p className="text-[#f5f0e8]/50 text-sm mb-4 max-w-sm">
+        Te enviamos un email de confirmación con todos los detalles.
+      </p>
+      <p className="text-[#f5f0e8]/30 text-xs mb-8 max-w-sm">
+        Si no lo ves en tu bandeja de entrada, revisá la carpeta de <span className="text-[#f5f0e8]/50">spam o correo no deseado</span>.
       </p>
 
       <div className="bg-[#222222] border border-[#3a3a3a] rounded-xl p-6 text-left w-full max-w-sm mb-8">
