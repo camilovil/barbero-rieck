@@ -119,6 +119,7 @@ export default function BookingFlow() {
             location={state.location}
             nombre={state.nombre}
             whatsapp={state.whatsapp}
+            email={state.email}
             direccion={state.direccion}
             nota={state.nota}
             onChange={(field, value) => update({ [field]: value })}
