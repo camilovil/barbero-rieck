@@ -14,12 +14,14 @@ export default function StepIndicator({ current }: { current: number }) {
           <div key={label} className="flex items-center">
             <div className="flex flex-col items-center">
               <div
-                className={`
-                  w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all
-                  ${isCompleted ? 'bg-[#f5f0e8] text-[#1a1a1a]' : ''}
-                  ${isActive ? 'bg-[#2e2e2e] text-[#f5f0e8] ring-2 ring-[#f5f0e8]/30' : ''}
-                  ${!isCompleted && !isActive ? 'bg-[#2e2e2e]/40 text-[#f5f0e8]/40' : ''}
-                `}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all"
+                style={
+                  isCompleted
+                    ? { background: 'var(--text)', color: 'var(--bg)' }
+                    : isActive
+                    ? { background: 'var(--bg-active)', color: 'var(--text)', outline: '2px solid rgba(128,128,128,0.3)' }
+                    : { background: 'var(--bg-active)', color: 'var(--text-faint)' }
+                }
               >
                 {isCompleted ? (
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -30,9 +32,8 @@ export default function StepIndicator({ current }: { current: number }) {
                 )}
               </div>
               <span
-                className={`mt-1 text-[10px] tracking-wide uppercase hidden sm:block transition-all
-                  ${isActive ? 'text-[#f5f0e8]' : 'text-[#f5f0e8]/40'}
-                `}
+                className="mt-1 text-[10px] tracking-wide uppercase hidden sm:block transition-all"
+                style={{ color: isActive ? 'var(--text)' : 'var(--text-faint)' }}
               >
                 {label}
               </span>
@@ -40,9 +41,8 @@ export default function StepIndicator({ current }: { current: number }) {
 
             {i < STEPS.length - 1 && (
               <div
-                className={`w-8 sm:w-12 h-px mx-1 mb-4 sm:mb-5 transition-all
-                  ${isCompleted ? 'bg-[#f5f0e8]/60' : 'bg-[#f5f0e8]/15'}
-                `}
+                className="w-8 sm:w-12 h-px mx-1 mb-4 sm:mb-5 transition-all"
+                style={{ background: isCompleted ? 'var(--text-muted)' : 'var(--border-2)' }}
               />
             )}
           </div>

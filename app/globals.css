@@ -7,13 +7,56 @@
   --font-playfair: var(--font-playfair), serif;
 }
 
+/* ── Variables de tema ── */
+:root {
+  --bg:          #1a1a1a;
+  --bg-2:        #1e1e1e;
+  --bg-card:     #222222;
+  --bg-hover:    #272727;
+  --bg-active:   #2e2e2e;
+  --border:      #2e2e2e;
+  --border-2:    #3a3a3a;
+  --text:        #f5f0e8;
+  --text-muted:  rgba(245,240,232,0.5);
+  --text-faint:  rgba(245,240,232,0.3);
+  --text-xfaint: rgba(245,240,232,0.2);
+}
+
+html.light {
+  --bg:          #f0ebe1;
+  --bg-2:        #e8e3d9;
+  --bg-card:     #dfd9ce;
+  --bg-hover:    #d9d3c8;
+  --bg-active:   #cfc9be;
+  --border:      #c8c2b8;
+  --border-2:    #b8b2a8;
+  --text:        #1a1a1a;
+  --text-muted:  rgba(26,26,26,0.55);
+  --text-faint:  rgba(26,26,26,0.35);
+  --text-xfaint: rgba(26,26,26,0.2);
+}
+
 body {
-  background: #1a1a1a;
-  color: #f5f0e8;
+  background: var(--bg);
+  color: var(--text);
   font-family: var(--font-dm-sans), sans-serif;
   -webkit-font-smoothing: antialiased;
+  transition: background 0.25s, color 0.25s;
 }
 
 .font-playfair {
   font-family: var(--font-playfair), serif;
 }
+
+/* ── Clases utilitarias temáticas ── */
+.t-bg       { background: var(--bg); }
+.t-bg-2     { background: var(--bg-2); }
+.t-bg-card  { background: var(--bg-card); }
+.t-bg-hover:hover { background: var(--bg-hover); }
+.t-bg-active { background: var(--bg-active); }
+.t-border   { border-color: var(--border); }
+.t-border-2 { border-color: var(--border-2); }
+.t-text     { color: var(--text); }
+.t-text-muted  { color: var(--text-muted); }
+.t-text-faint  { color: var(--text-faint); }
+.t-text-xfaint { color: var(--text-xfaint); }

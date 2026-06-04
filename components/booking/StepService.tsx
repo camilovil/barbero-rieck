@@ -14,8 +14,8 @@ export default function StepService({ location, selected, onSelect }: Props) {
 
   return (
     <div>
-      <h2 className="font-playfair text-2xl sm:text-3xl text-[#f5f0e8] mb-2">¿Qué servicio querés?</h2>
-      <p className="text-[#f5f0e8]/50 text-sm mb-8">
+      <h2 className="font-playfair text-2xl sm:text-3xl mb-2" style={{color:'var(--text)'}}>¿Qué servicio querés?</h2>
+      <p className="text-sm mb-8" style={{color:'var(--text-muted)'}}>
         {location === 'domicilio' ? 'Precios a domicilio' : 'Precios en el local'}
       </p>
 
@@ -26,26 +26,26 @@ export default function StepService({ location, selected, onSelect }: Props) {
             <button
               key={svc.name}
               onClick={() => onSelect(svc)}
-              className={`
-                relative text-left p-5 rounded-xl border transition-all duration-200 cursor-pointer
-                ${isSelected
-                  ? 'border-[#f5f0e8]/40 bg-[#2e2e2e]'
-                  : 'border-[#3a3a3a] bg-[#222222] hover:border-[#f5f0e8]/20 hover:bg-[#272727]'
-                }
-              `}
+              className="relative text-left p-5 rounded-xl border transition-all duration-200 cursor-pointer"
+              style={{
+                background: isSelected ? 'var(--bg-active)' : 'var(--bg-card)',
+                borderColor: isSelected ? 'var(--text-muted)' : 'var(--border-2)',
+              }}
             >
               {isSelected && (
-                <span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-[#f5f0e8] flex items-center justify-center">
-                  <svg className="w-3 h-3 text-[#1a1a1a]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <span className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center"
+                  style={{background:'var(--text)'}}>
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}
+                    style={{color:'var(--bg)'}}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </span>
               )}
-              <p className="font-playfair text-xl text-[#f5f0e8] mb-3">{svc.name}</p>
-              <p className="text-2xl font-semibold text-[#f5f0e8]">
+              <p className="font-playfair text-xl mb-3" style={{color:'var(--text)'}}>{svc.name}</p>
+              <p className="text-2xl font-semibold" style={{color:'var(--text)'}}>
                 ${svc.price.toLocaleString('es-AR')}
               </p>
-              <p className="text-[#f5f0e8]/40 text-xs mt-1">{svc.duration} min</p>
+              <p className="text-xs mt-1" style={{color:'var(--text-faint)'}}>{svc.duration} min</p>
             </button>
           )
         })}

@@ -10,9 +10,9 @@ interface Props {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between items-start py-3.5 border-b border-[#2e2e2e] last:border-0">
-      <span className="text-[#f5f0e8]/40 text-xs uppercase tracking-widest">{label}</span>
-      <span className="text-[#f5f0e8] text-sm text-right max-w-[60%]">{value}</span>
+    <div className="flex justify-between items-start py-3.5 border-b last:border-0" style={{borderColor:'var(--border)'}}>
+      <span className="text-xs uppercase tracking-widest" style={{color:'var(--text-faint)'}}>{label}</span>
+      <span className="text-sm text-right max-w-[60%]" style={{color:'var(--text)'}}>{value}</span>
     </div>
   )
 }
@@ -24,10 +24,10 @@ export default function StepResumen({ booking, onConfirm, loading }: Props) {
 
   return (
     <div>
-      <h2 className="font-playfair text-2xl sm:text-3xl text-[#f5f0e8] mb-2">Confirmá tu turno</h2>
-      <p className="text-[#f5f0e8]/50 text-sm mb-8">Revisá los datos antes de confirmar</p>
+      <h2 className="font-playfair text-2xl sm:text-3xl mb-2" style={{color:'var(--text)'}}>Confirmá tu turno</h2>
+      <p className="text-sm mb-8" style={{color:'var(--text-muted)'}}>Revisá los datos antes de confirmar</p>
 
-      <div className="max-w-md bg-[#222222] border border-[#3a3a3a] rounded-xl p-6 mb-8">
+      <div className="max-w-md rounded-xl p-6 mb-8 border" style={{background:'var(--bg-card)', borderColor:'var(--border-2)'}}>
         <Row label="Modalidad" value={booking.location === 'domicilio' ? 'A domicilio' : 'En el local'} />
         <Row label="Servicio" value={`${booking.service?.name} — $${booking.service?.price?.toLocaleString('es-AR')}`} />
         <Row label="Duración" value={`${booking.service?.duration} min`} />
@@ -45,13 +45,11 @@ export default function StepResumen({ booking, onConfirm, loading }: Props) {
       <button
         onClick={onConfirm}
         disabled={loading}
-        className={`
-          w-full max-w-md py-4 rounded-xl font-semibold text-sm tracking-wide uppercase transition-all
-          ${loading
-            ? 'bg-[#2e2e2e] text-[#f5f0e8]/30 cursor-not-allowed'
-            : 'bg-[#f5f0e8] text-[#1a1a1a] hover:bg-white active:scale-[0.99]'
-          }
-        `}
+        className="w-full max-w-md py-4 rounded-xl font-semibold text-sm tracking-wide uppercase transition-all active:scale-[0.99]"
+        style={loading
+          ? { background: 'var(--bg-active)', color: 'var(--text-xfaint)', cursor: 'not-allowed' }
+          : { background: 'var(--text)', color: 'var(--bg)' }
+        }
       >
         {loading ? 'Confirmando...' : 'Confirmar turno'}
       </button>

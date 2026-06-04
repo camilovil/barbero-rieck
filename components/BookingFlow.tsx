@@ -137,15 +137,13 @@ export default function BookingFlow() {
 
       {/* Navigation */}
       {state.step < 5 && (
-        <div className="flex items-center justify-between mt-10 pt-6 border-t border-[#2e2e2e]">
+        <div className="flex items-center justify-between mt-10 pt-6 border-t" style={{borderColor:'var(--border)'}}>
           <button
             onClick={goBack}
+            style={state.step === 1 ? {} : {color:'var(--text-muted)', borderColor:'var(--border-2)'}}
             className={`
-              flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all
-              ${state.step === 1
-                ? 'invisible'
-                : 'border-[#3a3a3a] text-[#f5f0e8]/60 hover:text-[#f5f0e8] hover:border-[#f5f0e8]/30 hover:bg-[#2e2e2e]'
-              }
+              flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all hover:opacity-100
+              ${state.step === 1 ? 'invisible' : ''}
             `}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -160,10 +158,11 @@ export default function BookingFlow() {
             className={`
               flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-semibold tracking-wide uppercase transition-all
               ${ready
-                ? 'bg-[#f5f0e8] text-[#1a1a1a] hover:bg-white active:scale-[0.99]'
-                : 'bg-[#2e2e2e] text-[#f5f0e8]/20 cursor-not-allowed'
+                ? 'active:scale-[0.99]'
+                : 'cursor-not-allowed opacity-30'
               }
             `}
+            style={ready ? {background:'var(--text)', color:'var(--bg)'} : {background:'var(--bg-active)', color:'var(--text-xfaint)'}}
           >
             {state.step === 4 ? 'Ver resumen' : 'Continuar'}
             {ready && (
