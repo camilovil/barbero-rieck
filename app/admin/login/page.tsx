@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const [password, setPassword] = useState('')
@@ -13,13 +14,11 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
-
     const res = await fetch('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password }),
     })
-
     if (res.ok) {
       router.push('/admin')
     } else {
@@ -30,17 +29,19 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a] flex flex-col items-center justify-center px-6">
+    <div className="min-h-screen flex flex-col items-center justify-center px-6" style={{background:'var(--bg)'}}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
-          <span className="text-3xl">✂️</span>
-          <h1 className="font-playfair text-2xl text-[#f5f0e8] mt-3">Panel de administración</h1>
-          <p className="text-[#f5f0e8]/40 text-sm mt-1">Barbería Rieck</p>
+          <div className="flex justify-center mb-3">
+            <Image src="/logo.png" alt="Santi Barber" width={56} height={56} className="rounded-full object-cover" />
+          </div>
+          <h1 className="font-playfair text-2xl mt-3" style={{color:'var(--text)'}}>Panel de administración</h1>
+          <p className="text-sm mt-1" style={{color:'var(--text-faint)'}}>Barbería Rieck</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs uppercase tracking-widest text-[#f5f0e8]/40 mb-2">
+            <label className="block text-xs uppercase tracking-widest mb-2" style={{color:'var(--text-faint)'}}>
               Contraseña
             </label>
             <input
@@ -48,23 +49,26 @@ export default function LoginPage() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full bg-[#222] border border-[#3a3a3a] rounded-lg px-4 py-3 text-[#f5f0e8] text-sm placeholder:text-[#f5f0e8]/20 focus:outline-none focus:border-[#f5f0e8]/30 transition-all"
+              className="w-full rounded-lg px-4 py-3 text-sm border focus:outline-none transition-all"
+              style={{
+                background: 'var(--bg-card)',
+                borderColor: 'var(--border-2)',
+                color: 'var(--text)',
+              }}
               required
             />
           </div>
 
-          {error && (
-            <p className="text-red-400 text-sm">{error}</p>
-          )}
+          {error && <p className="text-red-400 text-sm">{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-3 rounded-xl text-sm font-semibold tracking-wide uppercase transition-all
-              ${loading
-                ? 'bg-[#2e2e2e] text-[#f5f0e8]/30 cursor-not-allowed'
-                : 'bg-[#f5f0e8] text-[#1a1a1a] hover:bg-white'
-              }`}
+            className="w-full py-3 rounded-xl text-sm font-semibold tracking-wide uppercase transition-all"
+            style={loading
+              ? {background:'var(--bg-active)', color:'var(--text-xfaint)', cursor:'not-allowed'}
+              : {background:'var(--text)', color:'var(--bg)'}
+            }
           >
             {loading ? 'Entrando...' : 'Entrar'}
           </button>

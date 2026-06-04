@@ -25,7 +25,6 @@ export default function CancelarClient() {
 
   useEffect(() => {
     if (!eventId || !email) { setEstado('error'); setError('Link inválido'); return }
-
     fetch(`/api/cancelar?id=${eventId}&email=${encodeURIComponent(email)}`)
       .then(r => r.json())
       .then(data => {
@@ -48,54 +47,50 @@ export default function CancelarClient() {
       body: JSON.stringify({ eventId, email }),
     })
     const data = await res.json()
-    if (data.success) {
-      setEstado('cancelado')
-    } else {
-      setEstado('error')
-      setError(data.error ?? 'Error al cancelar')
-    }
+    if (data.success) setEstado('cancelado')
+    else { setEstado('error'); setError(data.error ?? 'Error al cancelar') }
   }
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a] flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{background:'var(--bg)'}}>
       {/* Header */}
-      <header className="border-b border-[#2e2e2e] px-6 h-16 flex items-center gap-3">
+      <header className="border-b px-6 h-16 flex items-center gap-3" style={{borderColor:'var(--border)', background:'var(--bg-2)'}}>
         <span className="text-lg">✂️</span>
-        <span className="font-playfair text-lg text-[#f5f0e8] tracking-wide">Santiago Rieck</span>
+        <span className="font-playfair text-lg tracking-wide" style={{color:'var(--text)'}}>Santiago Rieck</span>
       </header>
 
       <main className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
 
           {estado === 'cargando' && (
-            <div className="text-center text-[#f5f0e8]/40 text-sm">Verificando turno...</div>
+            <div className="text-center text-sm" style={{color:'var(--text-faint)'}}>Verificando turno...</div>
           )}
 
           {estado === 'notfound' && (
             <div className="text-center">
               <div className="text-4xl mb-4">🔍</div>
-              <h2 className="font-playfair text-2xl text-[#f5f0e8] mb-3">Turno no encontrado</h2>
-              <p className="text-[#f5f0e8]/50 text-sm">Este turno ya fue cancelado o no existe.</p>
+              <h2 className="font-playfair text-2xl mb-3" style={{color:'var(--text)'}}>Turno no encontrado</h2>
+              <p className="text-sm" style={{color:'var(--text-muted)'}}>Este turno ya fue cancelado o no existe.</p>
             </div>
           )}
 
           {estado === 'error' && (
             <div className="text-center">
               <div className="text-4xl mb-4">⚠️</div>
-              <h2 className="font-playfair text-2xl text-[#f5f0e8] mb-3">Algo salió mal</h2>
-              <p className="text-[#f5f0e8]/50 text-sm">{error}</p>
+              <h2 className="font-playfair text-2xl mb-3" style={{color:'var(--text)'}}>Algo salió mal</h2>
+              <p className="text-sm" style={{color:'var(--text-muted)'}}>{error}</p>
             </div>
           )}
 
           {estado === 'nopuede' && turno && (
             <div className="text-center">
               <div className="text-4xl mb-4">⏰</div>
-              <h2 className="font-playfair text-2xl text-[#f5f0e8] mb-3">Ya no es posible cancelar</h2>
-              <p className="text-[#f5f0e8]/50 text-sm mb-6">
+              <h2 className="font-playfair text-2xl mb-3" style={{color:'var(--text)'}}>Ya no es posible cancelar</h2>
+              <p className="text-sm mb-6" style={{color:'var(--text-muted)'}}>
                 Solo se puede cancelar con al menos 24 horas de anticipación.<br />
-                Tu turno es el <strong className="text-[#f5f0e8]">{turno.fecha} a las {turno.hora}</strong>.
+                Tu turno es el <strong style={{color:'var(--text)'}}>{turno.fecha} a las {turno.hora}</strong>.
               </p>
-              <p className="text-[#f5f0e8]/40 text-sm">
+              <p className="text-sm" style={{color:'var(--text-faint)'}}>
                 Para cancelar, contactá a Santiago directamente por WhatsApp.
               </p>
             </div>
@@ -103,21 +98,21 @@ export default function CancelarClient() {
 
           {(estado === 'listo' || estado === 'confirmando') && turno && (
             <div>
-              <h2 className="font-playfair text-2xl text-[#f5f0e8] mb-2">Cancelar turno</h2>
-              <p className="text-[#f5f0e8]/50 text-sm mb-8">
+              <h2 className="font-playfair text-2xl mb-2" style={{color:'var(--text)'}}>Cancelar turno</h2>
+              <p className="text-sm mb-8" style={{color:'var(--text-muted)'}}>
                 Vas a cancelar el siguiente turno. Esta acción no se puede deshacer.
               </p>
 
-              <div className="bg-[#222222] border border-[#2e2e2e] rounded-xl p-5 mb-8">
+              <div className="border rounded-xl p-5 mb-8" style={{background:'var(--bg-card)', borderColor:'var(--border-2)'}}>
                 {[
                   ['Nombre', turno.nombre],
                   ['Servicio', turno.servicio],
                   ['Fecha', turno.fecha],
                   ['Horario', turno.hora],
                 ].map(([label, value]) => (
-                  <div key={label} className="flex justify-between items-center py-3 border-b border-[#2a2a2a] last:border-0">
-                    <span className="text-[10px] uppercase tracking-widest text-[#f5f0e8]/35">{label}</span>
-                    <span className="text-sm text-[#f5f0e8]">{value}</span>
+                  <div key={label} className="flex justify-between items-center py-3 border-b last:border-0" style={{borderColor:'var(--border)'}}>
+                    <span className="text-[10px] uppercase tracking-widest" style={{color:'var(--text-faint)'}}>{label}</span>
+                    <span className="text-sm" style={{color:'var(--text)'}}>{value}</span>
                   </div>
                 ))}
               </div>
@@ -125,16 +120,15 @@ export default function CancelarClient() {
               <button
                 onClick={handleCancel}
                 disabled={estado === 'confirmando'}
-                className={`w-full py-4 rounded-xl text-sm font-semibold tracking-wide uppercase transition-all
-                  ${estado === 'confirmando'
-                    ? 'bg-[#2e2e2e] text-[#f5f0e8]/30 cursor-not-allowed'
-                    : 'bg-red-900/60 hover:bg-red-900/80 text-red-200 border border-red-900'
-                  }`}
+                className="w-full py-4 rounded-xl text-sm font-semibold tracking-wide uppercase transition-all border border-red-900"
+                style={estado === 'confirmando'
+                  ? {background:'var(--bg-active)', color:'var(--text-xfaint)', cursor:'not-allowed'}
+                  : {background:'rgba(127,29,29,0.4)', color:'#fca5a5'}}
               >
                 {estado === 'confirmando' ? 'Cancelando...' : 'Confirmar cancelación'}
               </button>
 
-              <p className="text-center text-[#f5f0e8]/25 text-xs mt-4">
+              <p className="text-center text-xs mt-4" style={{color:'var(--text-faint)'}}>
                 Te llega un email de confirmación al cancelar
               </p>
             </div>
@@ -142,13 +136,13 @@ export default function CancelarClient() {
 
           {estado === 'cancelado' && (
             <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-[#2e2e2e] border border-[#f5f0e8]/10 flex items-center justify-center mx-auto mb-6">
-                <svg className="w-8 h-8 text-[#f5f0e8]/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 border" style={{background:'var(--bg-active)', borderColor:'var(--border)'}}>
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} style={{color:'var(--text-muted)'}}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="font-playfair text-2xl text-[#f5f0e8] mb-3">Turno cancelado</h2>
-              <p className="text-[#f5f0e8]/50 text-sm">
+              <h2 className="font-playfair text-2xl mb-3" style={{color:'var(--text)'}}>Turno cancelado</h2>
+              <p className="text-sm" style={{color:'var(--text-muted)'}}>
                 Te mandamos un email de confirmación.<br />
                 El horario quedó libre para otros clientes.
               </p>

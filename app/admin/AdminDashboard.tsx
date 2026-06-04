@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import type { BookingEvent } from '@/lib/googleCalendar'
 
 function formatDay(dateStr: string): string {
@@ -9,7 +10,6 @@ function formatDay(dateStr: string): string {
   const today = new Date()
   const tomorrow = new Date(today)
   tomorrow.setDate(today.getDate() + 1)
-
   if (d.toDateString() === today.toDateString()) return 'Hoy'
   if (d.toDateString() === tomorrow.toDateString()) return 'Mañana'
   return d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -59,9 +59,7 @@ export default function AdminDashboard() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ eventId }),
     })
-    if (res.ok) {
-      setEvents(prev => prev.filter(e => e.id !== eventId))
-    }
+    if (res.ok) setEvents(prev => prev.filter(e => e.id !== eventId))
     setCancelling(null)
   }
 
@@ -73,28 +71,28 @@ export default function AdminDashboard() {
   const totalHoy = events.filter(e => new Date(e.start).toDateString() === new Date().toDateString()).length
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a] flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{background:'var(--bg)'}}>
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#1a1a1a]/95 backdrop-blur-sm border-b border-[#2e2e2e]">
-        <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
+      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b" style={{background:'var(--bg-2)', borderColor:'var(--border)'}}>
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span>✂️</span>
-            <span className="font-playfair text-[#f5f0e8]">Santiago Rieck</span>
-            <span className="text-[10px] uppercase tracking-widest text-[#f5f0e8]/30 border border-[#2e2e2e] px-2 py-0.5 rounded">Admin</span>
+            <Image src="/logo.png" alt="Santi Barber" width={32} height={32} className="rounded-full object-cover" />
+            <span className="font-playfair" style={{color:'var(--text)'}}>Santiago Rieck</span>
+            <span className="text-[10px] uppercase tracking-widest border px-2 py-0.5 rounded" style={{color:'var(--text-faint)', borderColor:'var(--border)'}}>Admin</span>
           </div>
-          <button onClick={handleLogout} className="text-xs text-[#f5f0e8]/30 hover:text-[#f5f0e8]/60 transition-colors">
+          <button onClick={handleLogout} className="text-xs transition-colors" style={{color:'var(--text-faint)'}}>
             Salir
           </button>
         </div>
       </header>
 
-      <main className="flex-1 pt-24 pb-16 px-6 max-w-3xl mx-auto w-full">
+      <main className="flex-1 pt-24 pb-16 px-4 sm:px-6 max-w-3xl mx-auto w-full">
 
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
+        <div className="grid grid-cols-3 gap-3 mb-8">
           {[
             ['Hoy', totalHoy],
-            ['Próximos 30 días', events.length],
+            ['30 días', events.length],
             ['Esta semana', events.filter(e => {
               const d = new Date(e.start)
               const now = new Date()
@@ -102,9 +100,9 @@ export default function AdminDashboard() {
               return d >= now && d <= week
             }).length],
           ].map(([label, count]) => (
-            <div key={label as string} className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl p-4">
-              <div className="text-2xl font-bold text-[#f5f0e8]">{count}</div>
-              <div className="text-xs text-[#f5f0e8]/40 mt-1">{label}</div>
+            <div key={label as string} className="border rounded-xl p-4" style={{background:'var(--bg-2)', borderColor:'var(--border)'}}>
+              <div className="text-2xl font-bold" style={{color:'var(--text)'}}>{count}</div>
+              <div className="text-xs mt-1" style={{color:'var(--text-faint)'}}>{label}</div>
             </div>
           ))}
         </div>
@@ -115,16 +113,15 @@ export default function AdminDashboard() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wide transition-all
-                ${filter === f
-                  ? 'bg-[#f5f0e8] text-[#1a1a1a]'
-                  : 'border border-[#2e2e2e] text-[#f5f0e8]/50 hover:text-[#f5f0e8]/80'
-                }`}
+              className="px-4 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wide transition-all"
+              style={filter === f
+                ? {background:'var(--text)', color:'var(--bg)'}
+                : {border:'1px solid var(--border)', color:'var(--text-muted)'}}
             >
               {f === 'today' ? 'Hoy' : 'Todos'}
             </button>
           ))}
-          <button onClick={fetchEvents} className="ml-auto text-xs text-[#f5f0e8]/30 hover:text-[#f5f0e8]/60 transition-colors">
+          <button onClick={fetchEvents} className="ml-auto text-xs transition-colors" style={{color:'var(--text-faint)'}}>
             ↻ Actualizar
           </button>
         </div>
@@ -132,65 +129,59 @@ export default function AdminDashboard() {
         {/* Lista */}
         {loading ? (
           <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-24 bg-[#1e1e1e] rounded-xl animate-pulse border border-[#2e2e2e]" />
+            {[1,2,3].map(i => (
+              <div key={i} className="h-24 rounded-xl animate-pulse border" style={{background:'var(--bg-2)', borderColor:'var(--border)'}} />
             ))}
           </div>
         ) : grouped.length === 0 ? (
-          <div className="text-center py-16 text-[#f5f0e8]/30 text-sm">
+          <div className="text-center py-16 text-sm" style={{color:'var(--text-faint)'}}>
             {filter === 'today' ? 'No hay turnos para hoy' : 'No hay turnos próximos'}
           </div>
         ) : (
           <div className="space-y-8">
             {grouped.map(([day, dayEvents]) => (
               <div key={day}>
-                <h2 className="text-xs uppercase tracking-widest text-[#f5f0e8]/40 mb-3 font-semibold">
+                <h2 className="text-xs uppercase tracking-widest mb-3 font-semibold capitalize" style={{color:'var(--text-faint)'}}>
                   {day} · {dayEvents.length} {dayEvents.length === 1 ? 'turno' : 'turnos'}
                 </h2>
                 <div className="space-y-2">
                   {dayEvents.map(ev => (
-                    <div
-                      key={ev.id}
-                      className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl p-4 flex items-start gap-4"
-                    >
+                    <div key={ev.id} className="border rounded-xl p-4 flex items-start gap-3" style={{background:'var(--bg-2)', borderColor:'var(--border)'}}>
                       {/* Hora */}
-                      <div className="text-lg font-bold text-[#f5f0e8] min-w-[52px]">
+                      <div className="text-base font-bold shrink-0 min-w-[52px]" style={{color:'var(--text)'}}>
                         {formatTime(ev.start)}
                       </div>
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-[#f5f0e8] text-sm">{ev.nombre}</span>
-                          <span className="text-[10px] uppercase tracking-wide text-[#f5f0e8]/30 border border-[#2e2e2e] px-2 py-0.5 rounded">
+                          <span className="font-semibold text-sm" style={{color:'var(--text)'}}>{ev.nombre}</span>
+                          <span className="text-[10px] uppercase tracking-wide border px-2 py-0.5 rounded" style={{color:'var(--text-faint)', borderColor:'var(--border)'}}>
                             {ev.modalidad?.includes('domicilio') ? '🏠 domicilio' : '✂️ local'}
                           </span>
                         </div>
-                        <div className="text-sm text-[#f5f0e8]/50 mt-0.5">{ev.servicio}</div>
+                        <div className="text-sm mt-0.5" style={{color:'var(--text-muted)'}}>{ev.servicio}</div>
                         {ev.nota && (
-                          <div className="text-xs text-[#f5f0e8]/30 mt-1 italic">"{ev.nota}"</div>
+                          <div className="text-xs mt-1 italic" style={{color:'var(--text-faint)'}}>"{ev.nota}"</div>
                         )}
-                        <div className="flex items-center gap-3 mt-2">
+                        <div className="flex items-center gap-3 mt-2 flex-wrap">
                           {ev.whatsapp && (
                             <>
-                              <a
-                                href={`tel:${ev.whatsapp.replace(/\D/g, '')}`}
-                                className="text-xs text-[#f5f0e8]/50 hover:text-[#f5f0e8] transition-colors"
-                              >
+                              <a href={`tel:${ev.whatsapp.replace(/\D/g, '')}`}
+                                className="text-xs transition-colors" style={{color:'var(--text-muted)'}}>
                                 {ev.whatsapp}
                               </a>
-                              <a
-                                href={`https://wa.me/${ev.whatsapp.replace(/\D/g, '')}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-green-500/70 hover:text-green-400 transition-colors"
-                              >
+                              <a href={`https://wa.me/${ev.whatsapp.replace(/\D/g, '')}`}
+                                target="_blank" rel="noopener noreferrer"
+                                className="text-xs text-green-500 transition-colors">
                                 WhatsApp →
                               </a>
                             </>
                           )}
                           {ev.email && (
-                            <span className="text-xs text-[#f5f0e8]/30">{ev.email}</span>
+                            <a href={`mailto:${ev.email}`} className="text-xs transition-colors" style={{color:'var(--text-faint)'}}>
+                              {ev.email}
+                            </a>
                           )}
                         </div>
                       </div>
@@ -199,9 +190,9 @@ export default function AdminDashboard() {
                       <button
                         onClick={() => handleCancel(ev.id, ev.nombre)}
                         disabled={cancelling === ev.id}
-                        className="text-red-400 border border-red-400/40 hover:bg-red-400/10 transition-colors text-xs shrink-0 disabled:opacity-50 px-3 py-1 rounded-lg"
+                        className="text-red-400 border border-red-400/40 hover:bg-red-400/10 transition-colors text-xs shrink-0 disabled:opacity-50 px-3 py-1 rounded-lg whitespace-nowrap"
                       >
-                        {cancelling === ev.id ? 'Cancelando...' : 'Cancelar turno'}
+                        {cancelling === ev.id ? 'Cancelando...' : 'Cancelar'}
                       </button>
                     </div>
                   ))}

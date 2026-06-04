@@ -19,17 +19,15 @@ export default function StepIndicator({ current }: { current: number }) {
                   isCompleted
                     ? { background: 'var(--text)', color: 'var(--bg)' }
                     : isActive
-                    ? { background: 'var(--bg-active)', color: 'var(--text)', outline: '2px solid rgba(128,128,128,0.3)' }
-                    : { background: 'var(--bg-active)', color: 'var(--text-faint)' }
+                    ? { background: 'var(--bg-active)', color: 'var(--text)', boxShadow: '0 0 0 2px var(--border-2)' }
+                    : { background: 'var(--bg-active)', color: 'var(--text-faint)', opacity: 0.5 }
                 }
               >
                 {isCompleted ? (
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
-                ) : (
-                  idx
-                )}
+                ) : idx}
               </div>
               <span
                 className="mt-1 text-[10px] tracking-wide uppercase hidden sm:block transition-all"
@@ -38,7 +36,6 @@ export default function StepIndicator({ current }: { current: number }) {
                 {label}
               </span>
             </div>
-
             {i < STEPS.length - 1 && (
               <div
                 className="w-8 sm:w-12 h-px mx-1 mb-4 sm:mb-5 transition-all"
