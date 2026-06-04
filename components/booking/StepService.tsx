@@ -27,7 +27,7 @@ export default function StepService({ location, selected, onSelect }: Props) {
               key={svc.name}
               onClick={() => onSelect(svc)}
               className={`
-                relative text-left p-5 rounded-xl border transition-all duration-200
+                relative text-left p-5 rounded-xl border transition-all duration-200 cursor-pointer
                 ${isSelected
                   ? 'border-[#f5f0e8]/40 bg-[#2e2e2e]'
                   : 'border-[#3a3a3a] bg-[#222222] hover:border-[#f5f0e8]/20 hover:bg-[#272727]'
