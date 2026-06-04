@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import type { BookingEvent } from '@/lib/googleCalendar'
 
 function formatDay(dateStr: string): string {
@@ -76,7 +75,8 @@ export default function AdminDashboard() {
       <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b" style={{background:'var(--bg-2)', borderColor:'var(--border)'}}>
         <div className="max-w-3xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="Santi Barber" width={32} height={32} className="rounded-full object-cover" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Santi Barber" width={32} height={32} className="rounded-full object-cover" />
             <span className="font-playfair" style={{color:'var(--text)'}}>Santiago Rieck</span>
             <span className="text-[10px] uppercase tracking-widest border px-2 py-0.5 rounded" style={{color:'var(--text-faint)', borderColor:'var(--border)'}}>Admin</span>
           </div>

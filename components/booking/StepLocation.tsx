@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import type { Location } from '@/types/booking'
 
 const OPTIONS: { value: Location; label: string; sublabel: string; img: string }[] = [
@@ -51,8 +50,9 @@ export default function StepLocation({ selected, onSelect }: Props) {
                   </svg>
                 </span>
               )}
-              <div className="relative w-full h-36 flex items-center justify-center">
-                <Image src={opt.img} alt={opt.label} fill className="object-contain p-4" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <div className="w-full h-36 flex items-center justify-center p-4">
+                <img src={opt.img} alt={opt.label} className="h-full w-full object-contain" />
               </div>
               <div className="px-5 pb-5">
                 <p className="font-semibold text-lg leading-tight" style={{color:'var(--text)'}}>{opt.label}</p>

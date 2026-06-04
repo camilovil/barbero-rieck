@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 
 export default function LoginPage() {
   const [password, setPassword] = useState('')
@@ -33,7 +32,8 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
           <div className="flex justify-center mb-3">
-            <Image src="/logo.png" alt="Santi Barber" width={56} height={56} className="rounded-full object-cover" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Santi Barber" width={56} height={56} className="rounded-full object-cover" />
           </div>
           <h1 className="font-playfair text-2xl mt-3" style={{color:'var(--text)'}}>Panel de administración</h1>
           <p className="text-sm mt-1" style={{color:'var(--text-faint)'}}>Barbería Rieck</p>
