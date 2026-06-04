@@ -37,7 +37,7 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="py-6 text-center text-xs" style={{color:'var(--text-faint)'}}>
+      <footer className="py-6 text-center text-xs" style={{color:'var(--text-muted)'}}>
         © {new Date().getFullYear()} Santiago Rieck · Todos los derechos reservados
       </footer>
     </div>
