@@ -172,14 +172,22 @@ export default function AdminDashboard() {
                         )}
                         <div className="flex items-center gap-3 mt-2">
                           {ev.whatsapp && (
-                            <a
-                              href={`https://wa.me/${ev.whatsapp.replace(/\D/g, '')}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-green-500/70 hover:text-green-400 transition-colors"
-                            >
-                              WhatsApp →
-                            </a>
+                            <>
+                              <a
+                                href={`tel:${ev.whatsapp.replace(/\D/g, '')}`}
+                                className="text-xs text-[#f5f0e8]/50 hover:text-[#f5f0e8] transition-colors"
+                              >
+                                {ev.whatsapp}
+                              </a>
+                              <a
+                                href={`https://wa.me/${ev.whatsapp.replace(/\D/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-green-500/70 hover:text-green-400 transition-colors"
+                              >
+                                WhatsApp →
+                              </a>
+                            </>
                           )}
                           {ev.email && (
                             <span className="text-xs text-[#f5f0e8]/30">{ev.email}</span>
