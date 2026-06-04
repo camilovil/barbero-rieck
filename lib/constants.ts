@@ -24,7 +24,7 @@ export const TIME_SLOTS: Record<Location, string[]> = {
 export const BLOCKED_SLOTS: string[] = ['09:30', '11:00', '15:00', '16:00']
 
 export const BARBER_NAME = 'Santiago Rieck'
-export const BARBER_ADDRESS = 'Barbería Rieck — Av. Corrientes 1234, CABA'
+export const BARBER_ADDRESS = 'Estudio de Santiago Rieck'
 
 // Horas mínimas de anticipación para poder cancelar
 export const CANCELLATION_MIN_HOURS = 24

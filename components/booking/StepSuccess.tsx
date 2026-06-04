@@ -37,7 +37,7 @@ export default function StepSuccess({ booking, onReset }: Props) {
           <p className="font-semibold" style={{color:'var(--text)'}}>{booking.service?.name}</p>
           <p className="text-sm capitalize" style={{color:'var(--text-muted)'}}>{dateStr} · {booking.time}</p>
           <p className="text-sm" style={{color:'var(--text-muted)'}}>
-            {booking.location === 'domicilio' ? `A domicilio — ${booking.direccion}` : 'Barbería Rieck'}
+            {booking.location === 'domicilio' ? `A domicilio — ${booking.direccion}` : 'Estudio de Santiago'}
           </p>
         </div>
       </div>

@@ -28,7 +28,7 @@ export default function StepResumen({ booking, onConfirm, loading }: Props) {
       <p className="text-sm mb-8" style={{color:'var(--text-muted)'}}>Revisá los datos antes de confirmar</p>
 
       <div className="max-w-md rounded-xl p-6 mb-8 border" style={{background:'var(--bg-card)', borderColor:'var(--border-2)'}}>
-        <Row label="Modalidad" value={booking.location === 'domicilio' ? 'A domicilio' : 'En el local'} />
+        <Row label="Modalidad" value={booking.location === 'domicilio' ? 'A domicilio' : 'Estudio de Santiago'} />
         <Row label="Servicio" value={`${booking.service?.name} — $${booking.service?.price?.toLocaleString('es-AR')}`} />
         <Row label="Duración" value={`${booking.service?.duration} min`} />
         <Row label="Fecha" value={dateStr} />

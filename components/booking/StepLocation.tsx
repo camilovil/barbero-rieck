@@ -5,8 +5,8 @@ import type { Location } from '@/types/booking'
 const OPTIONS: { value: Location; label: string; sublabel: string; img: string }[] = [
   {
     value: 'local',
-    label: 'Barbería Rieck',
-    sublabel: 'En el local con Santiago',
+    label: 'Estudio de Santiago',
+    sublabel: 'En su depto, cómodo y privado',
     img: '/sillon-transparente.png',
   },
   {
