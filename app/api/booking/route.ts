@@ -6,15 +6,24 @@ import type { BookingState } from '@/types/booking'
 
 export async function POST(req: NextRequest) {
   try {
-    const booking: BookingState = await req.json()
+    const raw = await req.json()
+
+    // JSON serializa Date como string — restaurar el objeto Date
+    const booking: BookingState = {
+      ...raw,
+      date: raw.date ? new Date(raw.date) : null,
+    }
 
     if (!booking.nombre || !booking.email || !booking.whatsapp || !booking.date || !booking.time || !booking.service) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
     }
 
-    const [eventId] = await Promise.all([
-      createCalendarEvent(booking),
-      sendBookingEmails(booking),
+    // Primero creamos el evento para tener el eventId y generar el link de cancelación
+    const eventId = await createCalendarEvent(booking)
+
+    // Luego enviamos emails con el link de cancelación incluido
+    await Promise.all([
+      sendBookingEmails(booking, eventId),
       sendBookingNotification(booking),
     ])
 

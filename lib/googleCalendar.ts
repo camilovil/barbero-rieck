@@ -15,8 +15,8 @@ function getAuth() {
 }
 
 export async function createCalendarEvent(booking: BookingState): Promise<string> {
-  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
-    console.log('[googleCalendar] stub — GOOGLE_SERVICE_ACCOUNT_EMAIL not set')
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) {
+    console.log('[googleCalendar] stub — GOOGLE_SERVICE_ACCOUNT_EMAIL o GOOGLE_CALENDAR_ID no configurado')
     return 'stub-event-id'
   }
 
@@ -40,6 +40,7 @@ export async function createCalendarEvent(booking: BookingState): Promise<string
 
   const description = [
     `Cliente: ${booking.nombre}`,
+    `Email: ${booking.email}`,
     `WhatsApp: ${booking.whatsapp}`,
     `Servicio: ${booking.service.name} ($${booking.service.price})`,
     `Modalidad: ${booking.location === 'domicilio' ? 'A domicilio' : 'En local'}`,
@@ -62,10 +63,87 @@ export async function createCalendarEvent(booking: BookingState): Promise<string
   return event.data.id ?? 'unknown'
 }
 
+export async function getCalendarEvent(eventId: string) {
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return null
+  const calendar = google.calendar({ version: 'v3', auth: getAuth() })
+  try {
+    const res = await calendar.events.get({
+      calendarId: process.env.GOOGLE_CALENDAR_ID,
+      eventId,
+    })
+    return res.data
+  } catch {
+    return null
+  }
+}
+
+export async function deleteCalendarEvent(eventId: string): Promise<void> {
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return
+  const calendar = google.calendar({ version: 'v3', auth: getAuth() })
+  await calendar.events.delete({
+    calendarId: process.env.GOOGLE_CALENDAR_ID,
+    eventId,
+  })
+}
+
+export interface BookingEvent {
+  id: string
+  nombre: string
+  email: string
+  whatsapp: string
+  servicio: string
+  modalidad: string
+  nota: string
+  start: string // ISO string
+  end: string
+}
+
+function parseDesc(desc: string): Record<string, string> {
+  const result: Record<string, string> = {}
+  for (const line of (desc ?? '').split('\n')) {
+    const idx = line.indexOf(': ')
+    if (idx !== -1) result[line.slice(0, idx).toLowerCase()] = line.slice(idx + 2).trim()
+  }
+  return result
+}
+
+export async function getUpcomingEvents(days = 30): Promise<BookingEvent[]> {
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return []
+
+  const calendar = google.calendar({ version: 'v3', auth: getAuth() })
+  const now = new Date()
+  const future = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
+
+  const res = await calendar.events.list({
+    calendarId: process.env.GOOGLE_CALENDAR_ID,
+    timeMin: now.toISOString(),
+    timeMax: future.toISOString(),
+    singleEvents: true,
+    orderBy: 'startTime',
+  })
+
+  return (res.data.items ?? [])
+    .filter(e => e.id && e.start?.dateTime)
+    .map(e => {
+      const d = parseDesc(e.description ?? '')
+      return {
+        id: e.id!,
+        nombre: d['cliente'] ?? '—',
+        email: d['email'] ?? '',
+        whatsapp: d['whatsapp'] ?? '',
+        servicio: d['servicio'] ?? e.summary ?? '—',
+        modalidad: d['modalidad'] ?? '—',
+        nota: d['nota'] ?? '',
+        start: e.start!.dateTime!,
+        end: e.end?.dateTime ?? '',
+      }
+    })
+}
+
 // Returns the list of TIME_SLOTS that are already booked for a given date
 export async function getBookedSlots(date: Date, location: Location): Promise<string[]> {
-  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
-    return [] // no Calendar configured — let constants.ts BLOCKED_SLOTS handle it
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) {
+    return [] // no Calendar configurado — BLOCKED_SLOTS de constants.ts como fallback
   }
 
   const calendar = google.calendar({ version: 'v3', auth: getAuth() })
