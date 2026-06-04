@@ -4,6 +4,7 @@ export type Service = {
   name: string
   duration: number
   price: number
+  priceLabel?: string  // si está, se muestra en vez del precio
 }
 
 export type BookingState = {

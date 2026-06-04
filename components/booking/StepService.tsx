@@ -43,7 +43,7 @@ export default function StepService({ location, selected, onSelect }: Props) {
               )}
               <p className="font-playfair text-xl mb-3" style={{color:'var(--text)'}}>{svc.name}</p>
               <p className="text-2xl font-semibold" style={{color:'var(--text)'}}>
-                ${svc.price.toLocaleString('es-AR')}
+                {svc.priceLabel ?? `$${svc.price.toLocaleString('es-AR')}`}
               </p>
               <p className="text-xs mt-1" style={{color:'var(--text-faint)'}}>{svc.duration} min</p>
             </button>

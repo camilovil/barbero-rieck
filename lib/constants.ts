@@ -7,7 +7,7 @@ export const SERVICES: Record<Location, Service[]> = {
   ],
   domicilio: [
     { name: 'Corte', duration: 90, price: 30000 },
-    { name: 'Corte y barba', duration: 90, price: 30000 },
+    { name: 'Corte y barba', duration: 90, price: 0, priceLabel: 'A consultar' },
   ],
 }
 
