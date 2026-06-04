@@ -2,29 +2,28 @@ import type { Location, Service } from '@/types/booking'
 
 export const SERVICES: Record<Location, Service[]> = {
   local: [
-    { name: 'Corte', duration: 45, price: 3500 },
-    { name: 'Barba', duration: 30, price: 2000 },
-    { name: 'Combo', duration: 70, price: 5000 },
+    { name: 'Corte', duration: 40, price: 15000 },
+    { name: 'Corte y barba', duration: 60, price: 17000 },
   ],
   domicilio: [
-    { name: 'Corte', duration: 60, price: 4500 },
-    { name: 'Barba', duration: 45, price: 3000 },
-    { name: 'Combo', duration: 90, price: 6500 },
+    { name: 'Corte', duration: 90, price: 30000 },
+    { name: 'Corte y barba', duration: 90, price: 30000 },
   ],
 }
 
 export const TIME_SLOTS: Record<Location, string[]> = {
   local: [
-    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-    '14:00', '14:30', '15:00', '15:30', '16:00', '17:00', '17:30',
+    '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',
+    '13:00', '14:00', '14:30', '15:00', '15:30', '16:00',
+    '16:30', '17:00', '17:30', '18:00', '18:30',
   ],
-  domicilio: ['10:00', '11:00', '14:00', '15:30', '16:30'],
+  domicilio: ['10:00', '11:30', '13:00', '15:00', '17:00'],
 }
 
-export const BLOCKED_SLOTS: string[] = ['09:30', '11:00', '15:00', '16:00']
+export const BLOCKED_SLOTS: string[] = []
 
 export const BARBER_NAME = 'Santiago Rieck'
-export const BARBER_ADDRESS = 'Estudio de Santiago Rieck'
+export const BARBER_ADDRESS = 'Congreso 1865, Belgrano, CABA'
 
 // Horas mínimas de anticipación para poder cancelar
 export const CANCELLATION_MIN_HOURS = 24

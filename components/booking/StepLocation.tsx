@@ -6,7 +6,7 @@ const OPTIONS: { value: Location; label: string; sublabel: string; img: string }
   {
     value: 'local',
     label: 'Estudio de Santiago',
-    sublabel: 'En su depto, cómodo y privado',
+    sublabel: 'Congreso 1865, Belgrano',
     img: '/sillon-transparente.png',
   },
   {
