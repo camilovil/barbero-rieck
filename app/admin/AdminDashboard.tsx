@@ -191,10 +191,9 @@ export default function AdminDashboard() {
                       <button
                         onClick={() => handleCancel(ev.id, ev.nombre)}
                         disabled={cancelling === ev.id}
-                        className="text-[#f5f0e8]/20 hover:text-red-400 transition-colors text-xs shrink-0 disabled:opacity-50"
-                        title="Cancelar turno"
+                        className="text-red-400 border border-red-400/40 hover:bg-red-400/10 transition-colors text-xs shrink-0 disabled:opacity-50 px-3 py-1 rounded-lg"
                       >
-                        {cancelling === ev.id ? '...' : '✕'}
+                        {cancelling === ev.id ? 'Cancelando...' : 'Cancelar turno'}
                       </button>
                     </div>
                   ))}
