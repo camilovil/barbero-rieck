@@ -44,6 +44,12 @@ body {
   transition: background 0.25s, color 0.25s;
 }
 
+button:not(:disabled) { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+
+/* Mobile tap highlight off */
+* { -webkit-tap-highlight-color: transparent; }
+
 .font-playfair {
   font-family: var(--font-playfair), serif;
 }
