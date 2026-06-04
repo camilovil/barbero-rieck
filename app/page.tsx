@@ -1,4 +1,6 @@
 import BookingFlow from '@/components/BookingFlow'
+import ThemeToggle from '@/components/ThemeToggle'
+import Image from 'next/image'
 
 export default function Home() {
   return (
@@ -7,10 +9,10 @@ export default function Home() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#1a1a1a]/95 backdrop-blur-sm border-b border-[#2e2e2e]">
         <div className="max-w-2xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-lg">✂️</span>
+            <Image src="/logo.png" alt="Santi Barber" width={36} height={36} className="rounded-full object-cover" />
             <span className="font-playfair text-lg text-[#f5f0e8] tracking-wide">Santiago Rieck</span>
           </div>
-          <span className="text-xs text-[#f5f0e8]/30 uppercase tracking-widest hidden sm:block">Barbería</span>
+          <ThemeToggle />
         </div>
       </header>
 

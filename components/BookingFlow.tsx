@@ -141,18 +141,24 @@ export default function BookingFlow() {
           <button
             onClick={goBack}
             className={`
-              text-sm text-[#f5f0e8]/40 hover:text-[#f5f0e8]/70 transition-colors
-              ${state.step === 1 ? 'invisible' : ''}
+              flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all
+              ${state.step === 1
+                ? 'invisible'
+                : 'border-[#3a3a3a] text-[#f5f0e8]/60 hover:text-[#f5f0e8] hover:border-[#f5f0e8]/30 hover:bg-[#2e2e2e]'
+              }
             `}
           >
-            ← Atrás
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Volver
           </button>
 
           <button
             onClick={goNext}
             disabled={!ready}
             className={`
-              px-8 py-3 rounded-xl text-sm font-semibold tracking-wide uppercase transition-all
+              flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-semibold tracking-wide uppercase transition-all
               ${ready
                 ? 'bg-[#f5f0e8] text-[#1a1a1a] hover:bg-white active:scale-[0.99]'
                 : 'bg-[#2e2e2e] text-[#f5f0e8]/20 cursor-not-allowed'
@@ -160,6 +166,11 @@ export default function BookingFlow() {
             `}
           >
             {state.step === 4 ? 'Ver resumen' : 'Continuar'}
+            {ready && (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
+              </svg>
+            )}
           </button>
         </div>
       )}
