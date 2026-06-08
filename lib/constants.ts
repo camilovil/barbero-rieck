@@ -27,3 +27,6 @@ export const BARBER_ADDRESS = 'Congreso 1865, Belgrano, CABA'
 
 // Horas mínimas de anticipación para poder cancelar
 export const CANCELLATION_MIN_HOURS = 24
+
+// Máximo de turnos por día (evita sobrecarga)
+export const MAX_DAILY_BOOKINGS = 8

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createCalendarEvent } from '@/lib/googleCalendar'
+import { createCalendarEvent, getDayBookingCount, isDateBlocked } from '@/lib/googleCalendar'
+import { MAX_DAILY_BOOKINGS } from '@/lib/constants'
 import { sendBookingNotification } from '@/lib/whatsapp'
 import { sendBookingEmails } from '@/lib/email'
 import type { BookingState } from '@/types/booking'
@@ -16,6 +17,18 @@ export async function POST(req: NextRequest) {
 
     if (!booking.nombre || !booking.email || !booking.whatsapp || !booking.date || !booking.time || !booking.service) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
+    }
+
+    // Verificar que el día no esté bloqueado
+    const dayBlocked = await isDateBlocked(booking.date)
+    if (dayBlocked) {
+      return NextResponse.json({ error: 'Este día no tiene turnos disponibles' }, { status: 409 })
+    }
+
+    // Verificar límite diario
+    const count = await getDayBookingCount(booking.date)
+    if (count >= MAX_DAILY_BOOKINGS) {
+      return NextResponse.json({ error: 'No hay más turnos disponibles para este día' }, { status: 409 })
     }
 
     // Primero creamos el evento para tener el eventId y generar el link de cancelación

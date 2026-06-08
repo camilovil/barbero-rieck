@@ -36,9 +36,19 @@ export default function StepCalendar({ location, selectedDate, selectedTime, onS
   const [localDate, setLocalDate] = useState<Date | null>(selectedDate)
   const [blockedSlots, setBlockedSlots] = useState<string[]>(BLOCKED_SLOTS)
   const [loadingSlots, setLoadingSlots] = useState(false)
+  const [blockedDates, setBlockedDates] = useState<string[]>([])
 
   const slots = TIME_SLOTS[location]
 
+  // Fetch blocked dates for visual calendar feedback
+  useEffect(() => {
+    fetch('/api/blocked-dates?days=90')
+      .then(r => r.json())
+      .then(data => setBlockedDates(data.blocked ?? []))
+      .catch(() => {})
+  }, [])
+
+  // Fetch available slots when a date is selected
   useEffect(() => {
     if (!localDate) return
     setLoadingSlots(true)
@@ -60,9 +70,12 @@ export default function StepCalendar({ location, selectedDate, selectedTime, onS
     if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1) }
     else setViewMonth(m => m + 1)
   }
+  function isBlocked(date: Date): boolean {
+    return blockedDates.includes(toDateParam(date))
+  }
   function handleDateClick(day: number) {
     const d = new Date(viewYear, viewMonth, day)
-    if (isSunday(d) || isPast(d)) return
+    if (isSunday(d) || isPast(d) || isBlocked(d)) return
     setLocalDate(d)
   }
   function handleTimeClick(time: string) {
@@ -106,9 +119,10 @@ export default function StepCalendar({ location, selectedDate, selectedTime, onS
             {cells.map((day, i) => {
               if (!day) return <div key={`e-${i}`} />
               const d = new Date(viewYear, viewMonth, day)
-              const disabled = isSunday(d) || isPast(d)
+              const disabled = isSunday(d) || isPast(d) || isBlocked(d)
               const isSelected = localDate && sameDay(d, localDate)
               const isToday = sameDay(d, today)
+              const blocked = isBlocked(d)
 
               return (
                 <button
@@ -118,7 +132,7 @@ export default function StepCalendar({ location, selectedDate, selectedTime, onS
                   className="relative mx-auto w-9 h-9 rounded-lg text-sm transition-all"
                   style={
                     disabled
-                      ? { color: 'var(--text-xfaint)', cursor: 'not-allowed' }
+                      ? { color: 'var(--text-xfaint)', cursor: 'not-allowed', textDecoration: blocked ? 'line-through' : 'none' }
                       : isSelected
                       ? { background: 'var(--text)', color: 'var(--bg)', fontWeight: 600, cursor: 'pointer' }
                       : isToday

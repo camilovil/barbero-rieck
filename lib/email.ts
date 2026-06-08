@@ -307,6 +307,101 @@ export async function sendBookingEmails(booking: BookingState, eventId: string):
   ])
 }
 
+export async function sendReminderEmail(
+  nombre: string,
+  email: string,
+  dateStr: string,
+  time: string,
+  servicio: string,
+  location: string,
+  whatsapp: string,
+): Promise<void> {
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return
+
+  const transporter = getTransporter()
+  const from = `"Barbería Rieck" <${process.env.GMAIL_USER}>`
+  const modalidad = location === 'domicilio' ? 'A domicilio' : 'Estudio de Santiago — <a href="https://maps.app.goo.gl/u8RhmS8WoqdQ61sx5" style="color:#888;text-decoration:underline">Congreso 1865, Belgrano</a>'
+  const waNumber = process.env.SANTIAGO_WHATSAPP ? process.env.SANTIAGO_WHATSAPP.replace(/\D/g,'') : ''
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#111111;font-family:Arial,Helvetica,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#111111">
+    <tr><td align="center" style="padding:40px 16px">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px">
+
+        <tr><td align="center" style="padding-bottom:32px;border-bottom:1px solid #2a2a2a">
+          <img src="https://barbero-rieck.vercel.app/logo.png" alt="Barbería Rieck" width="64" height="64"
+            style="border-radius:50%;display:block;margin:0 auto 12px" />
+          <p style="margin:0;font-size:20px;font-weight:700;letter-spacing:0.08em;color:#f5f0e8;text-transform:uppercase">Santiago Rieck</p>
+          <p style="margin:5px 0 0;font-size:11px;color:#666;letter-spacing:0.12em;text-transform:uppercase">Barbería</p>
+        </td></tr>
+
+        <tr><td style="padding:36px 0 8px">
+          <p style="margin:0;font-size:26px;font-weight:700;color:#f5f0e8;line-height:1.2">
+            ⏰ Recordatorio,<br>${nombre}!
+          </p>
+        </td></tr>
+        <tr><td style="padding-bottom:28px">
+          <p style="margin:0;font-size:15px;color:#888;line-height:1.5">
+            Mañana tenés turno con Santiago.<br>¡Te esperamos!
+          </p>
+        </td></tr>
+
+        <tr><td style="padding-bottom:24px">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td width="50%" style="padding:20px;background:#1e1e1e;border:1px solid #2e2e2e;border-radius:10px 0 0 10px;text-align:center">
+                <p style="margin:0 0 4px;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.09em">Fecha</p>
+                <p style="margin:0;font-size:16px;font-weight:700;color:#f5f0e8">${dateStr}</p>
+              </td>
+              <td width="50%" style="padding:20px;background:#1e1e1e;border:1px solid #2e2e2e;border-left:none;border-radius:0 10px 10px 0;text-align:center">
+                <p style="margin:0 0 4px;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.09em">Horario</p>
+                <p style="margin:0;font-size:24px;font-weight:700;color:#f5f0e8">${time}</p>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <tr><td style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:0 20px">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            ${detailRow('Servicio', servicio)}
+            ${detailRow('Modalidad', modalidad)}
+          </table>
+        </td></tr>
+
+        ${waNumber ? `
+        <tr><td style="padding:24px 0 0;text-align:center">
+          <a href="https://wa.me/${waNumber}" style="display:inline-block;padding:12px 28px;background:#25D366;color:#fff;font-size:14px;font-weight:700;text-decoration:none;border-radius:8px">
+            💬 Escribir a Santiago
+          </a>
+        </td></tr>` : ''}
+
+        <tr><td style="padding:16px 0 0;text-align:center">
+          <p style="margin:0;font-size:11px;color:#444">
+            Si no ves este mail, revisá tu carpeta de spam o correo no deseado.
+          </p>
+        </td></tr>
+
+        <tr><td style="padding:24px 0 0;border-top:1px solid #1e1e1e;text-align:center">
+          <p style="margin:0;font-size:12px;color:#333">¿Dudas? Escribile a Santiago por WhatsApp.</p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+
+  await transporter.sendMail({
+    from,
+    to: email,
+    subject: `⏰ Recordatorio: mañana ${time} — Barbería Rieck`,
+    html,
+  })
+}
+
 export async function sendCancellationEmails(
   nombre: string,
   email: string,

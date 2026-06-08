@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getBookedSlots } from '@/lib/googleCalendar'
-import { BLOCKED_SLOTS } from '@/lib/constants'
+import { getBookedSlots, isDateBlocked } from '@/lib/googleCalendar'
+import { BLOCKED_SLOTS, TIME_SLOTS } from '@/lib/constants'
 import type { Location } from '@/types/booking'
 
 export async function GET(req: NextRequest) {
@@ -18,6 +18,12 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // Si el día está bloqueado por Santiago, devolver todos los slots como ocupados
+    const dayBlocked = await isDateBlocked(date)
+    if (dayBlocked) {
+      return NextResponse.json({ blocked: TIME_SLOTS[location], dayBlocked: true })
+    }
+
     // Slots ocupados en Calendar + slots bloqueados estáticos (horarios de almuerzo, etc.)
     const calendarBooked = await getBookedSlots(date, location)
     const blocked = Array.from(new Set([...BLOCKED_SLOTS, ...calendarBooked]))
