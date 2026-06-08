@@ -44,7 +44,7 @@ function clientHtml(b: BookingState, cancelLink?: string): string {
   const dateStr = b.date ? capitalize(formatDate(b.date)) : '—'
   const modalidad = b.location === 'domicilio'
     ? `A domicilio — ${b.direccion}`
-    : 'Estudio de Santiago — Congreso 1865, Belgrano'
+    : 'Estudio de Santiago — <a href="https://maps.app.goo.gl/u8RhmS8WoqdQ61sx5" style="color:#888;text-decoration:underline">Congreso 1865, Belgrano</a>'
 
   return `<!DOCTYPE html>
 <html lang="es">
