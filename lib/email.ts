@@ -426,22 +426,55 @@ export async function sendCancellationEmails(
   const transporter = getTransporter()
   const from = `"Barbería Rieck" <${process.env.GMAIL_USER}>`
 
+  const waNumber = process.env.SANTIAGO_WHATSAPP ?? ''
+
   const clientCancelHtml = `<!DOCTYPE html>
 <html lang="es">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#111;font-family:Arial,sans-serif">
-  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;margin:0 auto;padding:40px 20px">
-    <tr><td>
-      <p style="margin:0 0 10px;font-size:30px">✂️</p>
-      <p style="margin:0;font-size:20px;font-weight:700;color:#f5f0e8;text-transform:uppercase;letter-spacing:0.08em">Santiago Rieck</p>
-      <p style="margin:4px 0 32px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.1em;padding-bottom:32px;border-bottom:1px solid #222">Barbería</p>
-      <h2 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#f5f0e8">Tu turno fue cancelado</h2>
-      <p style="margin:0 0 28px;font-size:15px;color:#777">${nombre}, cancelamos tu turno del <strong style="color:#f5f0e8">${dateStr} a las ${time}</strong>.</p>
-      <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:20px;margin-bottom:28px">
-        <p style="margin:0;font-size:14px;color:#888">Servicio: <span style="color:#f5f0e8">${servicio}</span></p>
-      </div>
-      <p style="margin:0;font-size:14px;color:#555">Si querés reservar otro turno, entrá a la app.</p>
-      <p style="margin:28px 0 0;font-size:12px;color:#333;padding-top:24px;border-top:1px solid #1e1e1e">Barbería Rieck · Sistema de turnos</p>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#111111;font-family:Arial,Helvetica,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#111111">
+    <tr><td align="center" style="padding:40px 16px">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px">
+
+        <tr><td align="center" style="padding-bottom:32px;border-bottom:1px solid #2a2a2a">
+          <img src="https://barbero-rieck.vercel.app/logo.png" alt="Barbería Rieck" width="64" height="64"
+            style="border-radius:50%;display:block;margin:0 auto 12px" />
+          <p style="margin:0;font-size:20px;font-weight:700;letter-spacing:0.08em;color:#f5f0e8;text-transform:uppercase">Santiago Rieck</p>
+          <p style="margin:5px 0 0;font-size:11px;color:#666;letter-spacing:0.12em;text-transform:uppercase">Barbería</p>
+        </td></tr>
+
+        <tr><td style="padding:36px 0 8px">
+          <p style="margin:0;font-size:26px;font-weight:700;color:#f5f0e8;line-height:1.2">
+            Tu turno fue cancelado
+          </p>
+        </td></tr>
+        <tr><td style="padding-bottom:28px">
+          <p style="margin:0;font-size:15px;color:#888;line-height:1.6">
+            ${nombre}, tu turno del <strong style="color:#f5f0e8">${dateStr} a las ${time}</strong> fue cancelado por Santiago.<br><br>
+            Si creés que hubo un error o querés reprogramarlo, escribile directamente.
+          </p>
+        </td></tr>
+
+        <tr><td style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:0 20px">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            ${detailRow('Servicio', servicio)}
+            ${detailRow('Fecha', dateStr)}
+            ${detailRow('Horario', time)}
+          </table>
+        </td></tr>
+
+        ${waNumber ? `
+        <tr><td style="padding:24px 0 0;text-align:center">
+          <a href="https://wa.me/${waNumber}" style="display:inline-block;padding:12px 28px;background:#25D366;color:#fff;font-size:14px;font-weight:700;text-decoration:none;border-radius:8px">
+            💬 Escribir a Santiago
+          </a>
+        </td></tr>` : ''}
+
+        <tr><td style="padding:24px 0 0;border-top:1px solid #1e1e1e;margin-top:24px;text-align:center">
+          <p style="margin:0;font-size:12px;color:#333">Barbería Rieck · Sistema de turnos</p>
+        </td></tr>
+
+      </table>
     </td></tr>
   </table>
 </body></html>`
