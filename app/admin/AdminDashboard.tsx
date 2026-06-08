@@ -165,7 +165,7 @@ export default function AdminDashboard() {
             <div className="flex flex-col leading-tight">
               <span style={{fontFamily:'var(--font-permanent-marker)', fontSize:'1.1rem', lineHeight:1.1}}>
                 <span style={{color:'var(--text)'}}>Santi </span>
-                <span style={{color:'#F5E6C8'}}>Barber</span>
+                <span style={{color:'var(--text)'}}>Barber</span>
               </span>
               <span style={{fontSize:'0.55rem', letterSpacing:'0.15em', textTransform:'uppercase', color:'var(--text-faint)'}}>Barbería</span>
             </div>
