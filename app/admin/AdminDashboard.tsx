@@ -161,7 +161,7 @@ export default function AdminDashboard() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="Santi Barber" width={32} height={32} className="rounded-full object-cover" style={{border:'2px solid #F5E6C8', padding:'1px'}} />
+            <img src="/logo.png" alt="Santi Barber" width={32} height={32} className="rounded-full object-cover" style={{border:'3px solid #F5E6C8', padding:'2px'}} />
             <div className="flex flex-col leading-tight">
               <span style={{fontFamily:'var(--font-permanent-marker)', fontSize:'1.1rem', lineHeight:1.1}}>
                 <span style={{color:'var(--text)'}}>Santi </span>
