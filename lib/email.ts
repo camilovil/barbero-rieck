@@ -61,7 +61,8 @@ function clientHtml(b: BookingState, cancelLink?: string): string {
 
         <!-- Header -->
         <tr><td align="center" style="padding-bottom:32px;border-bottom:1px solid #2a2a2a">
-          <p style="margin:0 0 10px;font-size:30px;line-height:1">✂️</p>
+          <img src="https://barbero-rieck.vercel.app/logo.png" alt="Barbería Rieck" width="64" height="64"
+            style="border-radius:50%;display:block;margin:0 auto 12px" />
           <p style="margin:0;font-size:20px;font-weight:700;letter-spacing:0.08em;
               color:#f5f0e8;text-transform:uppercase">Santiago Rieck</p>
           <p style="margin:5px 0 0;font-size:11px;color:#666;letter-spacing:0.12em;
