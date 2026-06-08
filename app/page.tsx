@@ -52,6 +52,8 @@ export default async function Home({ searchParams }: Props) {
       {/* Footer */}
       <footer className="py-6 text-center text-xs" style={{color:'var(--text-muted)'}}>
         © {new Date().getFullYear()} Santiago Rieck · Todos los derechos reservados
+        <br />
+        <span style={{fontSize:'0.6rem', opacity:0.5}}>Desarrollado por Camilo Villanueva</span>
       </footer>
     </div>
   )
