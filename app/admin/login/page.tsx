@@ -33,7 +33,7 @@ export default function LoginPage() {
         <div className="text-center mb-10">
           <div className="flex justify-center mb-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="Santi Barber" width={56} height={56} className="rounded-full object-cover" style={{border:'3px solid #F5E6C8', padding:'3px'}} />
+            <img src="/logo.png" alt="Santi Barber" width={56} height={56} className="rounded-full object-cover" style={{boxShadow:'0 0 0 3px #1a1a1a, 0 0 0 6px #F5E6C8'}} />
           </div>
           <h1 style={{fontFamily:'var(--font-permanent-marker)', fontSize:'1.6rem', marginTop:'12px', lineHeight:1.1}}>
             <span style={{color:'var(--text)'}}>Santi </span>
