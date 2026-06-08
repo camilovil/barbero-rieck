@@ -17,7 +17,7 @@ export default async function Home({ searchParams }: Props) {
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="Santi Barber" width={36} height={36} className="rounded-full object-cover" />
-            <span className="font-playfair text-lg tracking-wide t-text" style={{color:'var(--text)'}}>Santiago Rieck</span>
+            <span style={{fontFamily:'var(--font-permanent-marker)', fontSize:'1.2rem', color:'var(--text)'}}>Santi Barber</span>
           </div>
           <ThemeToggle />
         </div>

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Playfair_Display, DM_Sans } from 'next/font/google'
+import { Playfair_Display, DM_Sans, Permanent_Marker } from 'next/font/google'
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration'
 import './globals.css'
 
@@ -13,6 +13,12 @@ const dmSans = DM_Sans({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600'],
   variable: '--font-dm-sans',
+})
+
+const permanentMarker = Permanent_Marker({
+  subsets: ['latin'],
+  weight: ['400'],
+  variable: '--font-permanent-marker',
 })
 
 export const metadata: Metadata = {
@@ -33,7 +39,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`h-full ${playfair.variable} ${dmSans.variable}`}>
+    <html lang="es" className={`h-full ${playfair.variable} ${dmSans.variable} ${permanentMarker.variable}`}>
       <head>
         {/* PWA — iOS */}
         <meta name="mobile-web-app-capable" content="yes" />
