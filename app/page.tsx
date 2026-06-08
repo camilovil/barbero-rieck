@@ -16,7 +16,7 @@ export default async function Home({ searchParams }: Props) {
         <div className="max-w-2xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="Santi Barber" width={44} height={44} className="rounded-full object-cover" style={{marginTop:'-12px'}} />
+            <img src="/logo.png" alt="Santi Barber" width={48} height={48} className="rounded-full object-cover" style={{marginTop:'-8px', marginLeft:'4px'}} />
             <div className="flex flex-col leading-tight">
               <span style={{fontFamily:'var(--font-permanent-marker)', fontSize:'1.2rem', lineHeight:1.1}}>
                 <span style={{color:'var(--text)'}}>Santi </span>
