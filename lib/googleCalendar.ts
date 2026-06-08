@@ -160,6 +160,8 @@ async function getConfigEventId(calendar: ReturnType<typeof google.calendar>): P
     q: CONFIG_SUMMARY,
     maxResults: 1,
     showDeleted: false,
+    timeMin: '2000-01-01T00:00:00Z',
+    timeMax: '2100-01-01T00:00:00Z',
   })
   return res.data.items?.[0]?.id ?? null
 }
@@ -180,8 +182,6 @@ export async function getSettings(): Promise<AppSettings> {
 export async function saveSettings(settings: AppSettings): Promise<void> {
   const calendar = google.calendar({ version: 'v3', auth: getAuth() })
   const description = JSON.stringify(settings)
-  const today = new Date().toISOString().split('T')[0]
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
   const existingId = await getConfigEventId(calendar)
   if (existingId) {
     await calendar.events.patch({
@@ -195,8 +195,8 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
       requestBody: {
         summary: CONFIG_SUMMARY,
         description,
-        start: { date: today },
-        end: { date: tomorrow },
+        start: { date: '2099-01-01' },
+        end: { date: '2099-01-02' },
         visibility: 'private',
       },
     })
