@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer'
 import type { BookingState } from '@/types/booking'
+import type { BookingEvent } from '@/lib/googleCalendar'
 
 function getTransporter() {
   return nodemailer.createTransport({
@@ -40,7 +41,7 @@ function detailRow(label: string, value: string): string {
 
 // ─── Email al cliente ────────────────────────────────────────────────────────
 
-function clientHtml(b: BookingState, cancelLink?: string): string {
+function clientHtml(b: BookingState, cancelLink?: string, modLink?: string): string {
   const dateStr = b.date ? capitalize(formatDate(b.date)) : '—'
   const modalidad = b.location === 'domicilio'
     ? `A domicilio — ${b.direccion}`
@@ -116,13 +117,20 @@ function clientHtml(b: BookingState, cancelLink?: string): string {
           </p>
         </td></tr>
 
-        <!-- Cancel link -->
-        ${cancelLink ? `
+        <!-- Modify / Cancel links -->
+        ${(modLink || cancelLink) ? `
         <tr><td style="padding:16px 0 0;text-align:center">
-          <a href="${cancelLink}" style="font-size:12px;color:#555;text-decoration:underline">
-            Cancelar turno
-          </a>
-          <p style="margin:4px 0 0;font-size:11px;color:#333">Disponible hasta 24 hs antes del turno</p>
+          <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto">
+            <tr>
+              ${modLink ? `<td style="padding-right:16px">
+                <a href="${modLink}" style="font-size:12px;color:#888;text-decoration:underline">Modificar turno</a>
+              </td>` : ''}
+              ${cancelLink ? `<td>
+                <a href="${cancelLink}" style="font-size:12px;color:#555;text-decoration:underline">Cancelar turno</a>
+              </td>` : ''}
+            </tr>
+          </table>
+          <p style="margin:6px 0 0;font-size:11px;color:#333">Disponible hasta 24 hs antes del turno</p>
         </td></tr>` : ''}
 
         <!-- Spam warning -->
@@ -210,6 +218,41 @@ function santiagoHtml(b: BookingState): string {
           </a>
         </td></tr>` : ''}
 
+        <!-- Links para compartir -->
+        <tr><td style="padding:20px 0 0">
+          <p style="margin:0 0 10px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.08em">Links para compartir</p>
+          <table cellpadding="0" cellspacing="0" border="0" style="width:100%">
+            <tr>
+              <td style="padding:2px 4px 2px 0">
+                <a href="https://barbero-rieck.vercel.app?modalidad=local&servicio=corte"
+                  style="display:block;padding:8px 10px;background:#1e1e1e;border:1px solid #2e2e2e;border-radius:6px;font-size:11px;color:#888;text-decoration:none;text-align:center">
+                  ✂️ Corte — local
+                </a>
+              </td>
+              <td style="padding:2px 4px 2px 0">
+                <a href="https://barbero-rieck.vercel.app?modalidad=local&servicio=corte-barba"
+                  style="display:block;padding:8px 10px;background:#1e1e1e;border:1px solid #2e2e2e;border-radius:6px;font-size:11px;color:#888;text-decoration:none;text-align:center">
+                  ✂️ Corte+barba — local
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:2px 4px 2px 0">
+                <a href="https://barbero-rieck.vercel.app?modalidad=domicilio&servicio=corte"
+                  style="display:block;padding:8px 10px;background:#1e1e1e;border:1px solid #2e2e2e;border-radius:6px;font-size:11px;color:#888;text-decoration:none;text-align:center">
+                  🏠 Corte — domicilio
+                </a>
+              </td>
+              <td style="padding:2px 4px 2px 0">
+                <a href="https://barbero-rieck.vercel.app?modalidad=domicilio&servicio=corte-barba"
+                  style="display:block;padding:8px 10px;background:#1e1e1e;border:1px solid #2e2e2e;border-radius:6px;font-size:11px;color:#888;text-decoration:none;text-align:center">
+                  🏠 Corte+barba — domicilio
+                </a>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
         <tr><td style="padding-top:24px;text-align:center">
           <p style="margin:0;font-size:12px;color:#444">Barbería Rieck · Sistema de turnos</p>
         </td></tr>
@@ -277,6 +320,10 @@ function cancelUrl(eventId: string, email: string): string {
   return `${getAppUrl()}/cancelar?id=${eventId}&email=${encodeURIComponent(email)}`
 }
 
+function modificarUrl(eventId: string, email: string): string {
+  return `${getAppUrl()}/modificar?id=${eventId}&email=${encodeURIComponent(email)}`
+}
+
 // ─── Exports ─────────────────────────────────────────────────────────────────
 
 export async function sendBookingEmails(booking: BookingState, eventId: string): Promise<void> {
@@ -290,6 +337,7 @@ export async function sendBookingEmails(booking: BookingState, eventId: string):
   const dateStr = booking.date ? capitalize(formatDate(booking.date)) : '—'
   const icsContent = generateICS(booking)
   const cancelLink = cancelUrl(eventId, booking.email)
+  const modLink = modificarUrl(eventId, booking.email)
 
   await Promise.all([
     // Confirmación al cliente + adjunto .ics
@@ -297,7 +345,7 @@ export async function sendBookingEmails(booking: BookingState, eventId: string):
       from,
       to: booking.email,
       subject: `✂️ Turno confirmado — ${dateStr} a las ${booking.time}`,
-      html: clientHtml(booking, cancelLink),
+      html: clientHtml(booking, cancelLink, modLink),
       attachments: [{
         filename: 'turno-barberia-rieck.ics',
         content: Buffer.from(icsContent),
@@ -520,4 +568,84 @@ export async function sendCancellationEmails(
         })
       : Promise.resolve(),
   ])
+}
+
+// ─── Resumen diario para Santiago ─────────────────────────────────────────────
+
+export async function sendDailySummaryEmail(events: BookingEvent[], date: Date): Promise<void> {
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD || !process.env.SANTIAGO_EMAIL) return
+
+  const transporter = getTransporter()
+  const from = `"Barbería Rieck" <${process.env.GMAIL_USER}>`
+  const dateStr = capitalize(date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))
+
+  const turnosHtml = events.length === 0
+    ? `<tr><td colspan="4" style="padding:20px;text-align:center;font-size:14px;color:#555">No hay turnos para hoy 🎉</td></tr>`
+    : events.map(ev => {
+        const time = new Date(ev.start).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+        const waNumber = ev.whatsapp.replace(/https:\/\/wa\.me\//,'').replace(/\D/g,'')
+        return `
+        <tr style="border-bottom:1px solid #2a2a2a">
+          <td style="padding:14px 12px;font-size:15px;font-weight:700;color:#f5f0e8;white-space:nowrap">${time}</td>
+          <td style="padding:14px 12px;font-size:14px;color:#f5f0e8">${ev.nombre}</td>
+          <td style="padding:14px 12px;font-size:13px;color:#888">${ev.servicio.split(' — ')[0]}</td>
+          <td style="padding:14px 12px;font-size:13px;color:#888">${waNumber ? `<a href="https://wa.me/${waNumber}" style="color:#25D366;text-decoration:none">WhatsApp</a>` : '—'}</td>
+        </tr>`
+      }).join('')
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#111111;font-family:Arial,Helvetica,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#111111">
+    <tr><td align="center" style="padding:40px 16px">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px">
+
+        <tr><td align="center" style="padding-bottom:32px;border-bottom:1px solid #2a2a2a">
+          <img src="https://barbero-rieck.vercel.app/logo.png" alt="Barbería Rieck" width="64" height="64"
+            style="border-radius:50%;display:block;margin:0 auto 12px" />
+          <p style="margin:0;font-size:20px;font-weight:700;letter-spacing:0.08em;color:#f5f0e8;text-transform:uppercase">Santiago Rieck</p>
+          <p style="margin:5px 0 0;font-size:11px;color:#666;letter-spacing:0.12em;text-transform:uppercase">Barbería</p>
+        </td></tr>
+
+        <tr><td style="padding:32px 0 8px">
+          <p style="margin:0;font-size:24px;font-weight:700;color:#f5f0e8">📋 Turnos de hoy</p>
+          <p style="margin:6px 0 0;font-size:14px;color:#666">${dateStr}</p>
+        </td></tr>
+
+        <tr><td style="padding:20px 0">
+          <div style="background:#1e1e1e;border:1px solid #2a2a2a;border-radius:10px;overflow:hidden;display:inline-block;width:100%">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr style="background:#1a1a1a;border-bottom:1px solid #2e2e2e">
+                <td style="padding:10px 12px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.1em">Hora</td>
+                <td style="padding:10px 12px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.1em">Cliente</td>
+                <td style="padding:10px 12px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.1em">Servicio</td>
+                <td style="padding:10px 12px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.1em">Contacto</td>
+              </tr>
+              ${turnosHtml}
+            </table>
+          </div>
+        </td></tr>
+
+        <tr><td style="padding:0 0 8px;text-align:center">
+          <p style="margin:0;font-size:24px;font-weight:700;color:#f5f0e8">${events.length}</p>
+          <p style="margin:4px 0 0;font-size:12px;color:#555">${events.length === 1 ? 'turno hoy' : 'turnos hoy'}</p>
+        </td></tr>
+
+        <tr><td style="padding:24px 0 0;border-top:1px solid #1e1e1e;text-align:center">
+          <p style="margin:0;font-size:12px;color:#333">Barbería Rieck · Sistema de turnos</p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+
+  await transporter.sendMail({
+    from,
+    to: process.env.SANTIAGO_EMAIL,
+    subject: `📋 Turnos de hoy — ${dateStr} (${events.length} ${events.length === 1 ? 'turno' : 'turnos'})`,
+    html,
+  })
 }

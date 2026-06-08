@@ -9,18 +9,43 @@ import StepDatos from './booking/StepDatos'
 import StepResumen from './booking/StepResumen'
 import StepSuccess from './booking/StepSuccess'
 import type { BookingState, Location, Service } from '@/types/booking'
+import { SERVICES } from '@/lib/constants'
 
-const INITIAL_STATE: BookingState = {
-  step: 1,
-  location: null,
-  email: '',
-  service: null,
-  date: null,
-  time: null,
-  nombre: '',
-  whatsapp: '',
-  direccion: '',
-  nota: '',
+interface Props {
+  initialLocation?: Location | null
+  initialServicio?: string | null
+}
+
+function buildInitialState(initialLocation: Location | null, initialServicio: string | null): BookingState {
+  const location = initialLocation
+  let service: Service | null = null
+  let step = 1
+
+  if (location) {
+    step = 2
+    const services = SERVICES[location]
+    if (initialServicio) {
+      const slug = initialServicio.toLowerCase()
+      const match = services.find(s =>
+        s.name.toLowerCase().replace(/\s+y\s+/g, '-').replace(/\s+/g, '-') === slug ||
+        s.name.toLowerCase().split(' ')[0] === slug.split('-')[0]
+      )
+      if (match) { service = match; step = 3 }
+    }
+  }
+
+  return {
+    step,
+    location,
+    email: '',
+    service,
+    date: null,
+    time: null,
+    nombre: '',
+    whatsapp: '',
+    direccion: '',
+    nota: '',
+  }
 }
 
 function canAdvance(state: BookingState): boolean {
@@ -37,8 +62,8 @@ function canAdvance(state: BookingState): boolean {
   }
 }
 
-export default function BookingFlow() {
-  const [state, setState] = useState<BookingState>(INITIAL_STATE)
+export default function BookingFlow({ initialLocation = null, initialServicio = null }: Props) {
+  const [state, setState] = useState<BookingState>(() => buildInitialState(initialLocation, initialServicio))
   const [loading, setLoading] = useState(false)
   const [confirmed, setConfirmed] = useState(false)
 
@@ -62,18 +87,19 @@ export default function BookingFlow() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(state),
       })
-      if (!res.ok) throw new Error('Error al confirmar')
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Error al confirmar')
       setConfirmed(true)
     } catch (err) {
       console.error(err)
-      alert('Hubo un error al confirmar el turno. Intentá de nuevo.')
+      alert(err instanceof Error ? err.message : 'Hubo un error al confirmar el turno. Intentá de nuevo.')
     } finally {
       setLoading(false)
     }
   }
 
   function reset() {
-    setState(INITIAL_STATE)
+    setState(buildInitialState(null, null))
     setConfirmed(false)
   }
 
@@ -157,10 +183,7 @@ export default function BookingFlow() {
             disabled={!ready}
             className={`
               flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-semibold tracking-wide uppercase transition-all
-              ${ready
-                ? 'active:scale-[0.99]'
-                : 'cursor-not-allowed opacity-30'
-              }
+              ${ready ? 'active:scale-[0.99]' : 'cursor-not-allowed opacity-30'}
             `}
             style={ready ? {background:'var(--text)', color:'var(--bg)'} : {background:'var(--bg-active)', color:'var(--text-xfaint)'}}
           >

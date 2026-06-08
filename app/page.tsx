@@ -1,7 +1,14 @@
 import BookingFlow from '@/components/BookingFlow'
 import ThemeToggle from '@/components/ThemeToggle'
 
-export default function Home() {
+interface Props {
+  searchParams: Promise<{ modalidad?: string; servicio?: string }>
+}
+
+export default async function Home({ searchParams }: Props) {
+  const params = await searchParams
+  const initialLocation = params.modalidad === 'domicilio' ? 'domicilio' : params.modalidad === 'local' ? 'local' : null
+  const initialServicio = params.servicio ?? null
   return (
     <div className="min-h-screen flex flex-col t-bg">
       {/* Header */}
@@ -31,7 +38,7 @@ export default function Home() {
 
           {/* Booking card */}
           <div className="border rounded-2xl p-4 sm:p-8" style={{background:'var(--bg-2)', borderColor:'var(--border)'}}>
-            <BookingFlow />
+            <BookingFlow initialLocation={initialLocation} initialServicio={initialServicio} />
           </div>
         </div>
       </main>
