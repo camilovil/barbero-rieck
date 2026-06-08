@@ -197,9 +197,18 @@ function santiagoHtml(b: BookingState): string {
             ${detailRow('Email', b.email)}
             ${detailRow('Servicio', `${b.service?.name} — ${b.service?.priceLabel ?? '$' + b.service?.price?.toLocaleString('es-AR')}`)}
             ${detailRow('Modalidad', modalidad)}
+            ${b.location === 'domicilio' && b.direccion ? detailRow('Dirección', b.direccion) : ''}
             ${b.nota ? detailRow('Nota', b.nota) : ''}
           </table>
         </td></tr>
+
+        ${b.location === 'domicilio' && b.direccion ? `
+        <tr><td style="padding:20px 0 0;text-align:center">
+          <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.direccion)}"
+            style="display:inline-block;padding:11px 24px;background:#1e1e1e;border:1px solid #2e2e2e;color:#f5f0e8;font-size:13px;font-weight:600;text-decoration:none;border-radius:8px">
+            📍 Ver en Google Maps
+          </a>
+        </td></tr>` : ''}
 
         <tr><td style="padding-top:24px;text-align:center">
           <p style="margin:0;font-size:12px;color:#444">Barbería Rieck · Sistema de turnos</p>

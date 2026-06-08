@@ -47,6 +47,7 @@ export async function createCalendarEvent(booking: BookingState): Promise<string
     `Servicio: ${booking.service.name} — $${booking.service.price?.toLocaleString('es-AR')}`,
     `Modalidad: ${booking.location === 'domicilio' ? 'A domicilio' : 'Estudio'}`,
     booking.location === 'domicilio' && booking.direccion ? `Dirección cliente: ${booking.direccion}` : null,
+    booking.location === 'domicilio' && booking.direccion ? `Cómo llegar: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.direccion)}` : null,
     booking.nota ? `Nota: ${booking.nota}` : null,
   ]
     .filter(Boolean)
