@@ -47,6 +47,11 @@ export default function AdminDashboard() {
   const [blockingDate, setBlockingDate] = useState(false)
   const [showBlocked, setShowBlocked] = useState(false)
 
+  // Settings
+  const [maxDaily, setMaxDaily] = useState(8)
+  const [maxDailyInput, setMaxDailyInput] = useState(8)
+  const [savingSettings, setSavingSettings] = useState(false)
+
   const fetchEvents = useCallback(async () => {
     setLoading(true)
     const res = await fetch('/api/admin/bookings')
@@ -64,6 +69,10 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchEvents()
     fetchBlockedDates()
+    fetch('/api/admin/settings')
+      .then(r => r.json())
+      .then(d => { setMaxDaily(d.maxDailyBookings); setMaxDailyInput(d.maxDailyBookings) })
+      .catch(() => {})
   }, [fetchEvents, fetchBlockedDates])
 
   async function handleLogout() {
@@ -96,6 +105,17 @@ export default function AdminDashboard() {
       setBlockInput('')
     }
     setBlockingDate(false)
+  }
+
+  async function handleSaveSettings() {
+    setSavingSettings(true)
+    const res = await fetch('/api/admin/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ maxDailyBookings: maxDailyInput }),
+    })
+    if (res.ok) setMaxDaily(maxDailyInput)
+    setSavingSettings(false)
   }
 
   async function handleUnblock(eventId: string) {
@@ -300,6 +320,40 @@ export default function AdminDashboard() {
             ))}
           </div>
         )}
+
+        {/* ─── Configuración ─── */}
+        <div className="mt-12 border-t pt-10" style={{borderColor:'var(--border)'}}>
+          <h3 className="text-sm font-semibold mb-6" style={{color:'var(--text)'}}>⚙️ Configuración</h3>
+          <div className="border rounded-xl p-5" style={{background:'var(--bg-2)', borderColor:'var(--border)'}}>
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <p className="text-sm font-medium" style={{color:'var(--text)'}}>Límite de turnos por día</p>
+                <p className="text-xs mt-0.5" style={{color:'var(--text-faint)'}}>
+                  Actual: <strong style={{color:'var(--text)'}}>{maxDaily}</strong> turnos máximos
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={maxDailyInput}
+                  onChange={e => setMaxDailyInput(Number(e.target.value))}
+                  className="w-16 text-center rounded-lg border px-2 py-2 text-sm outline-none"
+                  style={{background:'var(--bg)', borderColor:'var(--border)', color:'var(--text)'}}
+                />
+                <button
+                  onClick={handleSaveSettings}
+                  disabled={savingSettings || maxDailyInput === maxDaily}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-40 transition-all"
+                  style={{background:'var(--text)', color:'var(--bg)'}}
+                >
+                  {savingSettings ? '...' : 'Guardar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* ─── Gestión de días bloqueados ─── */}
         <div className="mt-12 border-t pt-10" style={{borderColor:'var(--border)'}}>

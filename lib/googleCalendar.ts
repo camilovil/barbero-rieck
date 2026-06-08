@@ -140,6 +140,65 @@ export async function getUpcomingEvents(days = 30): Promise<BookingEvent[]> {
     })
 }
 
+// ─── App settings (stored as a special GCal event) ───────────────────────────
+
+const CONFIG_SUMMARY = '🔧 BARBERIA_CONFIG'
+
+export interface AppSettings {
+  maxDailyBookings: number
+}
+
+const DEFAULT_SETTINGS: AppSettings = { maxDailyBookings: 8 }
+
+async function getConfigEventId(calendar: ReturnType<typeof google.calendar>): Promise<string | null> {
+  const res = await calendar.events.list({
+    calendarId: process.env.GOOGLE_CALENDAR_ID!,
+    q: CONFIG_SUMMARY,
+    maxResults: 1,
+    showDeleted: false,
+  })
+  return res.data.items?.[0]?.id ?? null
+}
+
+export async function getSettings(): Promise<AppSettings> {
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return DEFAULT_SETTINGS
+  try {
+    const calendar = google.calendar({ version: 'v3', auth: getAuth() })
+    const id = await getConfigEventId(calendar)
+    if (!id) return DEFAULT_SETTINGS
+    const ev = await calendar.events.get({ calendarId: process.env.GOOGLE_CALENDAR_ID!, eventId: id })
+    return { ...DEFAULT_SETTINGS, ...JSON.parse(ev.data.description ?? '{}') }
+  } catch {
+    return DEFAULT_SETTINGS
+  }
+}
+
+export async function saveSettings(settings: AppSettings): Promise<void> {
+  const calendar = google.calendar({ version: 'v3', auth: getAuth() })
+  const description = JSON.stringify(settings)
+  const today = new Date().toISOString().split('T')[0]
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
+  const existingId = await getConfigEventId(calendar)
+  if (existingId) {
+    await calendar.events.patch({
+      calendarId: process.env.GOOGLE_CALENDAR_ID!,
+      eventId: existingId,
+      requestBody: { description },
+    })
+  } else {
+    await calendar.events.insert({
+      calendarId: process.env.GOOGLE_CALENDAR_ID!,
+      requestBody: {
+        summary: CONFIG_SUMMARY,
+        description,
+        start: { date: today },
+        end: { date: tomorrow },
+        visibility: 'private',
+      },
+    })
+  }
+}
+
 // ─── Blocked dates ────────────────────────────────────────────────────────────
 
 export async function blockDate(date: Date): Promise<string> {

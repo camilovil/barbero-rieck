@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createCalendarEvent, getDayBookingCount, isDateBlocked } from '@/lib/googleCalendar'
-import { MAX_DAILY_BOOKINGS } from '@/lib/constants'
+import { createCalendarEvent, getDayBookingCount, isDateBlocked, getSettings } from '@/lib/googleCalendar'
 import { sendBookingNotification } from '@/lib/whatsapp'
 import { sendBookingEmails } from '@/lib/email'
 import type { BookingState } from '@/types/booking'
@@ -25,9 +24,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Este día no tiene turnos disponibles' }, { status: 409 })
     }
 
-    // Verificar límite diario
+    // Verificar límite diario (configurable desde el admin)
+    const { maxDailyBookings } = await getSettings()
     const count = await getDayBookingCount(booking.date)
-    if (count >= MAX_DAILY_BOOKINGS) {
+    if (count >= maxDailyBookings) {
       return NextResponse.json({ error: 'No hay más turnos disponibles para este día' }, { status: 409 })
     }
 
