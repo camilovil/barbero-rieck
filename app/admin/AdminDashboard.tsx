@@ -162,7 +162,13 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="Santi Barber" width={32} height={32} className="rounded-full object-cover" />
-            <span style={{fontFamily:'var(--font-permanent-marker)', fontSize:'1.1rem', color:'var(--text)'}}>Santi Barber</span>
+            <div className="flex flex-col leading-tight">
+              <span style={{fontFamily:'var(--font-permanent-marker)', fontSize:'1.1rem', lineHeight:1.1}}>
+                <span style={{color:'var(--text)'}}>Santi </span>
+                <span style={{color:'#F5E6C8'}}>Barber</span>
+              </span>
+              <span style={{fontSize:'0.55rem', letterSpacing:'0.15em', textTransform:'uppercase', color:'var(--text-faint)'}}>Barbería</span>
+            </div>
             <span className="text-[10px] uppercase tracking-widest border px-2 py-0.5 rounded" style={{color:'var(--text-faint)', borderColor:'var(--border)'}}>Admin</span>
           </div>
           <button onClick={handleLogout} className="text-xs transition-colors" style={{color:'var(--text-faint)'}}>

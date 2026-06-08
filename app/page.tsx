@@ -17,7 +17,13 @@ export default async function Home({ searchParams }: Props) {
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="Santi Barber" width={36} height={36} className="rounded-full object-cover" />
-            <span style={{fontFamily:'var(--font-permanent-marker)', fontSize:'1.2rem', color:'var(--text)'}}>Santi Barber</span>
+            <div className="flex flex-col leading-tight">
+              <span style={{fontFamily:'var(--font-permanent-marker)', fontSize:'1.2rem', lineHeight:1.1}}>
+                <span style={{color:'var(--text)'}}>Santi </span>
+                <span style={{color:'#F5E6C8'}}>Barber</span>
+              </span>
+              <span style={{fontSize:'0.6rem', letterSpacing:'0.15em', textTransform:'uppercase', color:'var(--text-faint)'}}>Barbería</span>
+            </div>
           </div>
           <ThemeToggle />
         </div>
