@@ -43,7 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         {/* PWA — iOS */}
         <meta name="mobile-web-app-capable" content="yes" />
-        <link rel="apple-touch-startup-image" href="/apple-icon" />
+        <link rel="apple-touch-icon" href="/apple-icon.png" />
         {/* Genera los iconos 192/512 para el manifest */}
         <link rel="icon" sizes="192x192" href="/icon-192.png" />
         <link rel="icon" sizes="512x512" href="/icon-512.png" />
