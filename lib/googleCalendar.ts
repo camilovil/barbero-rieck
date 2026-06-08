@@ -35,15 +35,18 @@ export async function createCalendarEvent(booking: BookingState): Promise<string
 
   const locationLabel =
     booking.location === 'domicilio'
-      ? `A domicilio — ${booking.direccion}`
-      : 'Barbería Rieck — Av. Corrientes 1234, CABA'
+      ? `${booking.direccion}`
+      : 'Congreso 1865, Belgrano, CABA'
+
+  const waNumber = booking.whatsapp.replace(/\D/g, '')
 
   const description = [
     `Cliente: ${booking.nombre}`,
+    `WhatsApp: https://wa.me/${waNumber}`,
     `Email: ${booking.email}`,
-    `WhatsApp: ${booking.whatsapp}`,
-    `Servicio: ${booking.service.name} ($${booking.service.price})`,
-    `Modalidad: ${booking.location === 'domicilio' ? 'A domicilio' : 'En local'}`,
+    `Servicio: ${booking.service.name} — $${booking.service.price?.toLocaleString('es-AR')}`,
+    `Modalidad: ${booking.location === 'domicilio' ? 'A domicilio' : 'Estudio'}`,
+    booking.location === 'domicilio' && booking.direccion ? `Dirección cliente: ${booking.direccion}` : null,
     booking.nota ? `Nota: ${booking.nota}` : null,
   ]
     .filter(Boolean)
