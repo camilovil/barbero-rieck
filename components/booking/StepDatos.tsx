@@ -57,10 +57,16 @@ export default function StepDatos({ location, nombre, email, whatsapp, direccion
         </Field>
 
         {location === 'domicilio' && (
-          <Field label="Dirección" required>
-            <input type="text" value={direccion} onChange={e => onChange('direccion', e.target.value)}
-              placeholder="Calle, número, piso/depto, barrio" className={inputClass} style={inputStyle} />
-          </Field>
+          <div className="sm:col-span-2">
+            <Field label="Dirección completa" required>
+              <input type="text" value={direccion} onChange={e => onChange('direccion', e.target.value)}
+                placeholder="Calle y número, piso/depto (si aplica), localidad, ciudad, CP"
+                className={inputClass} style={inputStyle} />
+              <p className="mt-1.5 text-xs" style={{color:'var(--text-faint)'}}>
+                Ej: Av. Santa Fe 1234, 3°B, Palermo, CABA, C1059
+              </p>
+            </Field>
+          </div>
         )}
 
         <div className="sm:col-span-2">
