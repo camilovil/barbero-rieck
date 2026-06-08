@@ -1,7 +1,15 @@
-import { Resend } from 'resend'
+import nodemailer from 'nodemailer'
 import type { BookingState } from '@/types/booking'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getTransporter() {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  })
+}
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString('es-AR', {
@@ -36,7 +44,7 @@ function clientHtml(b: BookingState, cancelLink?: string): string {
   const dateStr = b.date ? capitalize(formatDate(b.date)) : '—'
   const modalidad = b.location === 'domicilio'
     ? `A domicilio — ${b.direccion}`
-    : 'Barbería Rieck — Av. Corrientes 1234, CABA'
+    : 'Estudio de Santiago — Congreso 1865, Belgrano'
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -79,7 +87,7 @@ function clientHtml(b: BookingState, cancelLink?: string): string {
               <td width="50%" style="padding:20px;background:#1e1e1e;border:1px solid #2e2e2e;
                   border-radius:10px 0 0 10px;text-align:center">
                 <p style="margin:0 0 4px;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.09em">Fecha</p>
-                <p style="margin:0;font-size:16px;font-weight:700;color:#f5f0e8">${dateStr.split(' de ')[0]} de ${dateStr.split(' de ').slice(1).join(' de ')}</p>
+                <p style="margin:0;font-size:16px;font-weight:700;color:#f5f0e8">${dateStr}</p>
               </td>
               <td width="50%" style="padding:20px;background:#1e1e1e;border:1px solid #2e2e2e;
                   border-left:none;border-radius:0 10px 10px 0;text-align:center">
@@ -93,7 +101,7 @@ function clientHtml(b: BookingState, cancelLink?: string): string {
         <!-- Detail card -->
         <tr><td style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:0 20px">
           <table width="100%" cellpadding="0" cellspacing="0" border="0">
-            ${detailRow('Servicio', `${b.service?.name} — $${b.service?.price?.toLocaleString('es-AR')}`)}
+            ${detailRow('Servicio', `${b.service?.name} — ${b.service?.priceLabel ?? '$' + b.service?.price?.toLocaleString('es-AR')}`)}
             ${detailRow('Duración', `${b.service?.duration} min`)}
             ${detailRow('Modalidad', modalidad)}
             ${b.nota ? detailRow('Nota', b.nota) : ''}
@@ -116,6 +124,13 @@ function clientHtml(b: BookingState, cancelLink?: string): string {
           <p style="margin:4px 0 0;font-size:11px;color:#333">Disponible hasta 24 hs antes del turno</p>
         </td></tr>` : ''}
 
+        <!-- Spam warning -->
+        <tr><td style="padding:16px 0 0;text-align:center">
+          <p style="margin:0;font-size:11px;color:#444">
+            Si no ves este mail, revisá tu carpeta de spam o correo no deseado.
+          </p>
+        </td></tr>
+
         <!-- Footer -->
         <tr><td style="padding:24px 0 0;border-top:1px solid #1e1e1e;margin-top:24px;text-align:center">
           <p style="margin:0;font-size:12px;color:#333">
@@ -136,7 +151,7 @@ function santiagoHtml(b: BookingState): string {
   const dateStr = b.date ? capitalize(formatDate(b.date)) : '—'
   const modalidad = b.location === 'domicilio'
     ? `A domicilio — ${b.direccion}`
-    : 'En el local'
+    : 'En el estudio'
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -179,7 +194,7 @@ function santiagoHtml(b: BookingState): string {
             ${detailRow('Cliente', b.nombre)}
             ${detailRow('WhatsApp', b.whatsapp)}
             ${detailRow('Email', b.email)}
-            ${detailRow('Servicio', `${b.service?.name} — $${b.service?.price?.toLocaleString('es-AR')}`)}
+            ${detailRow('Servicio', `${b.service?.name} — ${b.service?.priceLabel ?? '$' + b.service?.price?.toLocaleString('es-AR')}`)}
             ${detailRow('Modalidad', modalidad)}
             ${b.nota ? detailRow('Nota', b.nota) : ''}
           </table>
@@ -201,7 +216,6 @@ function santiagoHtml(b: BookingState): string {
 function generateICS(b: BookingState): string {
   const [h, m] = (b.time ?? '00:00').split(':').map(Number)
 
-  // Hora del turno en UTC (Argentina = UTC-3)
   const start = new Date(b.date!)
   start.setUTCHours(h + 3, m, 0, 0)
   const end = new Date(start)
@@ -212,7 +226,7 @@ function generateICS(b: BookingState): string {
 
   const location = b.location === 'domicilio'
     ? b.direccion
-    : 'Barbería Rieck — Av. Corrientes 1234, CABA'
+    : 'Estudio de Santiago — Congreso 1865, Belgrano'
 
   const description = [
     `Turno con Santiago Rieck`,
@@ -241,7 +255,6 @@ function generateICS(b: BookingState): string {
   ].join('\r\n')
 }
 
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function getAppUrl(): string {
@@ -257,31 +270,33 @@ function cancelUrl(eventId: string, email: string): string {
 // ─── Exports ─────────────────────────────────────────────────────────────────
 
 export async function sendBookingEmails(booking: BookingState, eventId: string): Promise<void> {
-  if (!process.env.RESEND_API_KEY) {
-    console.log('[email] stub — RESEND_API_KEY not set. Link de cancelación:', cancelUrl(eventId, booking.email))
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.log('[email] stub — GMAIL_USER/GMAIL_APP_PASSWORD not set. Link de cancelación:', cancelUrl(eventId, booking.email))
     return
   }
 
-  const from = process.env.RESEND_FROM_EMAIL ?? 'turnos@barberiarieck.com'
+  const transporter = getTransporter()
+  const from = `"Barbería Rieck" <${process.env.GMAIL_USER}>`
   const dateStr = booking.date ? capitalize(formatDate(booking.date)) : '—'
   const icsContent = generateICS(booking)
   const cancelLink = cancelUrl(eventId, booking.email)
 
   await Promise.all([
     // Confirmación al cliente + adjunto .ics
-    resend.emails.send({
+    transporter.sendMail({
       from,
       to: booking.email,
       subject: `✂️ Turno confirmado — ${dateStr} a las ${booking.time}`,
       html: clientHtml(booking, cancelLink),
       attachments: [{
         filename: 'turno-barberia-rieck.ics',
-        content: Buffer.from(icsContent).toString('base64'),
+        content: Buffer.from(icsContent),
+        contentType: 'text/calendar',
       }],
     }),
     // Notificación a Santiago
     process.env.SANTIAGO_EMAIL
-      ? resend.emails.send({
+      ? transporter.sendMail({
           from,
           to: process.env.SANTIAGO_EMAIL,
           subject: `📅 Nuevo turno: ${booking.nombre} — ${dateStr} ${booking.time}`,
@@ -298,12 +313,13 @@ export async function sendCancellationEmails(
   time: string,
   servicio: string,
 ): Promise<void> {
-  if (!process.env.RESEND_API_KEY) {
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
     console.log('[email] stub — cancelación de', nombre)
     return
   }
 
-  const from = process.env.RESEND_FROM_EMAIL ?? 'turnos@barberiarieck.com'
+  const transporter = getTransporter()
+  const from = `"Barbería Rieck" <${process.env.GMAIL_USER}>`
 
   const clientCancelHtml = `<!DOCTYPE html>
 <html lang="es">
@@ -351,14 +367,14 @@ export async function sendCancellationEmails(
 </body></html>`
 
   await Promise.all([
-    resend.emails.send({
+    transporter.sendMail({
       from,
       to: email,
       subject: `Turno cancelado — ${dateStr} a las ${time}`,
       html: clientCancelHtml,
     }),
     process.env.SANTIAGO_EMAIL
-      ? resend.emails.send({
+      ? transporter.sendMail({
           from,
           to: process.env.SANTIAGO_EMAIL,
           subject: `❌ Turno cancelado: ${nombre} — ${dateStr} ${time}`,
