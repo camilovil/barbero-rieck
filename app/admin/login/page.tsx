@@ -35,8 +35,8 @@ export default function LoginPage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="Santi Barber" width={56} height={56} className="rounded-full object-cover" />
           </div>
-          <h1 className="font-playfair text-2xl mt-3" style={{color:'var(--text)'}}>Panel de administración</h1>
-          <p className="text-sm mt-1" style={{color:'var(--text-faint)'}}>Barbería Rieck</p>
+          <h1 style={{fontFamily:'var(--font-permanent-marker)', fontSize:'1.6rem', color:'var(--text)', marginTop:'12px'}}>Santi Barber</h1>
+          <p className="text-sm mt-1" style={{color:'var(--text-faint)'}}>Panel de administración</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
