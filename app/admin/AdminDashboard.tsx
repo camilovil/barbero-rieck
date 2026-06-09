@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import type { BookingEvent } from '@/lib/googleCalendar'
+import ThemeToggle from '@/components/ThemeToggle'
 
 function formatDay(dateStr: string): string {
   const d = new Date(dateStr)
@@ -171,9 +172,12 @@ export default function AdminDashboard() {
             </div>
             <span className="text-[10px] uppercase tracking-widest border px-2 py-0.5 rounded" style={{color:'var(--text-faint)', borderColor:'var(--border)'}}>Admin</span>
           </div>
-          <button onClick={handleLogout} className="text-xs transition-colors" style={{color:'var(--text-faint)'}}>
-            Salir
-          </button>
+          <div className="flex items-center gap-3">
+            <ThemeToggle variant="admin" />
+            <button onClick={handleLogout} className="text-xs font-semibold transition-colors" style={{color:'var(--text-faint)'}}>
+              Salir
+            </button>
+          </div>
         </div>
       </header>
 

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import ThemeToggle from '@/components/ThemeToggle'
 
 export default function LoginPage() {
   const [password, setPassword] = useState('')
@@ -29,6 +30,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6" style={{background:'var(--bg)'}}>
+      <div style={{position:'fixed', top:12, right:16}}>
+        <ThemeToggle variant="admin" />
+      </div>
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
           <div className="flex justify-center mb-3">

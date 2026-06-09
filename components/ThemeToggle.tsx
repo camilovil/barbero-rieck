@@ -6,7 +6,7 @@ function applyTheme(isDark: boolean) {
   document.documentElement.classList.toggle('dark', isDark)
 }
 
-export default function ThemeToggle() {
+export default function ThemeToggle({ variant = 'header' }: { variant?: 'header' | 'admin' }) {
   const [dark, setDark] = useState(false)
 
   useEffect(() => {
@@ -23,19 +23,23 @@ export default function ThemeToggle() {
     applyTheme(next)
   }
 
+  const isAdmin = variant === 'admin'
+
   return (
     <button
       onClick={toggle}
       aria-label="Cambiar tema"
       style={{
-        width: 40, height: 40, borderRadius: '50%',
-        background: 'rgba(255,255,255,.18)',
-        border: '1.5px solid rgba(255,255,255,.55)',
+        width: 34, height: 34, borderRadius: '50%',
+        background: isAdmin ? 'var(--chip-bg)' : 'rgba(255,255,255,.18)',
+        border: isAdmin ? '1.5px solid var(--border)' : '1.5px solid rgba(255,255,255,.55)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        cursor: 'pointer', color: '#fff', transition: 'background .2s',
+        cursor: 'pointer',
+        color: isAdmin ? 'var(--text-mut)' : '#fff',
+        transition: 'background .2s',
       }}
-      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,.3)')}
-      onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,.18)')}
+      onMouseEnter={e => (e.currentTarget.style.background = isAdmin ? 'var(--border)' : 'rgba(255,255,255,.3)')}
+      onMouseLeave={e => (e.currentTarget.style.background = isAdmin ? 'var(--chip-bg)' : 'rgba(255,255,255,.18)')}
     >
       {dark ? (
         /* Sol */
