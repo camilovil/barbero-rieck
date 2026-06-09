@@ -345,112 +345,82 @@ function clientCancelHtml(
 </html>`
 }
 
-// ─── Email a Santiago ────────────────────────────────────────────────────────
+// ─── Email a Santiago — NUEVO TURNO ─────────────────────────────────────────
 
 function santiagoHtml(b: BookingState): string {
   const dateStr = b.date ? capitalize(formatDate(b.date)) : '—'
-  const modalidad = b.location === 'domicilio'
-    ? `A domicilio — ${b.direccion}`
-    : 'En el estudio'
+  const modalIcon = b.location === 'domicilio' ? '🏠' : '✂️'
+  const modalLabel = b.location === 'domicilio' ? `A domicilio — ${b.direccion || ''}` : 'En el estudio'
 
   return `<!DOCTYPE html>
 <html lang="es">
-<head><meta charset="UTF-8"><title>Nuevo turno</title></head>
-<body style="margin:0;padding:0;background:#111111;font-family:Arial,Helvetica,sans-serif">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#111111">
-    <tr><td align="center" style="padding:40px 16px">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&family=Barlow:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background:#f0f4f8;font-family:'Barlow',Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0f4f8">
+<tr><td align="center" style="padding:32px 16px">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;border:2px solid #DDE6F1">
 
-        <!-- Header badge -->
-        <tr><td style="padding-bottom:24px">
-          <table cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              <td style="background:#1e1e1e;border:1px solid #2e2e2e;border-radius:6px;
-                  padding:8px 16px;font-size:13px;font-weight:700;color:#f5f0e8">
-                📅 Nuevo turno
-              </td>
-            </tr>
-          </table>
+    ${emailHeader()}
+
+    <!-- Titulo -->
+    <tr><td style="padding:28px 28px 8px;text-align:center">
+      <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 14px">
+        <tr><td align="center" style="width:72px;height:72px;background:linear-gradient(160deg,#75AADB,#0B1F47);border-radius:50%">
+          <div style="font-size:34px;line-height:72px">📅</div>
         </td></tr>
+      </table>
+      <p style="margin:0 0 6px;font-family:'Anton',Arial,sans-serif;font-size:24px;letter-spacing:.4px;color:#0B1F47">NUEVO TURNO</p>
+      <p style="margin:0;font-size:13px;color:#7D8AA3;font-weight:600">
+        ${b.nombre} reservó para el <strong style="color:#0B1F47">${dateStr}</strong>
+      </p>
+    </td></tr>
 
-        <!-- Date highlight -->
-        <tr><td style="padding-bottom:24px">
-          <table width="100%" cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              <td style="padding:20px;background:#1e1e1e;border:1px solid #2e2e2e;border-radius:10px">
-                <p style="margin:0 0 4px;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.09em">
-                  ${dateStr}
-                </p>
-                <p style="margin:0;font-size:28px;font-weight:700;color:#f5f0e8">${b.time} hs</p>
-                <p style="margin:6px 0 0;font-size:14px;color:#888">${b.service?.name} · ${b.service?.duration} min</p>
-              </td>
-            </tr>
-          </table>
-        </td></tr>
-
-        <!-- Client detail card -->
-        <tr><td style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:0 20px">
-          <table width="100%" cellpadding="0" cellspacing="0" border="0">
-            ${detailRow('Cliente', b.nombre)}
-            ${detailRow('WhatsApp', b.whatsapp)}
-            ${detailRow('Email', b.email)}
-            ${detailRow('Servicio', `${b.service?.name} — ${b.service?.priceLabel ?? '$' + b.service?.price?.toLocaleString('es-AR')}`)}
-            ${detailRow('Modalidad', modalidad)}
-            ${b.location === 'domicilio' && b.direccion ? detailRow('Dirección', b.direccion) : ''}
-            ${b.nota ? detailRow('Nota', b.nota) : ''}
-          </table>
-        </td></tr>
-
-        ${b.location === 'domicilio' && b.direccion ? `
-        <tr><td style="padding:20px 0 0;text-align:center">
-          <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.direccion)}"
-            style="display:inline-block;padding:11px 24px;background:#1e1e1e;border:1px solid #2e2e2e;color:#f5f0e8;font-size:13px;font-weight:600;text-decoration:none;border-radius:8px">
-            📍 Ver en Google Maps
-          </a>
-        </td></tr>` : ''}
-
-        <!-- Links para compartir -->
-        <tr><td style="padding:20px 0 0">
-          <p style="margin:0 0 10px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.08em">Links para compartir</p>
-          <table cellpadding="0" cellspacing="0" border="0" style="width:100%">
-            <tr>
-              <td style="padding:2px 4px 2px 0">
-                <a href="https://barbero-rieck.vercel.app?modalidad=local&servicio=corte"
-                  style="display:block;padding:8px 10px;background:#1e1e1e;border:1px solid #2e2e2e;border-radius:6px;font-size:11px;color:#888;text-decoration:none;text-align:center">
-                  ✂️ Corte — local
-                </a>
-              </td>
-              <td style="padding:2px 4px 2px 0">
-                <a href="https://barbero-rieck.vercel.app?modalidad=local&servicio=corte-barba"
-                  style="display:block;padding:8px 10px;background:#1e1e1e;border:1px solid #2e2e2e;border-radius:6px;font-size:11px;color:#888;text-decoration:none;text-align:center">
-                  ✂️ Corte+barba — local
-                </a>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:2px 4px 2px 0">
-                <a href="https://barbero-rieck.vercel.app?modalidad=domicilio&servicio=corte"
-                  style="display:block;padding:8px 10px;background:#1e1e1e;border:1px solid #2e2e2e;border-radius:6px;font-size:11px;color:#888;text-decoration:none;text-align:center">
-                  🏠 Corte — domicilio
-                </a>
-              </td>
-              <td style="padding:2px 4px 2px 0">
-                <a href="https://barbero-rieck.vercel.app?modalidad=domicilio&servicio=corte-barba"
-                  style="display:block;padding:8px 10px;background:#1e1e1e;border:1px solid #2e2e2e;border-radius:6px;font-size:11px;color:#888;text-decoration:none;text-align:center">
-                  🏠 Corte+barba — domicilio
-                </a>
-              </td>
-            </tr>
-          </table>
-        </td></tr>
-
-        <tr><td style="padding-top:24px;text-align:center">
-          <p style="margin:0;font-size:12px;color:#444">Barbería Rieck · Sistema de turnos</p>
-        </td></tr>
-
+    <!-- Hora destacada -->
+    <tr><td style="padding:20px 28px 8px">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:linear-gradient(135deg,#75AADB,#0B1F47);border-radius:14px">
+        <tr>
+          <td style="padding:20px 24px;text-align:center">
+            <p style="margin:0 0 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.15em;color:rgba(255,255,255,.7)">${dateStr}</p>
+            <p style="margin:0;font-family:'Anton',Arial,sans-serif;font-size:40px;color:#ffffff;line-height:1">${b.time}</p>
+            <p style="margin:6px 0 0;font-size:12px;color:rgba(255,255,255,.75)">${b.service?.name} · ${b.service?.duration} min · ${modalIcon} ${b.location === 'domicilio' ? 'Domicilio' : 'Estudio'}</p>
+          </td>
+        </tr>
       </table>
     </td></tr>
+
+    <!-- Detalle cliente -->
+    <tr><td style="padding:8px 28px 24px">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:2px solid #DDE6F1;border-radius:12px;overflow:hidden">
+        ${detailRowNew('Cliente', b.nombre)}
+        ${detailRowNew('WhatsApp', b.whatsapp ? `<a href="https://wa.me/${b.whatsapp.replace(/\D/g,'')}" style="color:#25D366;text-decoration:none">${b.whatsapp} ↗</a>` : '—')}
+        ${detailRowNew('Email', b.email)}
+        ${detailRowNew('Modalidad', modalLabel)}
+        ${b.nota ? detailRowNew('Nota', `"${b.nota}"`, undefined, true) : detailRowNew('Servicio', `${b.service?.name}`, undefined, true)}
+      </table>
+    </td></tr>
+
+    ${b.location === 'domicilio' && b.direccion ? `
+    <tr><td style="padding:0 28px 20px;text-align:center">
+      <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.direccion)}"
+        style="display:inline-block;padding:12px 24px;background:#0B1F47;color:#ffffff;font-family:'Anton',Arial,sans-serif;font-size:12px;letter-spacing:1px;text-decoration:none;border-radius:30px;text-transform:uppercase">
+        📍 Ver en Google Maps
+      </a>
+    </td></tr>` : ''}
+
+    <!-- Footer -->
+    <tr><td style="background:#0B1F47;padding:18px 28px;text-align:center">
+      <p style="margin:0;font-size:11px;color:rgba(255,255,255,.45);letter-spacing:.08em;font-family:Arial,sans-serif">
+        SANTI BARBER · <a href="https://barbero-rieck.vercel.app/admin" style="color:#75AADB;text-decoration:none">Ver panel →</a>
+      </p>
+    </td></tr>
+
   </table>
+</td></tr>
+</table>
 </body>
 </html>`
 }
@@ -694,34 +664,59 @@ export async function sendCancellationEmails(
 
   const santiagoCancelHtml = `<!DOCTYPE html>
 <html lang="es">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#111;font-family:Arial,sans-serif">
-  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;margin:0 auto;padding:40px 20px">
-    <tr><td>
-      <div style="display:inline-block;padding:8px 16px;background:#1e1e1e;border:1px solid #2e2e2e;border-radius:6px;font-size:13px;font-weight:700;color:#f5f0e8;margin-bottom:24px">
-        ❌ Turno cancelado
-      </div>
-      <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#f5f0e8">Un cliente canceló su turno</h2>
-      <p style="margin:0 0 24px;font-size:14px;color:#777">El siguiente turno fue cancelado por el cliente.</p>
-      <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:20px">
-        <table width="100%" cellpadding="0" cellspacing="0">
-          ${detailRow('Cliente', nombre)}
-          ${detailRow('Email', email)}
-          ${detailRow('Fecha', dateStr)}
-          ${detailRow('Horario', time)}
-          ${detailRow('Servicio', servicio)}
-        </table>
-      </div>
-      ${waNumber ? `
-      <p style="margin:20px 0 0;text-align:center">
-        <a href="https://wa.me/${waNumber.replace(/\D/g,'')}" style="display:inline-block;padding:11px 24px;background:#25D366;color:#fff;font-size:13px;font-weight:700;text-decoration:none;border-radius:8px">
-          💬 Contactar al cliente
-        </a>
-      </p>` : ''}
-      <p style="margin:24px 0 0;font-size:12px;color:#333;text-align:center">El horario quedó libre automáticamente.</p>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background:#f0f4f8;font-family:'Barlow',Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0f4f8">
+<tr><td align="center" style="padding:32px 16px">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;border:2px solid #DDE6F1">
+
+    ${emailHeader()}
+
+    <tr><td style="padding:28px 28px 8px;text-align:center">
+      <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 14px">
+        <tr><td align="center" style="width:72px;height:72px;background:linear-gradient(160deg,#DC5B4B,#9b1c1c);border-radius:50%">
+          <div style="font-size:34px;line-height:72px;color:#fff">✕</div>
+        </td></tr>
+      </table>
+      <p style="margin:0 0 6px;font-family:'Anton',Arial,sans-serif;font-size:24px;letter-spacing:.4px;color:#0B1F47">TURNO CANCELADO</p>
+      <p style="margin:0;font-size:13px;color:#7D8AA3;font-weight:600">
+        <strong style="color:#0B1F47">${nombre}</strong> canceló su turno. El horario quedó libre.
+      </p>
     </td></tr>
+
+    <tr><td style="padding:20px 28px 24px">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:2px solid #DDE6F1;border-radius:12px;overflow:hidden">
+        ${detailRowNew('Fecha', dateStr)}
+        ${detailRowNew('Horario', time)}
+        ${detailRowNew('Servicio', servicio)}
+        ${detailRowNew('Email', email, undefined, !waNumber)}
+        ${waNumber ? detailRowNew('WhatsApp', `<a href="https://wa.me/${waNumber.replace(/\D/g,'')}" style="color:#25D366;text-decoration:none">${waNumber} ↗</a>`, undefined, true) : ''}
+      </table>
+    </td></tr>
+
+    ${reason ? `
+    <tr><td style="padding:0 28px 20px">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fff8f0;border:1.5px solid #fcd5a0;border-radius:10px;padding:14px 16px">
+        <tr><td style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#c47a1e;padding-bottom:4px">Motivo indicado</td></tr>
+        <tr><td style="font-size:13px;color:#7a4a0a">${reason}</td></tr>
+      </table>
+    </td></tr>` : ''}
+
+    <tr><td style="background:#0B1F47;padding:18px 28px;text-align:center">
+      <p style="margin:0;font-size:11px;color:rgba(255,255,255,.45);letter-spacing:.08em;font-family:Arial,sans-serif">
+        SANTI BARBER · <a href="https://barbero-rieck.vercel.app/admin" style="color:#75AADB;text-decoration:none">Ver panel →</a>
+      </p>
+    </td></tr>
+
   </table>
-</body></html>`
+</td></tr>
+</table>
+</body>
+</html>`
 
   await Promise.all([
     transporter.sendMail({
@@ -843,24 +838,61 @@ export async function sendRescheduleEmails(
 </body>
 </html>`
 
-  const santiagoHtml = `<!DOCTYPE html>
+  const santiagoRescheduleHtml = `<!DOCTYPE html>
 <html lang="es">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#111;font-family:Arial,sans-serif">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#111">
-    <tr><td align="center" style="padding:32px 16px">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px">
-        <tr><td style="background:#1e1e1e;border:1px solid #2a2a2a;border-radius:12px;padding:24px">
-          <p style="margin:0 0 4px;font-size:18px;font-weight:700;color:#f5f0e8">🔄 Turno reprogramado</p>
-          <p style="margin:0 0 20px;font-size:13px;color:#888">${nombre} · ${servicio.split(' — ')[0]}</p>
-          <p style="margin:0 0 6px;font-size:12px;color:#666;text-transform:uppercase;letter-spacing:.08em">Antes</p>
-          <p style="margin:0 0 16px;font-size:15px;color:#888;text-decoration:line-through">${capitalize(oldDateStr)} — ${oldTime}</p>
-          <p style="margin:0 0 6px;font-size:12px;color:#75AADB;text-transform:uppercase;letter-spacing:.08em">Ahora</p>
-          <p style="margin:0;font-size:18px;font-weight:700;color:#f5f0e8">${capitalize(newDateStr)} — ${newTime}</p>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background:#f0f4f8;font-family:'Barlow',Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0f4f8">
+<tr><td align="center" style="padding:32px 16px">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;border:2px solid #DDE6F1">
+
+    ${emailHeader()}
+
+    <tr><td style="padding:28px 28px 8px;text-align:center">
+      <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 14px">
+        <tr><td align="center" style="width:72px;height:72px;background:linear-gradient(160deg,#75AADB,#0B1F47);border-radius:50%">
+          <div style="font-size:34px;line-height:72px">🔄</div>
         </td></tr>
       </table>
+      <p style="margin:0 0 6px;font-family:'Anton',Arial,sans-serif;font-size:24px;letter-spacing:.4px;color:#0B1F47">TURNO REPROGRAMADO</p>
+      <p style="margin:0;font-size:13px;color:#7D8AA3;font-weight:600">
+        <strong style="color:#0B1F47">${nombre}</strong> · ${servicio.split(' — ')[0]}
+      </p>
     </td></tr>
+
+    <tr><td style="padding:20px 28px 8px">
+      <p style="margin:0 0 8px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#aaa">Antes</p>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1.5px solid #e8ecf0;border-radius:10px;overflow:hidden">
+        <tr>
+          <td style="padding:12px 16px;font-size:13px;font-weight:700;color:#bbb;text-decoration:line-through;border-right:1px solid #e8ecf0;text-align:center">${capitalize(oldDateStr)}</td>
+          <td style="padding:12px 16px;font-family:'Anton',Arial,sans-serif;font-size:20px;color:#bbb;text-decoration:line-through;text-align:center">${oldTime}</td>
+        </tr>
+      </table>
+    </td></tr>
+
+    <tr><td style="padding:12px 28px 24px">
+      <p style="margin:0 0 8px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#0B1F47">Nuevo horario ✓</p>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:2px solid #75AADB;border-radius:10px;overflow:hidden;background:#f5f9ff">
+        <tr>
+          <td style="padding:16px;font-size:14px;font-weight:800;color:#0B1F47;border-right:1px solid #75AADB;text-align:center">${capitalize(newDateStr)}</td>
+          <td style="padding:16px;font-family:'Anton',Arial,sans-serif;font-size:26px;color:#0B1F47;text-align:center">${newTime}</td>
+        </tr>
+      </table>
+    </td></tr>
+
+    <tr><td style="background:#0B1F47;padding:18px 28px;text-align:center">
+      <p style="margin:0;font-size:11px;color:rgba(255,255,255,.45);letter-spacing:.08em;font-family:Arial,sans-serif">
+        SANTI BARBER · <a href="https://barbero-rieck.vercel.app/admin" style="color:#75AADB;text-decoration:none">Ver panel →</a>
+      </p>
+    </td></tr>
+
   </table>
+</td></tr>
+</table>
 </body>
 </html>`
 
@@ -876,7 +908,7 @@ export async function sendRescheduleEmails(
           from,
           to: process.env.SANTIAGO_EMAIL,
           subject: `🔄 Reprogramado: ${nombre} → ${capitalize(newDateStr)} ${newTime}`,
-          html: santiagoHtml,
+          html: santiagoRescheduleHtml,
         })
       : Promise.resolve(),
   ])
