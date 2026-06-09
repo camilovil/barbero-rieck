@@ -56,23 +56,23 @@ function emailHeader(): string {
               <tr>
                 <td style="padding:0 7px;text-align:center">
                   <div style="font-size:15px;color:#F2B63C;line-height:1">&#9733;</div>
-                  <div style="font-family:Arial,sans-serif;font-size:8px;letter-spacing:1px;color:rgba(255,255,255,.85);margin-top:2px">1978</div>
+                  <div style="font-family:'Anton',Arial,sans-serif;font-size:8px;letter-spacing:1px;color:rgba(255,255,255,.85);margin-top:2px">1978</div>
                 </td>
                 <td style="padding:0 7px;text-align:center">
                   <div style="font-size:15px;color:#F2B63C;line-height:1">&#9733;</div>
-                  <div style="font-family:Arial,sans-serif;font-size:8px;letter-spacing:1px;color:rgba(255,255,255,.85);margin-top:2px">1986</div>
+                  <div style="font-family:'Anton',Arial,sans-serif;font-size:8px;letter-spacing:1px;color:rgba(255,255,255,.85);margin-top:2px">1986</div>
                 </td>
                 <td style="padding:0 7px;text-align:center">
                   <div style="font-size:15px;color:#F2B63C;line-height:1">&#9733;</div>
-                  <div style="font-family:Arial,sans-serif;font-size:8px;letter-spacing:1px;color:rgba(255,255,255,.85);margin-top:2px">2022</div>
+                  <div style="font-family:'Anton',Arial,sans-serif;font-size:8px;letter-spacing:1px;color:rgba(255,255,255,.85);margin-top:2px">2022</div>
                 </td>
               </tr>
             </table>
             <!-- Brand -->
-            <p style="margin:0 0 3px;font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:700;font-style:italic;color:#ffffff;text-shadow:0 2px 0 rgba(11,31,71,.35);letter-spacing:1px">
+            <p style="margin:0 0 3px;font-family:'Permanent Marker',cursive;font-size:28px;font-weight:400;color:#ffffff;text-shadow:0 2px 0 rgba(11,31,71,.35)">
               Santi <span style="color:#0B1F47">Barber</span>
             </p>
-            <p style="margin:0;font-family:Arial,sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.92)">
+            <p style="margin:0;font-family:'Anton',Arial,sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.92)">
               Edici&oacute;n Mundial &middot; 2026
             </p>
           </td>
@@ -88,8 +88,8 @@ function detailRowNew(label: string, value: string, sub?: string, last?: boolean
   return `
   <tr>
     <td style="padding:13px 20px;border-bottom:${last ? 'none' : '1px dashed #DDE6F1'}">
-      <p style="margin:0 0 2px;font-family:Arial,sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#7D8AA3">${label}</p>
-      <p style="margin:0;font-family:Arial,sans-serif;font-size:14px;font-weight:700;color:#0B1F47;line-height:1.3">${value}${sub ? `<span style="display:block;font-size:11px;font-weight:600;color:#7D8AA3;margin-top:1px">${sub}</span>` : ''}</p>
+      <p style="margin:0 0 2px;font-family:'Barlow',Arial,sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#7D8AA3">${label}</p>
+      <p style="margin:0;font-family:'Barlow',Arial,sans-serif;font-size:14px;font-weight:700;color:#0B1F47;line-height:1.3">${value}${sub ? `<span style="display:block;font-size:11px;font-weight:600;color:#7D8AA3;margin-top:1px">${sub}</span>` : ''}</p>
     </td>
   </tr>`
 }
@@ -130,8 +130,11 @@ function clientHtml(b: BookingState, cancelLink?: string, modLink?: string, even
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Turno confirmado</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&family=Barlow:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
 </head>
-<body style="margin:0;padding:0;background:#F5F8FC;font-family:Arial,Helvetica,sans-serif">
+<body style="margin:0;padding:0;background:#F5F8FC;font-family:'Barlow',Arial,Helvetica,sans-serif">
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F5F8FC">
 <tr><td align="center" style="padding:32px 16px">
 
@@ -150,7 +153,7 @@ function clientHtml(b: BookingState, cancelLink?: string, modLink?: string, even
       </table>
 
       <!-- Title -->
-      <p style="margin:0 0 10px;font-family:Arial,sans-serif;font-size:24px;font-weight:700;color:#0B1F47">
+      <p style="margin:0 0 10px;font-family:'Anton',Arial,sans-serif;font-size:24px;font-weight:400;color:#0B1F47">
         &iexcl;Turno confirmado!
       </p>
       <p style="margin:0 0 24px;font-family:Arial,sans-serif;font-size:13px;color:#7D8AA3;line-height:1.55;max-width:320px;margin-left:auto;margin-right:auto">
@@ -184,7 +187,7 @@ function clientHtml(b: BookingState, cancelLink?: string, modLink?: string, even
       <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto">
         <tr>
           <td align="center" bgcolor="#0B1F47" style="border-radius:30px">
-            <a href="${manageUrl}" style="display:inline-block;padding:14px 28px;background:#0B1F47;color:#ffffff;font-family:Arial,sans-serif;font-size:13px;font-weight:700;text-decoration:none;letter-spacing:1.5px;text-transform:uppercase;border-radius:30px">
+            <a href="${manageUrl}" style="display:inline-block;padding:14px 28px;background:#0B1F47;color:#ffffff;font-family:'Anton',Arial,sans-serif;font-size:13px;font-weight:400;text-decoration:none;letter-spacing:1.5px;text-transform:uppercase;border-radius:30px">
               &#128197; Agregar al calendario
             </a>
           </td>
@@ -216,7 +219,7 @@ function clientHtml(b: BookingState, cancelLink?: string, modLink?: string, even
 
     <!-- Footer -->
     <tr><td style="background:#0B1F47;padding:20px 24px;text-align:center">
-      <p style="margin:0 0 4px;font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;font-style:italic;color:#ffffff;letter-spacing:1px">
+      <p style="margin:0 0 4px;font-family:'Permanent Marker',cursive;font-size:18px;font-weight:400;color:#ffffff">
         Santi <span style="color:#75AADB">Barber</span>
       </p>
       <p style="margin:3px 0;font-family:Arial,sans-serif;font-size:11px;color:rgba(255,255,255,.55)">
@@ -257,8 +260,11 @@ function clientCancelHtml(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Turno cancelado</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&family=Barlow:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
 </head>
-<body style="margin:0;padding:0;background:#F5F8FC;font-family:Arial,Helvetica,sans-serif">
+<body style="margin:0;padding:0;background:#F5F8FC;font-family:'Barlow',Arial,Helvetica,sans-serif">
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F5F8FC">
 <tr><td align="center" style="padding:32px 16px">
 
@@ -277,7 +283,7 @@ function clientCancelHtml(
       </table>
 
       <!-- Title -->
-      <p style="margin:0 0 10px;font-family:Arial,sans-serif;font-size:24px;font-weight:700;color:#0B1F47">
+      <p style="margin:0 0 10px;font-family:'Anton',Arial,sans-serif;font-size:24px;font-weight:400;color:#0B1F47">
         Turno cancelado
       </p>
       <p style="margin:0 0 24px;font-family:Arial,sans-serif;font-size:13px;color:#7D8AA3;line-height:1.55;max-width:340px;margin-left:auto;margin-right:auto">
@@ -300,7 +306,7 @@ function clientCancelHtml(
       <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto">
         <tr>
           <td align="center" bgcolor="#3F86C4" style="border-radius:30px">
-            <a href="${rebookUrl}" style="display:inline-block;padding:14px 28px;background:linear-gradient(160deg,#75AADB,#3F86C4);color:#ffffff;font-family:Arial,sans-serif;font-size:13px;font-weight:700;text-decoration:none;letter-spacing:1.5px;text-transform:uppercase;border-radius:30px">
+            <a href="${rebookUrl}" style="display:inline-block;padding:14px 28px;background:linear-gradient(160deg,#75AADB,#3F86C4);color:#ffffff;font-family:'Anton',Arial,sans-serif;font-size:13px;font-weight:400;text-decoration:none;letter-spacing:1.5px;text-transform:uppercase;border-radius:30px">
               &#9733; Reservar otro turno
             </a>
           </td>
@@ -317,7 +323,7 @@ function clientCancelHtml(
 
     <!-- Footer -->
     <tr><td style="background:#0B1F47;padding:20px 24px;text-align:center">
-      <p style="margin:0 0 4px;font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;font-style:italic;color:#ffffff;letter-spacing:1px">
+      <p style="margin:0 0 4px;font-family:'Permanent Marker',cursive;font-size:18px;font-weight:400;color:#ffffff">
         Santi <span style="color:#75AADB">Barber</span>
       </p>
       <p style="margin:3px 0;font-family:Arial,sans-serif;font-size:11px;color:rgba(255,255,255,.55)">
