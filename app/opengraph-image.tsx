@@ -1,11 +1,15 @@
 import { ImageResponse } from 'next/og'
+import { readFile } from 'fs/promises'
+import { join } from 'path'
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 export const alt = 'Santi Barber — Edición Mundial 2026'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
-export default function Image() {
+export default async function Image() {
+  const fontData = await readFile(join(process.cwd(), 'public/fonts/PermanentMarker.woff2'))
+
   return new ImageResponse(
     (
       <div
@@ -34,27 +38,28 @@ export default function Image() {
         <div style={{ display:'flex', gap:64, marginBottom:20 }}>
           {['1978','1986','2022'].map(year => (
             <div key={year} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
-              <div style={{ width:36, height:36, background:'#F2B63C', borderRadius:'50%', display:'flex' }} />
-              <div style={{ fontSize:20, fontWeight:700, color:'#0B1F47', fontFamily:'sans-serif' }}>{year}</div>
+              <span style={{ fontSize:44, lineHeight:1 }}>⭐</span>
+              <span style={{ fontSize:20, fontWeight:700, color:'#0B1F47', fontFamily:'sans-serif' }}>{year}</span>
             </div>
           ))}
         </div>
 
-        {/* Title */}
+        {/* SANTI BARBER */}
         <div style={{ display:'flex', gap:24, marginBottom:10 }}>
-          <span style={{ fontSize:140, fontWeight:900, fontStyle:'italic', color:'#ffffff', fontFamily:'Georgia,serif', lineHeight:1, textShadow:'4px 4px 0 rgba(0,0,0,0.2)' }}>
+          <span style={{ fontFamily:'"Permanent Marker"', fontSize:148, color:'#ffffff', lineHeight:1, textShadow:'4px 4px 0 rgba(0,0,0,0.2)' }}>
             Santi
           </span>
-          <span style={{ fontSize:140, fontWeight:900, fontStyle:'italic', color:'#0B1F47', fontFamily:'Georgia,serif', lineHeight:1, textShadow:'4px 4px 0 rgba(0,0,0,0.2)' }}>
+          <span style={{ fontFamily:'"Permanent Marker"', fontSize:148, color:'#0B1F47', lineHeight:1, textShadow:'4px 4px 0 rgba(0,0,0,0.2)' }}>
             Barber
           </span>
         </div>
 
-        {/* Subtitle */}
+        {/* EDICIÓN MUNDIAL */}
         <div style={{ display:'flex', fontSize:27, fontWeight:700, color:'#fff', letterSpacing:7, textTransform:'uppercase', fontFamily:'sans-serif', marginBottom:24 }}>
           EDICIÓN MUNDIAL · 2026
         </div>
 
+        {/* Subtitle */}
         <div style={{ display:'flex', fontSize:24, color:'rgba(255,255,255,0.88)', fontFamily:'sans-serif', marginBottom:38 }}>
           Corte · Barba · Combo — en el local o a domicilio
         </div>
@@ -70,6 +75,9 @@ export default function Image() {
         </div>
       </div>
     ),
-    { ...size }
+    {
+      ...size,
+      fonts: [{ name: 'Permanent Marker', data: fontData, style: 'normal', weight: 400 }],
+    }
   )
 }
