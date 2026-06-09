@@ -1,20 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSettings, saveSettings } from '@/lib/googleCalendar'
-import { cookies } from 'next/headers'
 
-async function isAdmin(): Promise<boolean> {
-  const cookieStore = await cookies()
-  return cookieStore.get('admin_session')?.value === process.env.ADMIN_SECRET
-}
-
+// Auth handled by middleware
 export async function GET() {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   const settings = await getSettings()
   return NextResponse.json(settings)
 }
 
 export async function POST(req: NextRequest) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   try {
     const body = await req.json()
     const current = await getSettings()

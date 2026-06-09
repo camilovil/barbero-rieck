@@ -50,9 +50,9 @@ export default async function Image() {
 
         {/* Stars + years */}
         <div style={{ display: 'flex', gap: 64, marginBottom: 18 }}>
-          {[['★','1978'],['★','1986'],['★','2022']].map(([star, year]) => (
+          {[['⭐','1978'],['⭐','1986'],['⭐','2022']].map(([star, year]) => (
             <div key={year} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <span style={{ fontSize: 44, color: '#F2B63C', lineHeight: 1 }}>{star}</span>
+              <span style={{ fontSize: 44, lineHeight: 1 }}>{star}</span>
               <span style={{ fontSize: 22, fontWeight: 700, color: '#0B1F47', letterSpacing: 1, fontFamily: 'sans-serif' }}>{year}</span>
             </div>
           ))}

@@ -1,17 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getBlockedDates, blockDate, unblockDate } from '@/lib/googleCalendar'
-import { cookies } from 'next/headers'
 
-async function isAdmin(): Promise<boolean> {
-  const cookieStore = await cookies()
-  return cookieStore.get('admin_session')?.value === process.env.ADMIN_SECRET
-}
+// Auth handled by middleware
 
-// GET — list blocked dates with ids
 export async function GET() {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-  }
   try {
     const blocked = await getBlockedDates(90)
     return NextResponse.json({ blocked })
@@ -21,17 +13,9 @@ export async function GET() {
   }
 }
 
-// POST — block a date or range
-// Single: { date: 'YYYY-MM-DD' }
-// Range:  { dateFrom: 'YYYY-MM-DD', dateTo: 'YYYY-MM-DD' }
 export async function POST(req: NextRequest) {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-  }
   try {
     const body = await req.json()
-
-    // Normalize to always work with a range
     const from = body.dateFrom ?? body.date
     const to   = body.dateTo   ?? body.date
     if (!from) return NextResponse.json({ error: 'Falta date / dateFrom' }, { status: 400 })
@@ -41,7 +25,6 @@ export async function POST(req: NextRequest) {
     const toDate   = parseDate(to)
     if (fromDate > toDate) return NextResponse.json({ error: 'dateFrom debe ser <= dateTo' }, { status: 400 })
 
-    // Block each day in range
     const blocked: { id: string; date: string }[] = []
     const cur = new Date(fromDate)
     while (cur <= toDate) {
@@ -58,11 +41,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// DELETE — unblock { eventId: string }
 export async function DELETE(req: NextRequest) {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-  }
   try {
     const { eventId } = await req.json()
     if (!eventId) return NextResponse.json({ error: 'Falta eventId' }, { status: 400 })
