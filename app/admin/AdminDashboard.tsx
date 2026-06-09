@@ -42,6 +42,12 @@ export default function AdminDashboard() {
   const [cancelling, setCancelling] = useState<string | null>(null)
   const [filter, setFilter] = useState<'upcoming' | 'today' | 'week'>('upcoming')
 
+  // Modificar turno
+  const [editing, setEditing] = useState<BookingEvent | null>(null)
+  const [editDate, setEditDate] = useState('')
+  const [editTime, setEditTime] = useState('')
+  const [saving, setSaving] = useState(false)
+
   // Blocked dates
   const [blockedDates, setBlockedDates] = useState<{ id: string; date: string }[]>([])
   const [blockInput, setBlockInput] = useState('')
@@ -117,6 +123,43 @@ export default function AdminDashboard() {
     })
     if (res.ok) setMaxDaily(maxDailyInput)
     setSavingSettings(false)
+  }
+
+  function openEdit(ev: BookingEvent) {
+    const d = new Date(ev.start)
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+    const timeStr = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false })
+    setEditing(ev)
+    setEditDate(dateStr)
+    setEditTime(timeStr)
+  }
+
+  async function handleSaveEdit() {
+    if (!editing || !editDate || !editTime) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/admin/modificar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId: editing.id, newDate: editDate, newTime: editTime }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Error')
+      // Update local state: replace old event with updated times
+      setEvents(prev => prev.map(e => {
+        if (e.id !== editing.id) return e
+        const [h, m] = editTime.split(':').map(Number)
+        const newStart = new Date(editDate)
+        newStart.setHours(h, m, 0, 0)
+        const newEnd = new Date(newStart.getTime() + 60 * 60000)
+        return { ...e, id: data.newEventId, start: newStart.toISOString(), end: newEnd.toISOString() }
+      }))
+      setEditing(null)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error al modificar')
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleUnblock(eventId: string) {
@@ -331,14 +374,23 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
-                      {/* Cancel */}
-                      <button
-                        onClick={() => handleCancel(ev.id, ev.nombre)}
-                        disabled={cancelling === ev.id}
-                        className="text-red-400 border border-red-400/40 hover:bg-red-400/10 transition-colors text-xs shrink-0 disabled:opacity-50 px-3 py-1 rounded-lg whitespace-nowrap"
-                      >
-                        {cancelling === ev.id ? 'Cancelando...' : 'Cancelar'}
-                      </button>
+                      {/* Actions */}
+                      <div className="flex flex-col gap-1.5 shrink-0">
+                        <button
+                          onClick={() => openEdit(ev)}
+                          className="text-xs px-3 py-1 rounded-lg whitespace-nowrap transition-colors"
+                          style={{color:'var(--celeste)', border:'1px solid var(--celeste)', background:'transparent'}}
+                        >
+                          ✏️ Modificar
+                        </button>
+                        <button
+                          onClick={() => handleCancel(ev.id, ev.nombre)}
+                          disabled={cancelling === ev.id}
+                          className="text-red-400 border border-red-400/40 hover:bg-red-400/10 transition-colors text-xs disabled:opacity-50 px-3 py-1 rounded-lg whitespace-nowrap"
+                        >
+                          {cancelling === ev.id ? 'Cancelando...' : 'Cancelar'}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -444,6 +496,116 @@ export default function AdminDashboard() {
         </div>
 
       </main>
+
+      {/* ─── Modal modificar turno ─── */}
+      {editing && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 200,
+            background: 'rgba(0,0,0,.65)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          }}
+          onClick={e => { if (e.target === e.currentTarget) setEditing(null) }}
+        >
+          <div style={{
+            width: '100%', maxWidth: 480,
+            background: 'var(--surface)', borderRadius: '20px 20px 0 0',
+            border: '2px solid var(--border)', borderBottom: 'none',
+            padding: '24px 20px 36px',
+          }}>
+            {/* Handle */}
+            <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0 auto 20px' }} />
+
+            {/* Header */}
+            <div style={{ marginBottom: 20 }}>
+              <p style={{ margin: 0, fontFamily: 'var(--font-anton)', fontSize: 18, color: 'var(--text)', letterSpacing: '.3px' }}>
+                MODIFICAR TURNO
+              </p>
+              <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-mut)', fontWeight: 600 }}>
+                {editing.nombre} · {editing.servicio.split(' — ')[0]}
+              </p>
+            </div>
+
+            {/* Fecha */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--text-mut)', marginBottom: 6 }}>
+                Nueva fecha
+              </label>
+              <input
+                type="date"
+                value={editDate}
+                min={toDateParam(new Date())}
+                onChange={e => setEditDate(e.target.value)}
+                style={{
+                  width: '100%', padding: '12px 14px', borderRadius: 12,
+                  border: '2px solid var(--border)', background: 'var(--app-bg)',
+                  color: 'var(--text)', fontSize: 15, fontWeight: 700,
+                  boxSizing: 'border-box', outline: 'none',
+                }}
+              />
+            </div>
+
+            {/* Horario — grilla de slots */}
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--text-mut)', marginBottom: 10 }}>
+                Nuevo horario
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
+                {(editing.modalidad?.toLowerCase().includes('domicilio')
+                  ? ['10:00','11:30','13:00','15:00','17:00']
+                  : ['10:00','10:30','11:00','11:30','12:00','12:30','13:00','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30']
+                ).map(slot => (
+                  <button
+                    key={slot}
+                    onClick={() => setEditTime(slot)}
+                    style={{
+                      padding: '10px 4px',
+                      borderRadius: 10,
+                      border: editTime === slot ? '2px solid var(--celeste)' : '2px solid var(--border-soft)',
+                      background: editTime === slot ? 'var(--celeste-deep)' : 'var(--app-bg)',
+                      color: editTime === slot ? '#fff' : 'var(--text)',
+                      fontFamily: 'var(--font-anton)',
+                      fontSize: 13, letterSpacing: '.5px',
+                      cursor: 'pointer', transition: 'all .12s',
+                    }}
+                  >
+                    {slot}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Botones */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setEditing(null)}
+                style={{
+                  flex: 1, padding: '14px', borderRadius: 14,
+                  border: '2px solid var(--border)', background: 'none',
+                  color: 'var(--text-mut)', fontFamily: 'var(--font-anton)',
+                  fontSize: 13, letterSpacing: '1px', cursor: 'pointer',
+                }}
+              >
+                CANCELAR
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={saving || !editDate || !editTime}
+                style={{
+                  flex: 2, padding: '14px', borderRadius: 14,
+                  background: (!editDate || !editTime) ? 'var(--border)' : 'linear-gradient(135deg, #75AADB, #0B1F47)',
+                  color: '#fff', border: 'none',
+                  fontFamily: 'var(--font-anton)', fontSize: 13, letterSpacing: '1px',
+                  cursor: (!editDate || !editTime) ? 'not-allowed' : 'pointer',
+                  opacity: saving ? .7 : 1,
+                }}
+              >
+                {saving ? 'GUARDANDO...' : 'GUARDAR Y NOTIFICAR'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

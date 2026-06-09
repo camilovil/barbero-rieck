@@ -724,6 +724,147 @@ export async function sendCancellationEmails(
   ])
 }
 
+// ─── Reprogramación de turno ─────────────────────────────────────────────────
+
+export async function sendRescheduleEmails(
+  nombre: string,
+  email: string,
+  oldDateStr: string,
+  oldTime: string,
+  newDateStr: string,
+  newTime: string,
+  servicio: string,
+  newEventId: string,
+): Promise<void> {
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return
+
+  const transporter = getTransporter()
+  const from = `"Santi Barber" <${process.env.GMAIL_USER}>`
+  const code = bookingCode(newEventId)
+
+  const clientHtml = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;600;700;800&family=Permanent+Marker&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background:#f0f4f8;font-family:'Barlow',Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0f4f8">
+    <tr><td align="center" style="padding:32px 16px">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px">
+
+        ${emailHeader()}
+
+        <!-- Título -->
+        <tr><td style="background:#ffffff;padding:32px 28px 12px;text-align:center">
+          <div style="width:64px;height:64px;margin:0 auto 16px;border-radius:50%;background:linear-gradient(160deg,#75AADB,#0B1F47);display:flex;align-items:center;justify-content:center;font-size:32px;line-height:64px;text-align:center">
+            🔄
+          </div>
+          <p style="margin:0;font-family:'Anton',Arial,sans-serif;font-size:26px;letter-spacing:.5px;color:#0B1F47">
+            TURNO REPROGRAMADO
+          </p>
+          <p style="margin:8px 0 0;font-family:'Barlow',Arial,sans-serif;font-size:14px;color:#555;line-height:1.5">
+            Hola <strong>${nombre}</strong>, tu turno fue reprogramado por Santiago.
+          </p>
+        </td></tr>
+
+        <!-- Detalle anterior -->
+        <tr><td style="background:#ffffff;padding:8px 28px 4px">
+          <p style="margin:0 0 8px;font-family:'Anton',Arial,sans-serif;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:#999">Turno anterior</p>
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1.5px solid #e8ecf0;border-radius:10px;overflow:hidden">
+            <tr>
+              <td style="padding:12px 16px;font-size:13px;font-weight:700;color:#aaa;text-decoration:line-through;border-right:1px solid #e8ecf0;text-align:center">
+                ${capitalize(oldDateStr)}
+              </td>
+              <td style="padding:12px 16px;font-family:'Anton',Arial,sans-serif;font-size:20px;color:#aaa;text-decoration:line-through;text-align:center">
+                ${oldTime}
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- Nuevo horario -->
+        <tr><td style="background:#ffffff;padding:12px 28px 24px">
+          <p style="margin:0 0 8px;font-family:'Anton',Arial,sans-serif;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:#0B1F47">Nuevo horario ✓</p>
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:2px solid #75AADB;border-radius:10px;overflow:hidden">
+            <tr>
+              <td style="padding:16px;font-size:14px;font-weight:800;color:#0B1F47;border-right:1px solid #75AADB;text-align:center;background:#f5f9ff">
+                ${capitalize(newDateStr)}
+              </td>
+              <td style="padding:16px;font-family:'Anton',Arial,sans-serif;font-size:26px;color:#0B1F47;text-align:center;background:#f5f9ff">
+                ${newTime}
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- Servicio -->
+        <tr><td style="background:#ffffff;padding:0 28px 20px">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8fafc;border:1.5px dashed #c8d8ea;border-radius:10px">
+            <tr>
+              <td style="padding:14px 16px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#75AADB">Servicio</td>
+              <td style="padding:14px 16px;font-size:14px;font-weight:700;color:#0B1F47;text-align:right">${servicio.split(' — ')[0]}</td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- Código -->
+        <tr><td style="background:#ffffff;padding:0 28px 28px;text-align:center">
+          <p style="margin:0;font-size:11px;color:#aaa">Código de turno: <strong style="font-family:'Anton',Arial,sans-serif;letter-spacing:1px;color:#0B1F47">${code}</strong></p>
+          <p style="margin:8px 0 0;font-size:11px;color:#aaa">Podés cancelar o reprogramar hasta 24 hs antes del turno.</p>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="padding:20px 28px;text-align:center;background:#0B1F47;border-radius:0 0 16px 16px">
+          <p style="margin:0;font-size:11px;color:rgba(255,255,255,.5)">Santi Barber · Edición Mundial 2026</p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+
+  const santiagoHtml = `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#111;font-family:Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#111">
+    <tr><td align="center" style="padding:32px 16px">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px">
+        <tr><td style="background:#1e1e1e;border:1px solid #2a2a2a;border-radius:12px;padding:24px">
+          <p style="margin:0 0 4px;font-size:18px;font-weight:700;color:#f5f0e8">🔄 Turno reprogramado</p>
+          <p style="margin:0 0 20px;font-size:13px;color:#888">${nombre} · ${servicio.split(' — ')[0]}</p>
+          <p style="margin:0 0 6px;font-size:12px;color:#666;text-transform:uppercase;letter-spacing:.08em">Antes</p>
+          <p style="margin:0 0 16px;font-size:15px;color:#888;text-decoration:line-through">${capitalize(oldDateStr)} — ${oldTime}</p>
+          <p style="margin:0 0 6px;font-size:12px;color:#75AADB;text-transform:uppercase;letter-spacing:.08em">Ahora</p>
+          <p style="margin:0;font-size:18px;font-weight:700;color:#f5f0e8">${capitalize(newDateStr)} — ${newTime}</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+
+  await Promise.all([
+    transporter.sendMail({
+      from,
+      to: email,
+      subject: `🔄 Turno reprogramado — ${capitalize(newDateStr)} a las ${newTime}`,
+      html: clientHtml,
+    }),
+    process.env.SANTIAGO_EMAIL
+      ? transporter.sendMail({
+          from,
+          to: process.env.SANTIAGO_EMAIL,
+          subject: `🔄 Reprogramado: ${nombre} → ${capitalize(newDateStr)} ${newTime}`,
+          html: santiagoHtml,
+        })
+      : Promise.resolve(),
+  ])
+}
+
 // ─── Resumen diario para Santiago ─────────────────────────────────────────────
 
 export async function sendDailySummaryEmail(events: BookingEvent[], date: Date): Promise<void> {
