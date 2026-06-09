@@ -47,14 +47,37 @@ export default function StepCalendar({ location, selectedDate, selectedTime, onS
       .catch(() => {})
   }, [])
 
-  useEffect(() => {
-    if (!localDate) return
-    setLoadingSlots(true)
-    fetch(`/api/availability?date=${toDateParam(localDate)}&location=${location}`)
+  // Fetch availability — se llama al seleccionar fecha, al hacer foco y cada 30s
+  function fetchSlots(date: Date, isBackground = false) {
+    if (!isBackground) setLoadingSlots(true)
+    fetch(`/api/availability?date=${toDateParam(date)}&location=${location}`)
       .then(r => r.json())
       .then(data => setBlockedSlots(data.blocked ?? BLOCKED_SLOTS))
-      .catch(() => setBlockedSlots(BLOCKED_SLOTS))
-      .finally(() => setLoadingSlots(false))
+      .catch(() => {})
+      .finally(() => { if (!isBackground) setLoadingSlots(false) })
+  }
+
+  useEffect(() => {
+    if (!localDate) return
+    fetchSlots(localDate)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localDate, location])
+
+  // Polling cada 30s mientras hay una fecha seleccionada
+  useEffect(() => {
+    if (!localDate) return
+    const interval = setInterval(() => fetchSlots(localDate, true), 30_000)
+    return () => clearInterval(interval)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localDate, location])
+
+  // Refetch al volver el foco a la pestaña
+  useEffect(() => {
+    if (!localDate) return
+    function onFocus() { fetchSlots(localDate!, true) }
+    document.addEventListener('visibilitychange', onFocus)
+    return () => document.removeEventListener('visibilitychange', onFocus)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localDate, location])
 
   const firstDay = new Date(viewYear, viewMonth, 1).getDay()

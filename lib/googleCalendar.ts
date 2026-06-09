@@ -1,6 +1,6 @@
 import { google } from 'googleapis'
 import type { BookingState } from '@/types/booking'
-import { TIME_SLOTS } from './constants'
+import { TIME_SLOTS, TRAVEL_BUFFER_MINUTES } from './constants'
 import type { Location } from '@/types/booking'
 
 function getAuth() {
@@ -299,43 +299,43 @@ export async function getEventsForDate(date: Date): Promise<BookingEvent[]> {
 }
 
 // ─── Returns the list of TIME_SLOTS that are already booked for a given date ──
+// Incluye lógica de buffer de viaje: si hay un turno en estudio y el siguiente
+// slot es a domicilio (o viceversa), se agrega TRAVEL_BUFFER_MINUTES de margen.
 export async function getBookedSlots(date: Date, location: Location): Promise<string[]> {
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) {
-    return [] // no Calendar configurado — BLOCKED_SLOTS de constants.ts como fallback
+    return []
   }
 
-  const calendar = google.calendar({ version: 'v3', auth: getAuth() })
-
-  const dayStart = new Date(date)
-  dayStart.setHours(0, 0, 0, 0)
-  const dayEnd = new Date(date)
-  dayEnd.setHours(23, 59, 59, 999)
-
-  const freebusyRes = await calendar.freebusy.query({
-    requestBody: {
-      timeMin: dayStart.toISOString(),
-      timeMax: dayEnd.toISOString(),
-      timeZone: 'America/Argentina/Buenos_Aires',
-      items: [{ id: process.env.GOOGLE_CALENDAR_ID }],
-    },
-  })
-
-  const busyPeriods =
-    freebusyRes.data.calendars?.[process.env.GOOGLE_CALENDAR_ID!]?.busy ?? []
+  // Obtenemos los eventos reales del día (con modalidad) en lugar de solo freebusy
+  const events = await getEventsForDate(date)
+  if (events.length === 0) return []
 
   const slots = TIME_SLOTS[location]
+  const TRAVEL_MS = TRAVEL_BUFFER_MINUTES * 60 * 1000
+
+  // Duración máxima del servicio según modalidad (para calcular fin del slot)
+  const slotDurationMs = (location === 'local' ? 60 : 90) * 60 * 1000
 
   return slots.filter((time) => {
     const [h, m] = time.split(':').map(Number)
     const slotStart = new Date(date)
     slotStart.setHours(h, m, 0, 0)
-    const slotEnd = new Date(slotStart)
-    slotEnd.setMinutes(slotEnd.getMinutes() + 30) // buffer: block slot if any event overlaps 30 min window
+    const slotEnd = new Date(slotStart.getTime() + slotDurationMs)
 
-    return busyPeriods.some(({ start, end }) => {
-      const busyStart = new Date(start!)
-      const busyEnd = new Date(end!)
-      return busyStart < slotEnd && busyEnd > slotStart
+    return events.some((ev) => {
+      const evStart = new Date(ev.start)
+      const evEnd = new Date(ev.end || ev.start) // fallback si end está vacío
+
+      const evIsLocal = !ev.modalidad.toLowerCase().includes('domicilio')
+      const slotIsLocal = location === 'local'
+
+      // Si las modalidades son distintas, aplicar buffer en ambas direcciones:
+      // - hacia adelante: el slot no puede empezar hasta TRAVEL_MS después del fin del evento
+      // - hacia atrás: el slot no puede terminar hasta TRAVEL_MS antes del inicio del evento
+      const buffer = evIsLocal !== slotIsLocal ? TRAVEL_MS : 0
+
+      return slotStart < new Date(evEnd.getTime() + buffer)
+          && new Date(slotEnd.getTime() + buffer) > evStart
     })
   })
 }

@@ -47,6 +47,8 @@ export default function AdminDashboard() {
   const [editDate, setEditDate] = useState('')
   const [editTime, setEditTime] = useState('')
   const [saving, setSaving] = useState(false)
+  const [editBlockedSlots, setEditBlockedSlots] = useState<string[]>([])
+  const [loadingEditSlots, setLoadingEditSlots] = useState(false)
 
   // Blocked dates
   const [blockedDates, setBlockedDates] = useState<{ id: string; date: string }[]>([])
@@ -125,6 +127,16 @@ export default function AdminDashboard() {
     setSavingSettings(false)
   }
 
+  function fetchEditSlots(dateStr: string, modalidad: string) {
+    const loc = modalidad.toLowerCase().includes('domicilio') ? 'domicilio' : 'local'
+    setLoadingEditSlots(true)
+    fetch(`/api/availability?date=${dateStr}&location=${loc}`)
+      .then(r => r.json())
+      .then(data => setEditBlockedSlots(data.blocked ?? []))
+      .catch(() => setEditBlockedSlots([]))
+      .finally(() => setLoadingEditSlots(false))
+  }
+
   function openEdit(ev: BookingEvent) {
     const d = new Date(ev.start)
     const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
@@ -132,6 +144,8 @@ export default function AdminDashboard() {
     setEditing(ev)
     setEditDate(dateStr)
     setEditTime(timeStr)
+    setEditBlockedSlots([])
+    fetchEditSlots(dateStr, ev.modalidad)
   }
 
   async function handleSaveEdit() {
@@ -535,7 +549,11 @@ export default function AdminDashboard() {
                 type="date"
                 value={editDate}
                 min={toDateParam(new Date())}
-                onChange={e => setEditDate(e.target.value)}
+                onChange={e => {
+                  setEditDate(e.target.value)
+                  setEditTime('')
+                  if (e.target.value && editing) fetchEditSlots(e.target.value, editing.modalidad)
+                }}
                 style={{
                   width: '100%', padding: '12px 14px', borderRadius: 12,
                   border: '2px solid var(--border)', background: 'var(--app-bg)',
@@ -547,32 +565,71 @@ export default function AdminDashboard() {
 
             {/* Horario — grilla de slots */}
             <div style={{ marginBottom: 24 }}>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--text-mut)', marginBottom: 10 }}>
-                Nuevo horario
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
-                {(editing.modalidad?.toLowerCase().includes('domicilio')
-                  ? ['10:00','11:30','13:00','15:00','17:00']
-                  : ['10:00','10:30','11:00','11:30','12:00','12:30','13:00','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30']
-                ).map(slot => (
-                  <button
-                    key={slot}
-                    onClick={() => setEditTime(slot)}
-                    style={{
-                      padding: '10px 4px',
-                      borderRadius: 10,
-                      border: editTime === slot ? '2px solid var(--celeste)' : '2px solid var(--border-soft)',
-                      background: editTime === slot ? 'var(--celeste-deep)' : 'var(--app-bg)',
-                      color: editTime === slot ? '#fff' : 'var(--text)',
-                      fontFamily: 'var(--font-anton)',
-                      fontSize: 13, letterSpacing: '.5px',
-                      cursor: 'pointer', transition: 'all .12s',
-                    }}
-                  >
-                    {slot}
-                  </button>
-                ))}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <label style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--text-mut)' }}>
+                  Nuevo horario
+                </label>
+                <div style={{ display: 'flex', gap: 10, fontSize: 9, fontWeight: 700, color: 'var(--text-mut)', alignItems: 'center' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--celeste-deep)', display: 'inline-block' }} />
+                    LIBRE
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--chip-bg)', border: '1px solid var(--border-soft)', display: 'inline-block' }} />
+                    OCUPADO
+                  </span>
+                </div>
               </div>
+
+              {loadingEditSlots ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} style={{ height: 38, borderRadius: 10, background: 'var(--chip-bg)', opacity: .5 }} />
+                  ))}
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
+                  {(editing.modalidad?.toLowerCase().includes('domicilio')
+                    ? ['10:00','11:30','13:00','15:00','17:00']
+                    : ['10:00','10:30','11:00','11:30','12:00','12:30','13:00','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30']
+                  ).map(slot => {
+                    const isOccupied = editBlockedSlots.includes(slot)
+                    const isSelected = editTime === slot
+                    return (
+                      <button
+                        key={slot}
+                        disabled={isOccupied}
+                        onClick={() => !isOccupied && setEditTime(slot)}
+                        title={isOccupied ? 'Horario ocupado' : 'Disponible'}
+                        style={{
+                          padding: '10px 4px',
+                          borderRadius: 10,
+                          border: isSelected
+                            ? '2px solid var(--celeste)'
+                            : isOccupied
+                            ? '2px solid var(--border-soft)'
+                            : '2px solid var(--border)',
+                          background: isSelected
+                            ? 'var(--celeste-deep)'
+                            : isOccupied
+                            ? 'var(--chip-bg)'
+                            : 'var(--app-bg)',
+                          color: isSelected ? '#fff' : isOccupied ? 'var(--text-mut)' : 'var(--text)',
+                          fontFamily: 'var(--font-anton)',
+                          fontSize: 13, letterSpacing: '.5px',
+                          cursor: isOccupied ? 'not-allowed' : 'pointer',
+                          opacity: isOccupied ? .45 : 1,
+                          transition: 'all .12s',
+                          textDecoration: isOccupied ? 'line-through' : 'none',
+                          position: 'relative',
+                        }}
+                      >
+                        {slot}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Botones */}
