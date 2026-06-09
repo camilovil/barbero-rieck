@@ -156,46 +156,60 @@ export default function AdminDashboard() {
   const totalHoy = events.filter(e => new Date(e.start).toDateString() === new Date().toDateString()).length
 
   return (
-    <div className="min-h-screen flex flex-col" style={{background:'var(--bg)'}}>
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b" style={{background:'var(--bg-2)', borderColor:'var(--border)'}}>
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+    <div className="min-h-screen flex flex-col" style={{background:'var(--app-bg)'}}>
+      {/* Header — Argentina theme */}
+      <header className="fixed top-0 left-0 right-0 z-50" style={{
+        background: 'linear-gradient(135deg, #75AADB 0%, #0B1F47 100%)',
+        boxShadow: '0 2px 16px rgba(11,31,71,.45)',
+      }}>
+        {/* top celeste stripe */}
+        <div style={{height: 4, background: '#75AADB', opacity: .45}} />
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          {/* Brand */}
+          <div className="flex items-center gap-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="Santi Barber" width={40} height={40} className="rounded-full object-cover" style={{marginTop:'-8px', marginLeft:'12px'}} />
-            <div className="flex flex-col leading-tight">
-              <span style={{fontFamily:'var(--font-permanent-marker)', fontSize:'1.1rem', lineHeight:1.1}}>
-                <span style={{color:'var(--text)'}}>Santi </span>
-                <span style={{color:'var(--text)'}}>Barber</span>
+            <img src="/icon.svg" alt="" width={30} height={30} style={{filter:'drop-shadow(0 1px 4px rgba(0,0,0,.35))'}} />
+            <div className="flex flex-col leading-none">
+              <span style={{fontFamily:'var(--font-permanent-marker)', fontSize:'1rem', color:'#fff', lineHeight:1.1}}>
+                Santi Barber
               </span>
-              <span style={{fontSize:'0.55rem', letterSpacing:'0.15em', textTransform:'uppercase', color:'var(--text-faint)'}}>Barbería</span>
+              <span style={{fontFamily:'var(--font-anton)', fontSize:'0.52rem', letterSpacing:'0.2em', textTransform:'uppercase', color:'rgba(255,255,255,.6)', lineHeight:1, marginTop:2}}>
+                PANEL ADMIN
+              </span>
             </div>
-            <span className="text-[10px] uppercase tracking-widest border px-2 py-0.5 rounded" style={{color:'var(--text-faint)', borderColor:'var(--border)'}}>Admin</span>
           </div>
+          {/* Actions */}
           <div className="flex items-center gap-3">
             <ThemeToggle variant="admin" />
-            <button onClick={handleLogout} className="text-xs font-semibold transition-colors" style={{color:'var(--text-faint)'}}>
+            <button
+              onClick={handleLogout}
+              style={{
+                fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase',
+                color: 'rgba(255,255,255,.75)', background: 'none', border: 'none', cursor: 'pointer',
+                padding: '6px 2px',
+              }}
+            >
               Salir
             </button>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 pt-24 pb-16 px-4 sm:px-6 max-w-3xl mx-auto w-full">
+      <main className="flex-1 pt-20 pb-16 px-4 sm:px-6 max-w-3xl mx-auto w-full">
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3 mb-8">
           {[
             ['Hoy', totalHoy],
             ['30 días', events.length],
-            ['Esta semana', events.filter(e => {
+            ['Semana', events.filter(e => {
               const d = new Date(e.start)
               return d >= weekDays[0] && d <= weekDays[6]
             }).length],
           ].map(([label, count]) => (
-            <div key={label as string} className="border rounded-xl p-4" style={{background:'var(--bg-2)', borderColor:'var(--border)'}}>
-              <div className="text-2xl font-bold" style={{color:'var(--text)'}}>{count}</div>
-              <div className="text-xs mt-1" style={{color:'var(--text-faint)'}}>{label}</div>
+            <div key={label as string} className="border rounded-xl p-4" style={{background:'var(--surface)', borderColor:'var(--border)'}}>
+              <div className="text-2xl font-bold" style={{fontFamily:'var(--font-anton)', color:'var(--celeste)'}}>{count}</div>
+              <div className="text-xs mt-1 uppercase tracking-widest" style={{color:'var(--text-mut)'}}>{label}</div>
             </div>
           ))}
         </div>
@@ -208,13 +222,13 @@ export default function AdminDashboard() {
               onClick={() => setFilter(f)}
               className="px-4 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wide transition-all"
               style={filter === f
-                ? {background:'var(--text)', color:'var(--bg)'}
-                : {border:'1px solid var(--border)', color:'var(--text-muted)'}}
+                ? {background:'var(--celeste-deep)', color:'#fff'}
+                : {border:'1px solid var(--border)', color:'var(--text-mut)'}}
             >
               {f === 'today' ? 'Hoy' : f === 'week' ? 'Semana' : 'Todos'}
             </button>
           ))}
-          <button onClick={fetchEvents} className="ml-auto text-xs transition-colors" style={{color:'var(--text-faint)'}}>
+          <button onClick={fetchEvents} className="ml-auto text-xs transition-colors" style={{color:'var(--celeste)'}}>
             ↻ Actualizar
           </button>
         </div>
@@ -228,11 +242,11 @@ export default function AdminDashboard() {
                 const isToday = day.toDateString() === new Date().toDateString()
                 return (
                   <div key={i} className="border-r last:border-r-0 min-h-[80px]" style={{borderColor:'var(--border)'}}>
-                    <div className="text-center py-2 border-b text-[10px] uppercase tracking-wide" style={{borderColor:'var(--border)', background:'var(--bg-2)'}}>
-                      <div style={{color:'var(--text-faint)'}}>{WEEK_DAYS_SHORT[day.getDay()]}</div>
+                    <div className="text-center py-2 border-b text-[10px] uppercase tracking-wide" style={{borderColor:'var(--border)', background:'var(--surface)'}}>
+                      <div style={{color:'var(--text-mut)'}}>{WEEK_DAYS_SHORT[day.getDay()]}</div>
                       <div className="font-bold text-sm" style={{
-                        color: isToday ? 'var(--text)' : 'var(--text-muted)',
-                        background: isToday ? 'var(--bg-active)' : 'transparent',
+                        color: isToday ? '#fff' : 'var(--text-mut)',
+                        background: isToday ? 'var(--celeste-deep)' : 'transparent',
                         borderRadius: '50%',
                         width: 24, height: 24,
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -243,7 +257,7 @@ export default function AdminDashboard() {
                     <div className="p-1 space-y-1">
                       {dayEvents.map(ev => (
                         <div key={ev.id} className="rounded px-1 py-0.5 text-[10px] leading-tight truncate"
-                          style={{background:'var(--bg-active)', color:'var(--text-muted)'}}>
+                          style={{background:'var(--chip-bg)', color:'var(--text-mut)'}}>
                           {formatTime(ev.start)} {ev.nombre.split(' ')[0]}
                         </div>
                       ))}
@@ -259,7 +273,7 @@ export default function AdminDashboard() {
         {loading ? (
           <div className="space-y-3">
             {[1,2,3].map(i => (
-              <div key={i} className="h-24 rounded-xl animate-pulse border" style={{background:'var(--bg-2)', borderColor:'var(--border)'}} />
+              <div key={i} className="h-24 rounded-xl animate-pulse border" style={{background:'var(--surface)', borderColor:'var(--border)'}} />
             ))}
           </div>
         ) : grouped.length === 0 ? (
@@ -270,14 +284,16 @@ export default function AdminDashboard() {
           <div className="space-y-8">
             {grouped.map(([day, dayEvents]) => (
               <div key={day}>
-                <h2 className="text-xs uppercase tracking-widest mb-3 font-semibold capitalize" style={{color:'var(--text-faint)'}}>
+                <h2 className="text-xs uppercase tracking-widest mb-3 font-semibold capitalize" style={{fontFamily:'var(--font-anton)', color:'var(--text-mut)'}}>
                   {day} · {dayEvents.length} {dayEvents.length === 1 ? 'turno' : 'turnos'}
                 </h2>
                 <div className="space-y-2">
                   {dayEvents.map(ev => (
-                    <div key={ev.id} className="border rounded-xl p-4 flex items-start gap-3" style={{background:'var(--bg-2)', borderColor:'var(--border)'}}>
+                    <div key={ev.id} className="border rounded-xl p-4 flex items-start gap-3" style={{background:'var(--surface)', borderColor:'var(--border)'}}>
                       {/* Hora */}
-                      <div className="text-base font-bold shrink-0 min-w-[52px]" style={{color:'var(--text)'}}>
+                      <div className="shrink-0 min-w-[52px]" style={{
+                        fontFamily:'var(--font-anton)', fontSize:'1.1rem', color:'var(--celeste)',
+                      }}>
                         {formatTime(ev.start)}
                       </div>
 
@@ -285,19 +301,19 @@ export default function AdminDashboard() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold text-sm" style={{color:'var(--text)'}}>{ev.nombre}</span>
-                          <span className="text-[10px] uppercase tracking-wide border px-2 py-0.5 rounded" style={{color:'var(--text-faint)', borderColor:'var(--border)'}}>
+                          <span className="text-[10px] uppercase tracking-wide border px-2 py-0.5 rounded" style={{color:'var(--text-mut)', borderColor:'var(--border-soft)', background:'var(--chip-bg)'}}>
                             {ev.modalidad?.includes('domicilio') ? '🏠 domicilio' : '✂️ local'}
                           </span>
                         </div>
-                        <div className="text-sm mt-0.5" style={{color:'var(--text-muted)'}}>{ev.servicio}</div>
+                        <div className="text-sm mt-0.5" style={{color:'var(--text-mut)'}}>{ev.servicio}</div>
                         {ev.nota && (
-                          <div className="text-xs mt-1 italic" style={{color:'var(--text-faint)'}}>"{ev.nota}"</div>
+                          <div className="text-xs mt-1 italic" style={{color:'var(--text-mut)'}}>"{ev.nota}"</div>
                         )}
                         <div className="flex items-center gap-3 mt-2 flex-wrap">
                           {ev.whatsapp && (
                             <>
                               <a href={`tel:${ev.whatsapp.replace(/\D/g, '')}`}
-                                className="text-xs transition-colors" style={{color:'var(--text-muted)'}}>
+                                className="text-xs transition-colors" style={{color:'var(--text-mut)'}}>
                                 {ev.whatsapp}
                               </a>
                               <a href={`https://wa.me/${ev.whatsapp.replace(/\D/g, '')}`}
@@ -308,7 +324,7 @@ export default function AdminDashboard() {
                             </>
                           )}
                           {ev.email && (
-                            <a href={`mailto:${ev.email}`} className="text-xs transition-colors" style={{color:'var(--text-faint)'}}>
+                            <a href={`mailto:${ev.email}`} className="text-xs transition-colors" style={{color:'var(--text-mut)'}}>
                               {ev.email}
                             </a>
                           )}
@@ -332,14 +348,14 @@ export default function AdminDashboard() {
         )}
 
         {/* ─── Configuración ─── */}
-        <div className="mt-12 border-t pt-10" style={{borderColor:'var(--border)'}}>
-          <h3 className="text-sm font-semibold mb-6" style={{color:'var(--text)'}}>⚙️ Configuración</h3>
-          <div className="border rounded-xl p-5" style={{background:'var(--bg-2)', borderColor:'var(--border)'}}>
+        <div className="mt-12 border-t pt-10" style={{borderColor:'var(--border-soft)'}}>
+          <h3 className="text-xs uppercase tracking-widest font-semibold mb-5" style={{fontFamily:'var(--font-anton)', color:'var(--text-mut)'}}>⚙️ Configuración</h3>
+          <div className="border rounded-xl p-5" style={{background:'var(--surface)', borderColor:'var(--border)'}}>
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div>
                 <p className="text-sm font-medium" style={{color:'var(--text)'}}>Límite de turnos por día</p>
-                <p className="text-xs mt-0.5" style={{color:'var(--text-faint)'}}>
-                  Actual: <strong style={{color:'var(--text)'}}>{maxDaily}</strong> turnos máximos
+                <p className="text-xs mt-0.5" style={{color:'var(--text-mut)'}}>
+                  Actual: <strong style={{color:'var(--celeste)'}}>{maxDaily}</strong> turnos máximos
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -350,13 +366,13 @@ export default function AdminDashboard() {
                   value={maxDailyInput}
                   onChange={e => setMaxDailyInput(Number(e.target.value))}
                   className="w-16 text-center rounded-lg border px-2 py-2 text-sm outline-none"
-                  style={{background:'var(--bg)', borderColor:'var(--border)', color:'var(--text)'}}
+                  style={{background:'var(--app-bg)', borderColor:'var(--border)', color:'var(--text)'}}
                 />
                 <button
                   onClick={handleSaveSettings}
                   disabled={savingSettings || maxDailyInput === maxDaily}
                   className="px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-40 transition-all"
-                  style={{background:'var(--text)', color:'var(--bg)'}}
+                  style={{background:'var(--celeste-deep)', color:'#fff'}}
                 >
                   {savingSettings ? '...' : 'Guardar'}
                 </button>
@@ -366,33 +382,34 @@ export default function AdminDashboard() {
         </div>
 
         {/* ─── Gestión de días bloqueados ─── */}
-        <div className="mt-12 border-t pt-10" style={{borderColor:'var(--border)'}}>
+        <div className="mt-10 border-t pt-8" style={{borderColor:'var(--border-soft)'}}>
           <button
             onClick={() => setShowBlocked(v => !v)}
-            className="flex items-center gap-2 text-sm font-semibold mb-6 w-full text-left"
-            style={{color:'var(--text)'}}
+            className="flex items-center gap-2 w-full text-left mb-5"
           >
-            <span>🚫 Bloquear días sin turnos</span>
-            <span className="ml-auto text-xs" style={{color:'var(--text-faint)'}}>{showBlocked ? '▲ Ocultar' : '▼ Ver'}</span>
+            <span className="text-xs uppercase tracking-widest font-semibold" style={{fontFamily:'var(--font-anton)', color:'var(--text-mut)'}}>
+              🚫 Bloquear días sin turnos
+            </span>
+            <span className="ml-auto text-xs" style={{color:'var(--text-mut)'}}>{showBlocked ? '▲ Ocultar' : '▼ Ver'}</span>
           </button>
 
           {showBlocked && (
             <div>
               {/* Input para bloquear */}
-              <div className="flex gap-2 mb-6">
+              <div className="flex gap-2 mb-5">
                 <input
                   type="date"
                   value={blockInput}
                   onChange={e => setBlockInput(e.target.value)}
                   min={toDateParam(new Date())}
                   className="flex-1 rounded-lg border px-3 py-2 text-sm outline-none"
-                  style={{background:'var(--bg-2)', borderColor:'var(--border)', color:'var(--text)'}}
+                  style={{background:'var(--surface)', borderColor:'var(--border)', color:'var(--text)'}}
                 />
                 <button
                   onClick={handleBlockDate}
                   disabled={!blockInput || blockingDate}
                   className="px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50 transition-all"
-                  style={{background:'var(--text)', color:'var(--bg)'}}
+                  style={{background:'var(--celeste-deep)', color:'#fff'}}
                 >
                   {blockingDate ? '...' : 'Bloquear'}
                 </button>
@@ -400,7 +417,7 @@ export default function AdminDashboard() {
 
               {/* Lista de días bloqueados */}
               {blockedDates.length === 0 ? (
-                <p className="text-sm" style={{color:'var(--text-faint)'}}>No hay días bloqueados.</p>
+                <p className="text-sm" style={{color:'var(--text-mut)'}}>No hay días bloqueados.</p>
               ) : (
                 <div className="space-y-2">
                   {blockedDates.map(b => {
@@ -409,7 +426,7 @@ export default function AdminDashboard() {
                     const label = d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
                     return (
                       <div key={b.id} className="flex items-center justify-between border rounded-xl px-4 py-3"
-                        style={{background:'var(--bg-2)', borderColor:'var(--border)'}}>
+                        style={{background:'var(--surface)', borderColor:'var(--border)'}}>
                         <span className="text-sm capitalize" style={{color:'var(--text)'}}>{label}</span>
                         <button
                           onClick={() => handleUnblock(b.id)}

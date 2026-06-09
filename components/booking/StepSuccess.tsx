@@ -4,6 +4,7 @@ import type { BookingState } from '@/types/booking'
 
 interface Props {
   booking: BookingState
+  eventId: string | null
   onReset: () => void
 }
 
@@ -12,7 +13,7 @@ function genCode(booking: BookingState): string {
   return `SR-${ts}`
 }
 
-export default function StepSuccess({ booking, onReset }: Props) {
+export default function StepSuccess({ booking, eventId, onReset }: Props) {
   const dateStr = booking.date
     ? booking.date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
     : '—'
@@ -107,7 +108,7 @@ export default function StepSuccess({ booking, onReset }: Props) {
         <svg viewBox="0 0 24 24" width={15} height={15} fill="#F2B63C" style={{ flexShrink: 0, marginTop: 2 }}>
           <path d="M12 2l2.9 6.2 6.8.7-5 4.6 1.4 6.7L12 17.8 5.9 20.2l1.4-6.7-5-4.6 6.8-.7z"/>
         </svg>
-        <span>Podés cancelar o reprogramar sin costo hasta 2 hs antes del turno.</span>
+        <span>Podés cancelar o reprogramar sin costo hasta 24 hs antes del turno.</span>
       </div>
 
       {/* Actions */}
@@ -138,31 +139,62 @@ export default function StepSuccess({ booking, onReset }: Props) {
         )}
 
         {/* Reprogramar */}
-        <button
-          onClick={onReset}
-          style={{
-            background: 'none', border: '2px solid var(--border)',
-            color: 'var(--text)', borderRadius: 30, padding: '14px 22px',
-            fontFamily: 'var(--font-anton,"Anton"),sans-serif', fontSize: 13,
-            letterSpacing: '1.5px', textTransform: 'uppercase',
-            cursor: 'pointer', transition: '.15s', width: '100%',
-          }}
-        >
-          Reprogramar
-        </button>
+        {eventId && booking.email ? (
+          <a
+            href={`/modificar?id=${encodeURIComponent(eventId)}&email=${encodeURIComponent(booking.email)}`}
+            style={{
+              background: 'none', border: '2px solid var(--border)',
+              color: 'var(--text)', borderRadius: 30, padding: '14px 22px',
+              fontFamily: 'var(--font-anton,"Anton"),sans-serif', fontSize: 13,
+              letterSpacing: '1.5px', textTransform: 'uppercase',
+              textDecoration: 'none', textAlign: 'center', width: '100%',
+              display: 'block', boxSizing: 'border-box',
+            }}
+          >
+            Reprogramar
+          </a>
+        ) : (
+          <button
+            onClick={onReset}
+            style={{
+              background: 'none', border: '2px solid var(--border)',
+              color: 'var(--text)', borderRadius: 30, padding: '14px 22px',
+              fontFamily: 'var(--font-anton,"Anton"),sans-serif', fontSize: 13,
+              letterSpacing: '1.5px', textTransform: 'uppercase',
+              cursor: 'pointer', transition: '.15s', width: '100%',
+            }}
+          >
+            Reprogramar
+          </button>
+        )}
 
         {/* Cancelar turno */}
-        <button
-          onClick={onReset}
-          style={{
-            background: 'none', border: 'none',
-            color: 'var(--text-mut)', fontFamily: 'inherit', fontWeight: 800,
-            fontSize: 12.5, letterSpacing: '.3px', cursor: 'pointer',
-            padding: '6px', textAlign: 'center', width: '100%',
-          }}
-        >
-          Cancelar turno
-        </button>
+        {eventId && booking.email ? (
+          <a
+            href={`/cancelar?id=${encodeURIComponent(eventId)}&email=${encodeURIComponent(booking.email)}`}
+            style={{
+              background: 'none', border: 'none',
+              color: 'var(--text-mut)', fontWeight: 800,
+              fontSize: 12.5, letterSpacing: '.3px',
+              padding: '6px', textAlign: 'center', width: '100%',
+              display: 'block', textDecoration: 'none',
+            }}
+          >
+            Cancelar turno
+          </a>
+        ) : (
+          <button
+            onClick={onReset}
+            style={{
+              background: 'none', border: 'none',
+              color: 'var(--text-mut)', fontFamily: 'inherit', fontWeight: 800,
+              fontSize: 12.5, letterSpacing: '.3px', cursor: 'pointer',
+              padding: '6px', textAlign: 'center', width: '100%',
+            }}
+          >
+            Cancelar turno
+          </button>
+        )}
       </div>
     </div>
   )

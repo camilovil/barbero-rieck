@@ -1,4 +1,4 @@
-const CACHE = 'barberia-rieck-v1'
+const CACHE = 'barberia-rieck-v2'
 
 self.addEventListener('install', e => {
   e.waitUntil(

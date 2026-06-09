@@ -22,6 +22,7 @@ const permanentMarker = Permanent_Marker({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://barbero-rieck.vercel.app'),
   title: 'Santi Barber · Turnos online · Edición Mundial 2026',
   description: 'Reservá tu turno con Santiago Rieck. Corte, barba y combo. En el local o a domicilio.',
   manifest: '/site.webmanifest',
@@ -29,6 +30,28 @@ export const metadata: Metadata = {
     capable: true,
     title: 'Santi Barber',
     statusBarStyle: 'black-translucent',
+  },
+  openGraph: {
+    title: 'Santi Barber · Turnos online',
+    description: 'Reservá tu turno con Santiago Rieck. Corte, barba y combo. En el local o a domicilio.',
+    url: 'https://barbero-rieck.vercel.app',
+    siteName: 'Santi Barber',
+    images: [
+      {
+        url: '/opengraph-image',
+        width: 1200,
+        height: 630,
+        alt: 'Santi Barber — Edición Mundial 2026',
+      },
+    ],
+    locale: 'es_AR',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Santi Barber · Turnos online',
+    description: 'Reservá tu turno con Santiago Rieck. Corte, barba y combo.',
+    images: ['/opengraph-image'],
   },
 }
 

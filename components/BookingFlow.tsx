@@ -55,6 +55,7 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
   const [state, setState] = useState<BookingState>(() => buildInitialState(initialLocation, initialServicio))
   const [loading, setLoading] = useState(false)
   const [confirmed, setConfirmed] = useState(false)
+  const [eventId, setEventId] = useState<string | null>(null)
 
   function update(patch: Partial<BookingState>) {
     setState(prev => ({ ...prev, ...patch }))
@@ -78,6 +79,7 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Error al confirmar')
+      setEventId(data.eventId ?? null)
       setConfirmed(true)
     } catch (err) {
       console.error(err)
@@ -90,10 +92,11 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
   function reset() {
     setState(buildInitialState(null, null))
     setConfirmed(false)
+    setEventId(null)
   }
 
   if (confirmed) {
-    return <StepSuccess booking={state} onReset={reset} />
+    return <StepSuccess booking={state} eventId={eventId} onReset={reset} />
   }
 
   const ready = canAdvance(state)
