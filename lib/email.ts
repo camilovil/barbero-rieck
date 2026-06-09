@@ -566,77 +566,80 @@ export async function sendReminderEmail(
 
   const transporter = getTransporter()
   const from = `"Santi Barber" <${process.env.GMAIL_USER}>`
-  const modalidad = location === 'domicilio' ? 'A domicilio' : 'Estudio de Santiago — <a href="https://maps.app.goo.gl/u8RhmS8WoqdQ61sx5" style="color:#888;text-decoration:underline">Congreso 1865, Belgrano</a>'
+  const jerseyNo = JERSEY[servicio.split(' — ')[0]] ?? '★'
+  const lugar = location === 'domicilio'
+    ? { main: 'A domicilio', sub: '' }
+    : { main: 'Barbería Rieck', sub: 'CABA · Corrientes 1234' }
   const waNumber = process.env.SANTIAGO_WHATSAPP ? process.env.SANTIAGO_WHATSAPP.replace(/\D/g,'') : ''
 
   const html = `<!DOCTYPE html>
 <html lang="es">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#111111;font-family:Arial,Helvetica,sans-serif">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#111111">
-    <tr><td align="center" style="padding:40px 16px">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;600;700;800&family=Permanent+Marker&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background:#F5F8FC;font-family:'Barlow',Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F5F8FC">
+<tr><td align="center" style="padding:32px 16px">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;border:2px solid #DDE6F1">
 
-        <tr><td align="center" style="padding-bottom:32px;border-bottom:1px solid #2a2a2a">
-          <img src="https://barbero-rieck.vercel.app/logo.png" alt="Santi Barber" width="64" height="64"
-            style="border-radius:50%;display:block;margin:0 auto 12px" />
-          <p style="margin:0;font-size:20px;font-weight:700;letter-spacing:0.08em;color:#f5f0e8;text-transform:uppercase">Santiago Rieck</p>
-          <p style="margin:5px 0 0;font-size:11px;color:#666;letter-spacing:0.12em;text-transform:uppercase">Barbería</p>
-        </td></tr>
+    ${emailHeader()}
 
-        <tr><td style="padding:36px 0 8px">
-          <p style="margin:0;font-size:26px;font-weight:700;color:#f5f0e8;line-height:1.2">
-            ⏰ Recordatorio,<br>${nombre}!
-          </p>
-        </td></tr>
-        <tr><td style="padding-bottom:28px">
-          <p style="margin:0;font-size:15px;color:#888;line-height:1.5">
-            Mañana tenés turno con Santiago.<br>¡Te esperamos!
-          </p>
-        </td></tr>
+    <!-- Título -->
+    <tr><td style="padding:28px 28px 8px;text-align:center">
+      <div style="width:72px;height:72px;margin:0 auto 14px;border-radius:50%;background:linear-gradient(160deg,#75AADB,#0B1F47);display:inline-flex;align-items:center;justify-content:center;font-size:34px;line-height:1">
+        ⏰
+      </div>
+      <p style="margin:0 0 6px;font-family:'Anton',Arial,sans-serif;font-size:26px;letter-spacing:.5px;color:#0B1F47">
+        ¡MAÑANA ES TU TURNO!
+      </p>
+      <p style="margin:0;font-size:14px;color:#555;font-weight:600">
+        Hola <strong style="color:#0B1F47">${nombre}</strong>, te recordamos tu turno de mañana con Santiago.
+      </p>
+    </td></tr>
 
-        <tr><td style="padding-bottom:24px">
-          <table width="100%" cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              <td width="50%" style="padding:20px;background:#1e1e1e;border:1px solid #2e2e2e;border-radius:10px 0 0 10px;text-align:center">
-                <p style="margin:0 0 4px;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.09em">Fecha</p>
-                <p style="margin:0;font-size:16px;font-weight:700;color:#f5f0e8">${dateStr}</p>
-              </td>
-              <td width="50%" style="padding:20px;background:#1e1e1e;border:1px solid #2e2e2e;border-left:none;border-radius:0 10px 10px 0;text-align:center">
-                <p style="margin:0 0 4px;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.09em">Horario</p>
-                <p style="margin:0;font-size:24px;font-weight:700;color:#f5f0e8">${time}</p>
-              </td>
-            </tr>
-          </table>
-        </td></tr>
-
-        <tr><td style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:0 20px">
-          <table width="100%" cellpadding="0" cellspacing="0" border="0">
-            ${detailRow('Servicio', servicio)}
-            ${detailRow('Modalidad', modalidad)}
-          </table>
-        </td></tr>
-
-        ${waNumber ? `
-        <tr><td style="padding:24px 0 0;text-align:center">
-          <a href="https://wa.me/${waNumber}" style="display:inline-block;padding:12px 28px;background:#25D366;color:#fff;font-size:14px;font-weight:700;text-decoration:none;border-radius:8px">
-            💬 Escribir a Santiago
-          </a>
-        </td></tr>` : ''}
-
-        <tr><td style="padding:16px 0 0;text-align:center">
-          <p style="margin:0;font-size:11px;color:#444">
-            Si no ves este mail, revisá tu carpeta de spam o correo no deseado.
-          </p>
-        </td></tr>
-
-        <tr><td style="padding:24px 0 0;border-top:1px solid #1e1e1e;text-align:center">
-          <p style="margin:0;font-size:12px;color:#333">¿Dudas? Escribile a Santiago por WhatsApp.</p>
-        </td></tr>
-
+    <!-- Fecha y hora destacadas -->
+    <tr><td style="padding:20px 28px 8px">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:2px solid #75AADB;border-radius:12px;overflow:hidden">
+        <tr>
+          <td width="55%" style="padding:18px 16px;background:#f5f9ff;border-right:1px solid #DDE6F1;text-align:center">
+            <p style="margin:0 0 4px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#75AADB">Fecha</p>
+            <p style="margin:0;font-size:15px;font-weight:800;color:#0B1F47;line-height:1.3">${capitalize(dateStr)}</p>
+          </td>
+          <td width="45%" style="padding:18px 16px;background:#f5f9ff;text-align:center">
+            <p style="margin:0 0 4px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#75AADB">Horario</p>
+            <p style="margin:0;font-family:'Anton',Arial,sans-serif;font-size:28px;color:#0B1F47;line-height:1">${time}</p>
+          </td>
+        </tr>
       </table>
     </td></tr>
+
+    <!-- Detalles -->
+    <tr><td style="padding:8px 28px 20px">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:2px solid #DDE6F1;border-radius:12px;overflow:hidden">
+        ${detailRowNew('Servicio', `${servicio.split(' — ')[0]} &middot; N&deg;${jerseyNo}`)}
+        ${detailRowNew('Lugar', lugar.main, lugar.sub)}
+      </table>
+    </td></tr>
+
+    ${waNumber ? `
+    <!-- CTA WhatsApp -->
+    <tr><td style="padding:0 28px 24px;text-align:center">
+      <a href="https://wa.me/${waNumber}" style="display:inline-block;padding:13px 28px;background:#25D366;color:#fff;font-family:'Anton',Arial,sans-serif;font-size:13px;letter-spacing:1px;text-decoration:none;border-radius:30px;text-transform:uppercase">
+        💬 Escribir a Santiago
+      </a>
+    </td></tr>` : ''}
+
+    <!-- Footer -->
+    <tr><td style="padding:20px 28px;text-align:center;background:#0B1F47;border-radius:0 0 14px 14px">
+      <p style="margin:0 0 4px;font-size:11px;color:rgba(255,255,255,.5)">Si necesitás cancelar o reprogramar, hacelo con al menos 24 hs de anticipación.</p>
+      <p style="margin:0;font-size:10px;color:rgba(255,255,255,.3)">Santi Barber · Edición Mundial 2026</p>
+    </td></tr>
+
   </table>
+</td></tr>
+</table>
 </body>
 </html>`
 
@@ -889,61 +892,95 @@ export async function sendDailySummaryEmail(events: BookingEvent[], date: Date):
   const dateStr = capitalize(date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))
 
   const turnosHtml = events.length === 0
-    ? `<tr><td colspan="4" style="padding:20px;text-align:center;font-size:14px;color:#555">No hay turnos para hoy 🎉</td></tr>`
-    : events.map(ev => {
+    ? `<tr><td colspan="4" style="padding:24px;text-align:center;font-size:14px;color:#888;font-family:Arial,sans-serif">
+        🎉 Sin turnos para hoy — día libre
+       </td></tr>`
+    : events.map((ev, i) => {
         const time = new Date(ev.start).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
         const waNumber = ev.whatsapp.replace(/https:\/\/wa\.me\//,'').replace(/\D/g,'')
+        const isLast = i === events.length - 1
+        const modalIcon = ev.modalidad?.toLowerCase().includes('domicilio') ? '🏠' : '✂️'
         return `
-        <tr style="border-bottom:1px solid #2a2a2a">
-          <td style="padding:14px 12px;font-size:15px;font-weight:700;color:#f5f0e8;white-space:nowrap">${time}</td>
-          <td style="padding:14px 12px;font-size:14px;color:#f5f0e8">${ev.nombre}</td>
-          <td style="padding:14px 12px;font-size:13px;color:#888">${ev.servicio.split(' — ')[0]}</td>
-          <td style="padding:14px 12px;font-size:13px;color:#888">${waNumber ? `<a href="https://wa.me/${waNumber}" style="color:#25D366;text-decoration:none">WhatsApp</a>` : '—'}</td>
+        <tr style="${isLast ? '' : 'border-bottom:1px solid #e8f0f8'}">
+          <td style="padding:14px 14px;font-size:16px;font-weight:900;color:#0B1F47;white-space:nowrap;font-family:'Arial Black',Arial,sans-serif">${time}</td>
+          <td style="padding:14px 8px;font-size:14px;font-weight:700;color:#1a1a2e;font-family:Arial,sans-serif">${ev.nombre}</td>
+          <td style="padding:14px 8px;font-size:12px;color:#666;font-family:Arial,sans-serif">${modalIcon} ${ev.servicio.split(' — ')[0]}</td>
+          <td style="padding:14px 14px;font-size:12px;font-family:Arial,sans-serif">${waNumber ? `<a href="https://wa.me/${waNumber}" style="color:#25D366;text-decoration:none;font-weight:700">WhatsApp ↗</a>` : '—'}</td>
         </tr>`
       }).join('')
 
   const html = `<!DOCTYPE html>
 <html lang="es">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#111111;font-family:Arial,Helvetica,sans-serif">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#111111">
-    <tr><td align="center" style="padding:40px 16px">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background:#f0f4f8;font-family:Arial,Helvetica,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0f4f8">
+    <tr><td align="center" style="padding:32px 16px 40px">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;border-radius:18px;overflow:hidden;box-shadow:0 8px 32px rgba(11,31,71,.13)">
 
-        <tr><td align="center" style="padding-bottom:32px;border-bottom:1px solid #2a2a2a">
-          <img src="https://barbero-rieck.vercel.app/logo.png" alt="Santi Barber" width="64" height="64"
-            style="border-radius:50%;display:block;margin:0 auto 12px" />
-          <p style="margin:0;font-size:20px;font-weight:700;letter-spacing:0.08em;color:#f5f0e8;text-transform:uppercase">Santiago Rieck</p>
-          <p style="margin:5px 0 0;font-size:11px;color:#666;letter-spacing:0.12em;text-transform:uppercase">Barbería</p>
-        </td></tr>
+        <!-- Header Argentina -->
+        ${emailHeader()}
 
-        <tr><td style="padding:32px 0 8px">
-          <p style="margin:0;font-size:24px;font-weight:700;color:#f5f0e8">📋 Turnos de hoy</p>
-          <p style="margin:6px 0 0;font-size:14px;color:#666">${dateStr}</p>
-        </td></tr>
+        <!-- Título sección -->
+        <tr>
+          <td style="background:#ffffff;padding:28px 28px 8px">
+            <p style="margin:0;font-family:'Anton',Arial,sans-serif;font-size:22px;letter-spacing:.5px;color:#0B1F47;text-transform:uppercase">
+              Agenda del día
+            </p>
+            <p style="margin:6px 0 0;font-size:13px;color:#888;font-family:Arial,sans-serif">${dateStr}</p>
+          </td>
+        </tr>
 
-        <tr><td style="padding:20px 0">
-          <div style="background:#1e1e1e;border:1px solid #2a2a2a;border-radius:10px;overflow:hidden;display:inline-block;width:100%">
-            <table width="100%" cellpadding="0" cellspacing="0" border="0">
-              <tr style="background:#1a1a1a;border-bottom:1px solid #2e2e2e">
-                <td style="padding:10px 12px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.1em">Hora</td>
-                <td style="padding:10px 12px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.1em">Cliente</td>
-                <td style="padding:10px 12px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.1em">Servicio</td>
-                <td style="padding:10px 12px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.1em">Contacto</td>
+        <!-- Stat grande -->
+        <tr>
+          <td style="background:#ffffff;padding:16px 28px 24px">
+            <table cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="background:linear-gradient(135deg,#75AADB,#0B1F47);border-radius:14px;padding:16px 28px;text-align:center">
+                  <p style="margin:0;font-family:'Anton',Arial,sans-serif;font-size:36px;color:#ffffff;line-height:1">${events.length}</p>
+                  <p style="margin:4px 0 0;font-size:11px;color:rgba(255,255,255,.75);letter-spacing:.15em;text-transform:uppercase;font-family:Arial,sans-serif">
+                    ${events.length === 1 ? 'turno hoy' : 'turnos hoy'}
+                  </p>
+                </td>
+                ${events.length > 0 ? `
+                <td style="padding-left:16px;vertical-align:middle">
+                  <p style="margin:0;font-size:13px;color:#555;font-family:Arial,sans-serif;line-height:1.5">
+                    Primer turno: <strong style="color:#0B1F47">${new Date(events[0].start).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}</strong><br>
+                    Último turno: <strong style="color:#0B1F47">${new Date(events[events.length-1].start).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}</strong>
+                  </p>
+                </td>` : ''}
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Tabla de turnos -->
+        <tr>
+          <td style="background:#ffffff;padding:0 28px 28px">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0"
+              style="border:2px solid #e8f0f8;border-radius:12px;overflow:hidden">
+              <tr style="background:#f5f8fc">
+                <td style="padding:10px 14px;font-size:9px;color:#75AADB;text-transform:uppercase;letter-spacing:.12em;font-weight:700;font-family:Arial,sans-serif">Hora</td>
+                <td style="padding:10px 8px;font-size:9px;color:#75AADB;text-transform:uppercase;letter-spacing:.12em;font-weight:700;font-family:Arial,sans-serif">Cliente</td>
+                <td style="padding:10px 8px;font-size:9px;color:#75AADB;text-transform:uppercase;letter-spacing:.12em;font-weight:700;font-family:Arial,sans-serif">Servicio</td>
+                <td style="padding:10px 14px;font-size:9px;color:#75AADB;text-transform:uppercase;letter-spacing:.12em;font-weight:700;font-family:Arial,sans-serif">Contacto</td>
               </tr>
               ${turnosHtml}
             </table>
-          </div>
-        </td></tr>
+          </td>
+        </tr>
 
-        <tr><td style="padding:0 0 8px;text-align:center">
-          <p style="margin:0;font-size:24px;font-weight:700;color:#f5f0e8">${events.length}</p>
-          <p style="margin:4px 0 0;font-size:12px;color:#555">${events.length === 1 ? 'turno hoy' : 'turnos hoy'}</p>
-        </td></tr>
-
-        <tr><td style="padding:24px 0 0;border-top:1px solid #1e1e1e;text-align:center">
-          <p style="margin:0;font-size:12px;color:#333">Santi Barber · Sistema de turnos</p>
-        </td></tr>
+        <!-- Footer -->
+        <tr>
+          <td style="background:#0B1F47;padding:18px 28px;text-align:center">
+            <p style="margin:0;font-size:11px;color:rgba(255,255,255,.45);letter-spacing:.08em;font-family:Arial,sans-serif">
+              SANTI BARBER · PANEL ADMIN · <a href="https://barbero-rieck.vercel.app/admin" style="color:#75AADB;text-decoration:none">Ver panel →</a>
+            </p>
+          </td>
+        </tr>
 
       </table>
     </td></tr>
@@ -954,7 +991,7 @@ export async function sendDailySummaryEmail(events: BookingEvent[], date: Date):
   await transporter.sendMail({
     from,
     to: process.env.SANTIAGO_EMAIL,
-    subject: `📋 Turnos de hoy — ${dateStr} (${events.length} ${events.length === 1 ? 'turno' : 'turnos'})`,
+    subject: `📋 ${events.length} ${events.length === 1 ? 'turno' : 'turnos'} hoy — ${dateStr}`,
     html,
   })
 }
