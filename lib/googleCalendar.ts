@@ -111,6 +111,40 @@ function parseDesc(desc: string): Record<string, string> {
   return result
 }
 
+export async function getPastEvents(days = 30): Promise<BookingEvent[]> {
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return []
+
+  const calendar = google.calendar({ version: 'v3', auth: getAuth() })
+  const now = new Date()
+  const past = new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
+
+  const res = await calendar.events.list({
+    calendarId: process.env.GOOGLE_CALENDAR_ID,
+    timeMin: past.toISOString(),
+    timeMax: now.toISOString(),
+    singleEvents: true,
+    orderBy: 'startTime',
+  })
+
+  return (res.data.items ?? [])
+    .filter(e => e.id && e.start?.dateTime && e.summary?.includes('✂️'))
+    .map(e => {
+      const d = parseDesc(e.description ?? '')
+      return {
+        id: e.id!,
+        nombre: d['cliente'] ?? '—',
+        email: d['email'] ?? '',
+        whatsapp: d['whatsapp'] ?? '',
+        servicio: d['servicio'] ?? e.summary ?? '—',
+        modalidad: d['modalidad'] ?? '—',
+        nota: d['nota'] ?? '',
+        start: e.start!.dateTime!,
+        end: e.end?.dateTime ?? '',
+      }
+    })
+    .reverse() // más reciente primero
+}
+
 export async function getUpcomingEvents(days = 30): Promise<BookingEvent[]> {
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return []
 
