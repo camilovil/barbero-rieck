@@ -5,32 +5,7 @@ export const alt = 'Santi Barber — Edición Mundial 2026'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
-async function loadFont(): Promise<ArrayBuffer | null> {
-  try {
-    // Get the actual font file URL from Google Fonts CSS
-    const css = await fetch(
-      'https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap',
-      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)' } }
-    ).then(r => r.text())
-    const match = css.match(/src: url\(([^)]+)\) format\('woff2'\)/)
-    if (!match) return null
-    return fetch(match[1]).then(r => r.arrayBuffer())
-  } catch {
-    return null
-  }
-}
-
-export default async function Image() {
-  const fontData = await loadFont()
-
-  const fonts = fontData
-    ? [{ name: 'Permanent Marker', data: fontData, style: 'normal' as const, weight: 400 as const }]
-    : []
-
-  const titleStyle = fontData
-    ? { fontFamily: '"Permanent Marker"' }
-    : { fontFamily: 'serif', fontStyle: 'italic' }
-
+export default function Image() {
   return new ImageResponse(
     (
       <div
@@ -46,77 +21,55 @@ export default async function Image() {
           overflow: 'hidden',
         }}
       >
-        {/* Jersey vertical stripes — left side */}
+        {/* Jersey stripes left */}
         {[0,1,2,3,4].map(i => (
-          <div key={`l${i}`} style={{
-            position: 'absolute', left: i * 22, top: 0, bottom: 0,
-            width: 11, background: 'rgba(255,255,255,0.18)', display: 'flex',
-          }} />
+          <div key={`l${i}`} style={{ position:'absolute', left: i*22, top:0, bottom:0, width:11, background:'rgba(255,255,255,0.18)', display:'flex' }} />
         ))}
-        {/* Jersey vertical stripes — right side */}
+        {/* Jersey stripes right */}
         {[0,1,2,3,4].map(i => (
-          <div key={`r${i}`} style={{
-            position: 'absolute', right: i * 22, top: 0, bottom: 0,
-            width: 11, background: 'rgba(255,255,255,0.18)', display: 'flex',
-          }} />
+          <div key={`r${i}`} style={{ position:'absolute', right: i*22, top:0, bottom:0, width:11, background:'rgba(255,255,255,0.18)', display:'flex' }} />
         ))}
 
         {/* Stars + years */}
-        <div style={{ display: 'flex', gap: 64, marginBottom: 18 }}>
-          {(['1978','1986','2022']).map(year => (
-            <div key={year} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <span style={{ fontSize: 44, lineHeight: 1 }}>⭐</span>
-              <span style={{ fontSize: 22, fontWeight: 700, color: '#0B1F47', letterSpacing: 1, fontFamily: 'sans-serif' }}>{year}</span>
+        <div style={{ display:'flex', gap:64, marginBottom:20 }}>
+          {['1978','1986','2022'].map(year => (
+            <div key={year} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
+              <div style={{ fontSize:42, lineHeight:1, color:'#F2B63C' }}>★</div>
+              <div style={{ fontSize:20, fontWeight:700, color:'#0B1F47', fontFamily:'sans-serif' }}>{year}</div>
             </div>
           ))}
         </div>
 
-        {/* SANTI BARBER */}
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 28, marginBottom: 6 }}>
-          <span style={{ ...titleStyle, fontSize: 148, color: '#ffffff', lineHeight: 1, textShadow: '3px 3px 0 rgba(0,0,0,0.15)' }}>
+        {/* Title */}
+        <div style={{ display:'flex', gap:24, marginBottom:10 }}>
+          <span style={{ fontSize:140, fontWeight:900, fontStyle:'italic', color:'#ffffff', fontFamily:'Georgia,serif', lineHeight:1, textShadow:'4px 4px 0 rgba(0,0,0,0.2)' }}>
             Santi
           </span>
-          <span style={{ ...titleStyle, fontSize: 148, color: '#0B1F47', lineHeight: 1, textShadow: '3px 3px 0 rgba(0,0,0,0.15)' }}>
+          <span style={{ fontSize:140, fontWeight:900, fontStyle:'italic', color:'#0B1F47', fontFamily:'Georgia,serif', lineHeight:1, textShadow:'4px 4px 0 rgba(0,0,0,0.2)' }}>
             Barber
           </span>
         </div>
 
-        {/* EDICIÓN MUNDIAL */}
-        <div style={{
-          display: 'flex', fontSize: 28, fontWeight: 700, color: '#ffffff',
-          letterSpacing: '8px', textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: 28,
-        }}>
+        {/* Subtitle */}
+        <div style={{ display:'flex', fontSize:27, fontWeight:700, color:'#fff', letterSpacing:7, textTransform:'uppercase', fontFamily:'sans-serif', marginBottom:24 }}>
           EDICIÓN MUNDIAL · 2026
         </div>
 
-        {/* Subtitle */}
-        <div style={{
-          display: 'flex', fontSize: 26, color: 'rgba(255,255,255,0.9)',
-          fontFamily: 'sans-serif', fontWeight: 500, marginBottom: 40, letterSpacing: 0.5,
-        }}>
+        <div style={{ display:'flex', fontSize:24, color:'rgba(255,255,255,0.88)', fontFamily:'sans-serif', marginBottom:38 }}>
           Corte · Barba · Combo — en el local o a domicilio
         </div>
 
-        {/* CTA row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            background: '#F2B63C', borderRadius: 50, padding: '18px 44px',
-            fontSize: 24, fontWeight: 900, color: '#0B1F47',
-            letterSpacing: '2px', textTransform: 'uppercase', fontFamily: 'sans-serif',
-          }}>
-            <span style={{ fontSize: 26 }}>📅</span>
-            RESERVÁ TU TURNO
+        {/* CTA */}
+        <div style={{ display:'flex', alignItems:'center', gap:28 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, background:'#F2B63C', borderRadius:50, padding:'16px 42px', fontSize:22, fontWeight:900, color:'#0B1F47', letterSpacing:2, textTransform:'uppercase', fontFamily:'sans-serif' }}>
+            📅 RESERVÁ TU TURNO
           </div>
-          <div style={{
-            display: 'flex', fontSize: 24, color: 'rgba(255,255,255,0.85)',
-            fontFamily: 'monospace', fontWeight: 600,
-          }}>
-            barbero-rieck<span style={{ color: '#ffffff', fontWeight: 900 }}>.vercel.app</span>
+          <div style={{ display:'flex', fontSize:22, color:'rgba(255,255,255,0.8)', fontFamily:'monospace' }}>
+            barbero-rieck.vercel.app
           </div>
         </div>
       </div>
     ),
-    { ...size, fonts }
+    { ...size }
   )
 }
