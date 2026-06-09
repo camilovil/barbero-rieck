@@ -24,6 +24,7 @@ const permanentMarker = Permanent_Marker({
 export const metadata: Metadata = {
   title: 'Santi Barber · Turnos online · Edición Mundial 2026',
   description: 'Reservá tu turno con Santiago Rieck. Corte, barba y combo. En el local o a domicilio.',
+  manifest: '/site.webmanifest',
   appleWebApp: {
     capable: true,
     title: 'Santi Barber',
@@ -32,7 +33,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#3F86C4',
+  themeColor: '#0B1F47',
   width: 'device-width',
   initialScale: 1,
 }
@@ -42,9 +43,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" className={`h-full ${anton.variable} ${barlow.variable} ${permanentMarker.variable}`}>
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
-        <link rel="apple-touch-icon" href="/apple-icon.png" />
-        <link rel="icon" sizes="192x192" href="/icon-192.png" />
-        <link rel="icon" sizes="512x512" href="/icon-512.png" />
+        {/* Favicon SVG moderno */}
+        <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+        {/* Favicon clásico */}
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+        {/* iPhone / iPad — icono al agregar a pantalla de inicio */}
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
       </head>
       <body className="min-h-full flex flex-col antialiased">
         {children}

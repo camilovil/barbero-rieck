@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <pattern id="arg" width="15" height="15" patternUnits="userSpaceOnUse" patternTransform="rotate(56)">
+      <rect width="15" height="15" fill="#ffffff"></rect>
+      <rect width="7.5" height="15" x="0" fill="#75AADB"></rect>
+    </pattern>
+    <radialGradient id="navyG" cx="50%" cy="36%" r="80%">
+      <stop offset="0" stop-color="#16315c"></stop><stop offset="1" stop-color="#0B1F47"></stop>
+    </radialGradient>
+    <linearGradient id="goldG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FAD06A"></stop><stop offset="1" stop-color="#D99B22"></stop>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="27" fill="#4F93CF"></rect>
+  <g stroke="#161616" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round">
+    <circle cx="60" cy="30" r="15" fill="#fff"></circle>
+    <path d="M60 22 L66 27 L64 34 L56 34 L54 27 Z" fill="#161616" stroke-width="2.5"></path>
+    <rect x="38" y="48" width="44" height="8" rx="3.5" fill="url(#goldG)"></rect>
+    <rect x="38" y="94" width="44" height="8" rx="3.5" fill="url(#goldG)"></rect>
+    <rect x="43" y="56" width="34" height="38" rx="5" fill="url(#arg)"></rect>
+    <rect x="48" y="102" width="24" height="7" rx="3" fill="#0a1733"></rect>
+  </g>
+</svg>
