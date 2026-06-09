@@ -10,7 +10,7 @@ export default function AppHeader() {
       <div style={{ position:'absolute', top:0, bottom:0, left:0, width:14, background:'repeating-linear-gradient(180deg,#fff 0 9px,transparent 9px 18px)', opacity:.5, pointerEvents:'none' }} />
       <div style={{ position:'absolute', top:0, bottom:0, right:0, width:14, background:'repeating-linear-gradient(180deg,#fff 0 9px,transparent 9px 18px)', opacity:.5, pointerEvents:'none' }} />
 
-      <div style={{ position:'relative', textAlign:'center', padding:'14px 56px 16px' }}>
+      <div style={{ position:'relative', textAlign:'center', padding:'calc(env(safe-area-inset-top) + 14px) 56px 16px' }}>
         {/* Estrellas */}
         <div style={{ display:'flex', justifyContent:'center', gap:14, marginBottom:4 }}>
           {['1978','1986','2022'].map(yr => (

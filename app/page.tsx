@@ -16,7 +16,7 @@ export default async function Home({ searchParams }: Props) {
       <AppHeader />
 
       {/* Main */}
-      <main className="flex-1 pb-12 px-3 sm:px-6" style={{ paddingTop: 119 + 16 }}>
+      <main className="flex-1 pb-12 px-3 sm:px-6" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 135px)' }}>
         <div className="max-w-2xl mx-auto">
 
           {/* Hero */}

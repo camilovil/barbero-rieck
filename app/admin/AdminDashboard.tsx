@@ -164,7 +164,7 @@ export default function AdminDashboard() {
       }}>
         {/* top celeste stripe */}
         <div style={{height: 4, background: '#75AADB', opacity: .45}} />
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 flex items-center justify-between" style={{height:'calc(env(safe-area-inset-top) + 56px)', paddingTop:'env(safe-area-inset-top)'}}>
           {/* Brand */}
           <div className="flex items-center gap-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -195,7 +195,7 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <main className="flex-1 pt-20 pb-16 px-4 sm:px-6 max-w-3xl mx-auto w-full">
+      <main className="flex-1 pb-16 px-4 sm:px-6 max-w-3xl mx-auto w-full" style={{paddingTop:'calc(env(safe-area-inset-top) + 74px)'}}>
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3 mb-8">
