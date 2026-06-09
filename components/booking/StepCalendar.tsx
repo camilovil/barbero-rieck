@@ -40,7 +40,6 @@ export default function StepCalendar({ location, selectedDate, selectedTime, onS
 
   const slots = TIME_SLOTS[location]
 
-  // Fetch blocked dates for visual calendar feedback
   useEffect(() => {
     fetch('/api/blocked-dates?days=90')
       .then(r => r.json())
@@ -48,7 +47,6 @@ export default function StepCalendar({ location, selectedDate, selectedTime, onS
       .catch(() => {})
   }, [])
 
-  // Fetch available slots when a date is selected
   useEffect(() => {
     if (!localDate) return
     setLoadingSlots(true)
@@ -70,9 +68,7 @@ export default function StepCalendar({ location, selectedDate, selectedTime, onS
     if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1) }
     else setViewMonth(m => m + 1)
   }
-  function isBlocked(date: Date): boolean {
-    return blockedDates.includes(toDateParam(date))
-  }
+  function isBlocked(date: Date) { return blockedDates.includes(toDateParam(date)) }
   function handleDateClick(day: number) {
     const d = new Date(viewYear, viewMonth, day)
     if (isSunday(d) || isPast(d) || isBlocked(d)) return
@@ -89,61 +85,90 @@ export default function StepCalendar({ location, selectedDate, selectedTime, onS
   ]
 
   return (
-    <div>
-      <h2 className="font-playfair text-2xl sm:text-3xl mb-2" style={{color:'var(--text)'}}>Elegí día y horario</h2>
-      <p className="text-sm mb-6" style={{color:'var(--text-muted)'}}>Los domingos no hay turnos</p>
+    <div className="step-enter">
+      <div style={{ fontFamily: 'var(--font-anton, "Anton"), sans-serif', fontSize: 25, letterSpacing: '.3px', margin: '0 0 3px', color: 'var(--text)' }}>
+        Día y horario
+      </div>
+      <p style={{ fontSize: 12.5, color: 'var(--text-mut)', fontWeight: 600, margin: '0 0 16px' }}>
+        Los domingos no hay turnos
+      </p>
 
-      {/* En mobile: columna. En desktop: dos columnas */}
-      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2">
-        {/* Calendar */}
-        <div className="rounded-xl p-4 sm:p-5 border" style={{background:'var(--bg-card)', borderColor:'var(--border-2)'}}>
-          <div className="flex items-center justify-between mb-5">
-            <button onClick={prevMonth} className="w-9 h-9 rounded-lg border flex items-center justify-center transition-all cursor-pointer text-lg"
-              style={{borderColor:'var(--border-2)', color:'var(--text-muted)'}}>‹</button>
-            <span className="font-semibold text-sm tracking-wide uppercase" style={{color:'var(--text)'}}>
-              {MONTHS[viewMonth]} {viewYear}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Calendario */}
+        <div style={{
+          border: '2.5px solid var(--border)', borderRadius: 16,
+          padding: 14, background: 'var(--surface)',
+        }}>
+          {/* Nav mes */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <button
+              onClick={prevMonth}
+              style={{
+                width: 28, height: 28, border: '2px solid var(--border)', borderRadius: 9,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: 800, color: 'var(--text)', cursor: 'pointer', background: 'none',
+                fontSize: 16, transition: '.15s',
+              }}
+            >‹</button>
+            <span style={{
+              fontFamily: 'var(--font-anton, "Anton"), sans-serif',
+              fontSize: 14, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--text)',
+            }}>
+              {MONTHS[viewMonth].toUpperCase()} {viewYear}
             </span>
-            <button onClick={nextMonth} className="w-9 h-9 rounded-lg border flex items-center justify-center transition-all cursor-pointer text-lg"
-              style={{borderColor:'var(--border-2)', color:'var(--text-muted)'}}>›</button>
+            <button
+              onClick={nextMonth}
+              style={{
+                width: 28, height: 28, border: '2px solid var(--border)', borderRadius: 9,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: 800, color: 'var(--text)', cursor: 'pointer', background: 'none',
+                fontSize: 16, transition: '.15s',
+              }}
+            >›</button>
           </div>
 
-          <div className="grid grid-cols-7 mb-2">
+          {/* Cabecera días */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4 }}>
             {DAYS.map(d => (
-              <div key={d} className="text-center text-[10px] uppercase tracking-wider py-1" style={{color:'var(--text-faint)'}}>
+              <div key={d} style={{ textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'var(--text-mut)', padding: '3px 0' }}>
                 {d}
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-y-1">
+          {/* Grilla días */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
             {cells.map((day, i) => {
               if (!day) return <div key={`e-${i}`} />
               const d = new Date(viewYear, viewMonth, day)
               const disabled = isSunday(d) || isPast(d) || isBlocked(d)
               const isSelected = localDate && sameDay(d, localDate)
               const isToday = sameDay(d, today)
-              const blocked = isBlocked(d)
 
               return (
                 <button
                   key={day}
                   disabled={disabled}
                   onClick={() => handleDateClick(day)}
-                  className="relative mx-auto w-9 h-9 rounded-lg text-sm transition-all"
-                  style={
-                    disabled
-                      ? { color: 'var(--text-xfaint)', cursor: 'not-allowed', textDecoration: blocked ? 'line-through' : 'none' }
-                      : isSelected
-                      ? { background: 'var(--text)', color: 'var(--bg)', fontWeight: 600, cursor: 'pointer' }
-                      : isToday
-                      ? { color: 'var(--text)', fontWeight: 600, cursor: 'pointer' }
-                      : { color: 'var(--text-muted)', cursor: 'pointer' }
-                  }
+                  style={{
+                    position: 'relative',
+                    aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 13, borderRadius: 10, border: 'none', cursor: disabled ? 'not-allowed' : 'pointer',
+                    fontWeight: 700, transition: '.12s',
+                    background: isSelected ? 'var(--celeste)' : 'transparent',
+                    color: disabled ? 'var(--off)' : isSelected ? '#fff' : isToday ? 'var(--text)' : 'var(--text)',
+                    opacity: disabled ? .4 : 1,
+                    outline: isToday && !isSelected ? '1.5px solid var(--celeste-deep)' : 'none',
+                  }}
                 >
                   {day}
+                  {/* Punto dorado en días disponibles */}
                   {!disabled && !isSelected && (
-                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
-                      style={{background:'var(--text-faint)'}} />
+                    <span style={{
+                      position: 'absolute', bottom: 4, left: '50%', transform: 'translateX(-50%)',
+                      width: 4, height: 4, borderRadius: '50%', background: 'var(--gold)',
+                      display: 'block',
+                    }} />
                   )}
                 </button>
               )
@@ -151,22 +176,25 @@ export default function StepCalendar({ location, selectedDate, selectedTime, onS
           </div>
         </div>
 
-        {/* Time slots */}
+        {/* Slots de hora */}
         <div>
           {localDate ? (
             <>
-              <p className="text-sm mb-4 capitalize" style={{color:'var(--text-muted)'}}>
+              <p style={{ fontSize: 12, fontWeight: 800, color: 'var(--text)', margin: '0 0 10px', textTransform: 'capitalize' }}>
                 {localDate.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
               </p>
 
               {loadingSlots ? (
-                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 gap-2">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                   {Array.from({ length: slots.length }).map((_, i) => (
-                    <div key={i} className="py-3 rounded-lg border animate-pulse" style={{borderColor:'var(--border)', background:'var(--bg-card)'}} />
+                    <div key={i} style={{
+                      padding: '9px 0', borderRadius: 11, border: '2px solid var(--border)',
+                      background: 'var(--chip-bg)', opacity: .5,
+                    }} />
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 gap-2">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                   {slots.map((time) => {
                     const blocked = blockedSlots.includes(time)
                     const isSelected = selectedTime === time && localDate && selectedDate && sameDay(localDate, selectedDate)
@@ -176,24 +204,17 @@ export default function StepCalendar({ location, selectedDate, selectedTime, onS
                         key={time}
                         disabled={blocked}
                         onClick={() => handleTimeClick(time)}
-                        className="relative py-3 rounded-lg border text-sm font-medium transition-all"
-                        style={
-                          blocked
-                            ? { borderColor: 'var(--border)', color: 'var(--text-xfaint)', cursor: 'not-allowed', textDecoration: 'line-through' }
-                            : isSelected
-                            ? { borderColor: 'var(--text-muted)', background: 'var(--bg-active)', color: 'var(--text)', cursor: 'pointer' }
-                            : { borderColor: 'var(--border-2)', color: 'var(--text-muted)', cursor: 'pointer' }
-                        }
+                        style={{
+                          border: '2px solid', borderRadius: 11,
+                          padding: '9px 0', textAlign: 'center',
+                          fontWeight: 800, fontSize: 12.5, cursor: blocked ? 'not-allowed' : 'pointer',
+                          transition: '.15s', fontFamily: 'inherit',
+                          background: isSelected ? 'var(--celeste)' : 'transparent',
+                          color: blocked ? 'var(--off)' : isSelected ? '#fff' : 'var(--text)',
+                          borderColor: blocked ? 'var(--border-soft)' : isSelected ? 'var(--celeste)' : 'var(--border)',
+                          textDecoration: blocked ? 'line-through' : 'none',
+                        }}
                       >
-                        {isSelected && (
-                          <span className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full flex items-center justify-center"
-                            style={{background:'var(--text)'}}>
-                            <svg className="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}
-                              style={{color:'var(--bg)'}}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          </span>
-                        )}
                         {time}
                       </button>
                     )
@@ -202,7 +223,10 @@ export default function StepCalendar({ location, selectedDate, selectedTime, onS
               )}
             </>
           ) : (
-            <div className="h-full flex items-center justify-center text-sm text-center py-12" style={{color:'var(--text-faint)'}}>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              minHeight: 80, fontSize: 13, color: 'var(--text-mut)', fontWeight: 600,
+            }}>
               Seleccioná un día para ver los horarios disponibles
             </div>
           )}

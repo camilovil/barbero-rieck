@@ -1,46 +1,65 @@
 'use client'
 
-const STEPS = ['Ubicación', 'Servicio', 'Horario', 'Datos', 'Resumen']
+const STEPS = ['Lugar', 'Servicio', 'Horario', 'Datos', 'Resumen']
 
 export default function StepIndicator({ current }: { current: number }) {
   return (
-    <div className="flex items-center justify-center gap-0 mb-8">
+    <div
+      style={{
+        display: 'flex', alignItems: 'flex-start',
+        padding: '14px 4px 10px',
+        borderBottom: '2px solid var(--border-soft)',
+        marginBottom: '20px',
+      }}
+    >
       {STEPS.map((label, i) => {
         const idx = i + 1
         const isCompleted = idx < current
         const isActive = idx === current
 
         return (
-          <div key={label} className="flex items-center">
-            <div className="flex flex-col items-center">
+          <div key={label} style={{ display: 'flex', alignItems: 'flex-start', flex: idx < STEPS.length ? 1 : 'none' }}>
+            {/* Step dot + label */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
               <div
-                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all"
-                style={
-                  isCompleted
-                    ? { background: 'var(--text)', color: 'var(--bg)' }
+                style={{
+                  width: 30, height: 30, borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'var(--font-anton, "Anton"), sans-serif',
+                  fontSize: 14, transition: 'all .25s',
+                  ...(isCompleted
+                    ? { background: 'var(--ink)', borderColor: 'var(--ink)', color: '#fff', border: '2.5px solid var(--ink)' }
                     : isActive
-                    ? { background: 'var(--bg-active)', color: 'var(--text)', boxShadow: '0 0 0 2px var(--border-2)' }
-                    : { background: 'var(--bg-active)', color: 'var(--text-faint)', opacity: 0.5 }
-                }
+                    ? { background: 'var(--celeste)', borderColor: 'var(--celeste)', color: '#fff', border: '2.5px solid var(--celeste)', boxShadow: '0 4px 12px rgba(63,134,196,.4)' }
+                    : { background: 'var(--surface)', borderColor: 'var(--off)', color: 'var(--off)', border: '2.5px solid var(--off)' }
+                  ),
+                }}
               >
                 {isCompleted ? (
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
                   </svg>
                 ) : idx}
               </div>
               <span
-                className="mt-1 text-[10px] tracking-wide uppercase hidden sm:block transition-all"
-                style={{ color: isActive ? 'var(--text)' : 'var(--text-faint)' }}
+                style={{
+                  fontSize: '8.5px', fontWeight: 800, letterSpacing: '.4px',
+                  textTransform: 'uppercase', textAlign: 'center',
+                  color: isActive ? 'var(--celeste-deep)' : isCompleted ? 'var(--ink)' : 'var(--text-mut)',
+                }}
               >
                 {label}
               </span>
             </div>
-            {i < STEPS.length - 1 && (
-              <div
-                className="w-8 sm:w-12 h-px mx-1 mb-4 sm:mb-5 transition-all"
-                style={{ background: isCompleted ? 'var(--text-muted)' : 'var(--border-2)' }}
-              />
+
+            {/* Connector */}
+            {idx < STEPS.length && (
+              <div style={{
+                flex: 1, height: 3, margin: '13px 2px 0',
+                borderRadius: 2,
+                background: isCompleted ? 'var(--ink)' : 'var(--border-soft)',
+                transition: 'background .25s',
+              }} />
             )}
           </div>
         )

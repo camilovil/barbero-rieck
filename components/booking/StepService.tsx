@@ -3,6 +3,12 @@
 import { SERVICES } from '@/lib/constants'
 import type { Location, Service } from '@/types/booking'
 
+/* Número de camiseta asignado a cada servicio */
+const JERSEY_NO: Record<string, string> = {
+  'Corte':       '7',
+  'Corte y barba': '10',
+}
+
 interface Props {
   location: Location
   selected: Service | null
@@ -13,40 +19,47 @@ export default function StepService({ location, selected, onSelect }: Props) {
   const services = SERVICES[location]
 
   return (
-    <div>
-      <h2 className="font-playfair text-2xl sm:text-3xl mb-2" style={{color:'var(--text)'}}>¿Qué servicio querés?</h2>
-      <p className="text-sm mb-8" style={{color:'var(--text-muted)'}}>
-        {location === 'domicilio' ? 'Precios a domicilio' : 'Precios en el local'}
+    <div className="step-enter">
+      <div style={{ fontFamily: 'var(--font-anton, "Anton"), sans-serif', fontSize: 25, letterSpacing: '.3px', margin: '0 0 3px', color: 'var(--text)' }}>
+        ¿Qué te hacés?
+      </div>
+      <p style={{ fontSize: 12.5, color: 'var(--text-mut)', fontWeight: 600, margin: '0 0 18px' }}>
+        {location === 'domicilio' ? 'A domicilio — incluye traslado de Santiago' : 'Elegí tu jugada'}
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 18 }}>
         {services.map((svc) => {
           const isSelected = selected?.name === svc.name && selected?.price === svc.price
+          const jerseyNo = JERSEY_NO[svc.name] ?? '★'
+          const priceLabel = svc.priceLabel ?? `$${svc.price.toLocaleString('es-AR')}`
+
           return (
-            <button
+            <div
               key={svc.name}
+              className={`opt-card${isSelected ? ' selected' : ''}`}
               onClick={() => onSelect(svc)}
-              className="relative text-left p-5 rounded-xl border transition-all duration-200 cursor-pointer"
-              style={{
-                background: isSelected ? 'var(--bg-active)' : 'var(--bg-card)',
-                borderColor: isSelected ? 'var(--text-muted)' : 'var(--border-2)',
-              }}
+              style={{ padding: '16px 8px 14px', textAlign: 'center' }}
             >
-              {isSelected && (
-                <span className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center"
-                  style={{background:'var(--text)'}}>
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}
-                    style={{color:'var(--bg)'}}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                </span>
-              )}
-              <p className="font-playfair text-xl mb-3" style={{color:'var(--text)'}}>{svc.name}</p>
-              <p className="text-2xl font-semibold" style={{color:'var(--text)'}}>
-                {svc.priceLabel ?? `$${svc.price.toLocaleString('es-AR')}`}
-              </p>
-              <p className="text-xs mt-1" style={{color:'var(--text-faint)'}}>{svc.duration} min</p>
-            </button>
+              {/* Número de camiseta */}
+              <div style={{
+                fontFamily: 'var(--font-anton, "Anton"), sans-serif',
+                fontSize: 30, lineHeight: .9,
+                color: isSelected ? 'var(--gold)' : 'var(--celeste)',
+                WebkitTextStroke: `1.5px var(--stroke)`,
+                marginBottom: 7,
+                transition: 'color .18s',
+              }}>
+                {jerseyNo}
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)' }}>{svc.name}</div>
+              <div style={{
+                fontFamily: 'var(--font-anton, "Anton"), sans-serif',
+                fontSize: 19, color: 'var(--text)', margin: '4px 0 2px',
+              }}>{priceLabel}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-mut)', fontWeight: 800, letterSpacing: '.5px' }}>
+                {svc.duration} MIN
+              </div>
+            </div>
           )
         })}
       </div>

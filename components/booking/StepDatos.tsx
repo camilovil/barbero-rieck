@@ -15,8 +15,12 @@ interface Props {
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs uppercase tracking-widest mb-2" style={{color:'var(--text-faint)'}}>
-        {label} {required && <span style={{color:'var(--text-muted)'}}>*</span>}
+      <label style={{
+        display: 'block', fontSize: 10, fontWeight: 800,
+        textTransform: 'uppercase', letterSpacing: '.7px',
+        color: 'var(--text-mut)', marginBottom: 6,
+      }}>
+        {label} {required && <span style={{ color: 'var(--celeste-deep)' }}>*</span>}
       </label>
       {children}
     </div>
@@ -24,56 +28,53 @@ function Field({ label, required, children }: { label: string; required?: boolea
 }
 
 export default function StepDatos({ location, nombre, email, whatsapp, direccion, nota, onChange }: Props) {
-  const inputStyle = {
-    background: 'var(--bg-card)',
-    borderColor: 'var(--border-2)',
-    color: 'var(--text)',
-  }
-
-  const inputClass = `
-    w-full rounded-lg px-4 py-3 text-sm border
-    focus:outline-none transition-all
-  `
-
   return (
-    <div>
-      <h2 className="font-playfair text-2xl sm:text-3xl mb-2" style={{color:'var(--text)'}}>Tus datos</h2>
-      <p className="text-sm mb-8" style={{color:'var(--text-muted)'}}>Te mandamos confirmación por mail y Santiago te contacta por WhatsApp</p>
+    <div className="step-enter">
+      <div style={{ fontFamily: 'var(--font-anton, "Anton"), sans-serif', fontSize: 25, letterSpacing: '.3px', margin: '0 0 3px', color: 'var(--text)' }}>
+        Tus datos
+      </div>
+      <p style={{ fontSize: 12.5, color: 'var(--text-mut)', fontWeight: 600, margin: '0 0 18px' }}>
+        Te llega la confirmación por mail y WhatsApp
+      </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-xl">
-        <Field label="Nombre" required>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, maxWidth: 520 }}>
+        <Field label="Nombre y apellido" required>
           <input type="text" value={nombre} onChange={e => onChange('nombre', e.target.value)}
-            placeholder="Tu nombre" className={inputClass} style={inputStyle} />
+            placeholder="Ej: Lucas García" className="w-input" />
         </Field>
 
         <Field label="Email" required>
           <input type="email" value={email} onChange={e => onChange('email', e.target.value)}
-            placeholder="tu@mail.com" className={inputClass} style={inputStyle} />
+            placeholder="tu@mail.com" className="w-input" />
         </Field>
 
         <Field label="WhatsApp" required>
           <input type="tel" value={whatsapp} onChange={e => onChange('whatsapp', e.target.value)}
-            placeholder="+54 9 11 XXXX XXXX" className={inputClass} style={inputStyle} />
+            placeholder="+54 9 11 XXXX XXXX" className="w-input" />
         </Field>
 
         {location === 'domicilio' && (
-          <div className="sm:col-span-2">
+          <div style={{ gridColumn: '1 / -1' }}>
             <Field label="Dirección completa" required>
               <input type="text" value={direccion} onChange={e => onChange('direccion', e.target.value)}
-                placeholder="Calle y número, piso/depto (si aplica), localidad, ciudad, CP"
-                className={inputClass} style={inputStyle} />
-              <p className="mt-1.5 text-xs" style={{color:'var(--text-faint)'}}>
+                placeholder="Calle y número, piso/depto, localidad, CP"
+                className="w-input" />
+              <p style={{ marginTop: 6, fontSize: 11, color: 'var(--text-mut)', fontWeight: 600 }}>
                 Ej: Av. Santa Fe 1234, 3°B, Palermo, CABA, C1059
               </p>
             </Field>
           </div>
         )}
 
-        <div className="sm:col-span-2">
+        <div style={{ gridColumn: '1 / -1' }}>
           <Field label="Nota opcional">
-            <textarea value={nota} onChange={e => onChange('nota', e.target.value)}
+            <textarea
+              value={nota} onChange={e => onChange('nota', e.target.value)}
               placeholder="Algún detalle extra, preferencia de estilo..."
-              rows={3} className={`${inputClass} resize-none`} style={inputStyle} />
+              rows={3}
+              className="w-input"
+              style={{ resize: 'none', minHeight: 74 }}
+            />
           </Field>
         </div>
       </div>

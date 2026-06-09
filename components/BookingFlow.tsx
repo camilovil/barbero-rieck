@@ -34,18 +34,7 @@ function buildInitialState(initialLocation: Location | null, initialServicio: st
     }
   }
 
-  return {
-    step,
-    location,
-    email: '',
-    service,
-    date: null,
-    time: null,
-    nombre: '',
-    whatsapp: '',
-    direccion: '',
-    nota: '',
-  }
+  return { step, location, email: '', service, date: null, time: null, nombre: '', whatsapp: '', direccion: '', nota: '' }
 }
 
 function canAdvance(state: BookingState): boolean {
@@ -113,16 +102,13 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
     <div>
       <StepIndicator current={state.step} />
 
-      <div className="min-h-[340px]">
+      <div style={{ minHeight: 340 }}>
         {state.step === 1 && (
           <StepLocation
             selected={state.location}
-            onSelect={(loc: Location) => {
-              update({ location: loc, service: null })
-            }}
+            onSelect={(loc: Location) => update({ location: loc, service: null })}
           />
         )}
-
         {state.step === 2 && state.location && (
           <StepService
             location={state.location}
@@ -130,7 +116,6 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
             onSelect={(s: Service) => update({ service: s })}
           />
         )}
-
         {state.step === 3 && state.location && (
           <StepCalendar
             location={state.location}
@@ -139,7 +124,6 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
             onSelect={(date, time) => update({ date, time })}
           />
         )}
-
         {state.step === 4 && state.location && (
           <StepDatos
             location={state.location}
@@ -151,7 +135,6 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
             onChange={(field, value) => update({ [field]: value })}
           />
         )}
-
         {state.step === 5 && (
           <StepResumen
             booking={state}
@@ -161,36 +144,38 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
         )}
       </div>
 
-      {/* Navigation */}
+      {/* Footer de navegación — oculto en paso 5 (tiene su propio CTA) */}
       {state.step < 5 && (
-        <div className="flex items-center justify-between mt-10 pt-6 border-t" style={{borderColor:'var(--border)'}}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          marginTop: 24, paddingTop: 14,
+          borderTop: '2px solid var(--border-soft)',
+        }}>
+          {/* Atrás */}
           <button
             onClick={goBack}
-            style={state.step === 1 ? {} : {color:'var(--text-muted)', borderColor:'var(--border-2)'}}
-            className={`
-              flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all hover:opacity-100
-              ${state.step === 1 ? 'invisible' : ''}
-            `}
+            style={{
+              visibility: state.step === 1 ? 'hidden' : 'visible',
+              background: 'none', border: 'none',
+              color: 'var(--text-mut)', fontWeight: 800, fontSize: 12.5,
+              fontFamily: 'inherit', letterSpacing: '.3px',
+              cursor: 'pointer', padding: '6px 4px', transition: 'color .15s',
+            }}
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
-            </svg>
-            Volver
+            ← Atrás
           </button>
 
+          {/* Continuar (pill CTA) */}
           <button
             onClick={goNext}
             disabled={!ready}
-            className={`
-              flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-semibold tracking-wide uppercase transition-all
-              ${ready ? 'active:scale-[0.99]' : 'cursor-not-allowed opacity-30'}
-            `}
-            style={ready ? {background:'var(--text)', color:'var(--bg)'} : {background:'var(--bg-active)', color:'var(--text-xfaint)'}}
+            className={`btn-cta${state.step === 4 ? ' final' : ''}`}
+            style={{ marginLeft: 'auto' }}
           >
-            {state.step === 4 ? 'Ver resumen' : 'Continuar'}
+            {state.step === 4 ? 'VER RESUMEN' : 'CONTINUAR'}
             {ready && (
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 5l7 7-7 7"/>
               </svg>
             )}
           </button>

@@ -1,68 +1,221 @@
 @import "tailwindcss";
 
-@theme inline {
-  --color-background: #1a1a1a;
-  --color-foreground: #f5f0e8;
-  --font-sans: var(--font-dm-sans), sans-serif;
-  --font-playfair: var(--font-playfair), serif;
-}
+/* =============================================
+   FUENTES — importadas via next/font en layout.tsx
+   ============================================= */
 
-/* ── Variables de tema ── */
+/* =============================================
+   TOKENS DE MARCA (invariantes entre temas)
+   ============================================= */
 :root {
-  --bg:          #1a1a1a;
-  --bg-2:        #1e1e1e;
-  --bg-card:     #222222;
-  --bg-hover:    #272727;
-  --bg-active:   #2e2e2e;
-  --border:      #2e2e2e;
-  --border-2:    #3a3a3a;
-  --text:        #f5f0e8;
-  --text-muted:  rgba(245,240,232,0.5);
-  --text-faint:  rgba(245,240,232,0.3);
-  --text-xfaint: rgba(245,240,232,0.2);
+  --celeste:      #75AADB;
+  --celeste-deep: #3F86C4;
+  --sky:          #A9CFEC;
+  --ink:          #0B1F47;
+  --ink-soft:     #33476F;
+  --gold:         #F2B63C;
+  --gold-deep:    #D6991C;
+
+  /* Superficies — tema CLARO (camiseta titular) */
+  --app-bg:      #F5F8FC;
+  --surface:     #FFFFFF;
+  --border:      #DDE6F1;
+  --border-soft: #E7EEF7;
+  --text:        #0B1F47;
+  --text-mut:    #7D8AA3;
+  --chip-bg:     #EEF6FD;
+  --hover:       #EEF6FD;
+  --input-bg:    #FFFFFF;
+  --btn-bg:      #0B1F47;
+  --stroke:      #0B1F47;
+  --off:         #C3CCDB;
+
+  /* Compatibilidad con componentes que aún usan las vars viejas */
+  --bg:          #F5F8FC;
+  --bg-2:        #FFFFFF;
+  --bg-card:     #FFFFFF;
+  --bg-hover:    #EEF6FD;
+  --bg-active:   #DDE6F1;
+  --border-2:    #DDE6F1;
+  --text-muted:  #7D8AA3;
+  --text-faint:  #A8B5C8;
+  --text-xfaint: #C3CCDB;
+
+  --font-sans: var(--font-barlow), system-ui, sans-serif;
+  --font-display: var(--font-anton), sans-serif;
+  --font-marker: var(--font-permanent-marker), cursive;
 }
 
-html.light {
-  --bg:          #f0ebe1;
-  --bg-2:        #e8e3d9;
-  --bg-card:     #dfd9ce;
-  --bg-hover:    #d9d3c8;
-  --bg-active:   #cfc9be;
-  --border:      #c8c2b8;
-  --border-2:    #b8b2a8;
-  --text:        #1a1a1a;
-  --text-muted:  rgba(26,26,26,0.55);
-  --text-faint:  rgba(26,26,26,0.35);
-  --text-xfaint: rgba(26,26,26,0.2);
+/* Tema OSCURO (camiseta suplente / nocturno) */
+html.dark {
+  --app-bg:      #0A1730;
+  --surface:     #11233F;
+  --border:      #284468;
+  --border-soft: #1D3457;
+  --text:        #EAF2FB;
+  --text-mut:    #90A6C8;
+  --chip-bg:     #163050;
+  --hover:       #163050;
+  --input-bg:    #0D1D39;
+  --btn-bg:      #3F86C4;
+  --stroke:      #EAF2FB;
+  --off:         #43597C;
+
+  /* Compatibilidad con vars viejas */
+  --bg:          #0A1730;
+  --bg-2:        #11233F;
+  --bg-card:     #11233F;
+  --bg-hover:    #163050;
+  --bg-active:   #1C3C61;
+  --border-2:    #284468;
+  --text-muted:  #90A6C8;
+  --text-faint:  #6B839E;
+  --text-xfaint: #43597C;
 }
+
+/* =============================================
+   BASE
+   ============================================= */
+*, *::before, *::after { box-sizing: border-box; }
+* { -webkit-tap-highlight-color: transparent; }
+
+html { height: 100%; }
 
 body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-dm-sans), sans-serif;
+  min-height: 100%;
+  font-family: var(--font-barlow, "Barlow"), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  color: var(--text);
   transition: background 0.25s, color 0.25s;
+}
+
+/* Fondo de jersey (camiseta titular) */
+body {
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,.04) 0 2px, transparent 2px 5px),
+    linear-gradient(105deg, var(--celeste) 0 33%, #EAF3FB 33% 67%, var(--celeste) 67% 100%);
+}
+
+/* Fondo de camiseta suplente (oscuro) */
+html.dark body {
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,.03) 0 2px, transparent 2px 5px),
+    linear-gradient(105deg, #0c1c33 0 33%, #15293f 33% 67%, #0c1c33 67% 100%);
+}
+
+/* Puntitos de estrellas sobre el fondo */
+body::before {
+  content: "";
+  position: fixed; inset: 0; pointer-events: none; opacity: .12;
+  background-image:
+    radial-gradient(circle at 12% 18%, #fff 0 2px, transparent 3px),
+    radial-gradient(circle at 80% 12%, #fff 0 2px, transparent 3px),
+    radial-gradient(circle at 67% 78%, #fff 0 2px, transparent 3px),
+    radial-gradient(circle at 22% 82%, #fff 0 2px, transparent 3px);
+  z-index: 0;
 }
 
 button:not(:disabled) { cursor: pointer; }
 button:disabled { cursor: not-allowed; }
 
-/* Mobile tap highlight off */
-* { -webkit-tap-highlight-color: transparent; }
+/* =============================================
+   TIPOGRAFÍA UTILITARIA
+   ============================================= */
+.font-anton   { font-family: var(--font-anton, "Anton"), sans-serif; }
+.font-marker  { font-family: var(--font-permanent-marker, "Permanent Marker"), cursive; }
+.font-barlow  { font-family: var(--font-barlow, "Barlow"), sans-serif; }
+.font-playfair { font-family: var(--font-playfair, "Barlow"), sans-serif; }
 
-.font-playfair {
-  font-family: var(--font-playfair), serif;
+/* =============================================
+   CLASES UTILITARIAS TEMÁTICAS (backward compat)
+   ============================================= */
+.t-bg       { background: var(--app-bg); }
+.t-bg-2     { background: var(--surface); }
+.t-bg-card  { background: var(--surface); }
+.t-bg-hover:hover { background: var(--hover); }
+.t-bg-active { background: var(--border-soft); }
+.t-border   { border-color: var(--border); }
+.t-border-2 { border-color: var(--border-soft); }
+.t-text     { color: var(--text); }
+.t-text-muted  { color: var(--text-mut); }
+.t-text-faint  { color: var(--text-faint); }
+.t-text-xfaint { color: var(--off); }
+
+/* =============================================
+   ANIMACIÓN DE ENTRADA DE PASO
+   ============================================= */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(7px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.step-enter { animation: rise .3s ease both; }
+@media (prefers-reduced-motion: reduce) { .step-enter { animation: none; } }
+
+/* =============================================
+   COMPONENTES COMPARTIDOS
+   ============================================= */
+
+/* Card de opción (lugar / servicio) */
+.opt-card {
+  border: 2.5px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color .18s, background .18s, box-shadow .18s;
+  position: relative;
+}
+.opt-card:hover { border-color: var(--celeste); }
+.opt-card.selected {
+  border-color: var(--celeste);
+  background: linear-gradient(180deg, var(--surface), var(--chip-bg));
+  box-shadow: 0 8px 20px rgba(63,134,196,.18);
 }
 
-/* ── Clases utilitarias temáticas ── */
-.t-bg       { background: var(--bg); }
-.t-bg-2     { background: var(--bg-2); }
-.t-bg-card  { background: var(--bg-card); }
-.t-bg-hover:hover { background: var(--bg-hover); }
-.t-bg-active { background: var(--bg-active); }
-.t-border   { border-color: var(--border); }
-.t-border-2 { border-color: var(--border-2); }
-.t-text     { color: var(--text); }
-.t-text-muted  { color: var(--text-muted); }
-.t-text-faint  { color: var(--text-faint); }
-.t-text-xfaint { color: var(--text-xfaint); }
+/* Check badge en cards */
+.opt-card.selected::after {
+  content: "";
+  position: absolute; top: 10px; right: 10px; width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--celeste) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/12px no-repeat;
+}
+
+/* Botón CTA pill */
+.btn-cta {
+  border-radius: 30px;
+  background: var(--btn-bg);
+  color: #fff;
+  font-family: var(--font-anton, "Anton"), sans-serif;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  border: none;
+  padding: 13px 26px;
+  cursor: pointer;
+  transition: transform .18s, box-shadow .18s, opacity .15s;
+  display: flex; align-items: center; gap: 8px;
+}
+.btn-cta:hover:not(:disabled) { transform: translateY(-1px); }
+.btn-cta:disabled { opacity: .3; cursor: not-allowed; }
+.btn-cta.final {
+  background: linear-gradient(160deg, var(--celeste), var(--celeste-deep));
+  box-shadow: 0 8px 20px rgba(63,134,196,.45);
+}
+
+/* Input / textarea */
+.w-input {
+  width: 100%;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 13px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--input-bg);
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.w-input:focus {
+  border-color: var(--celeste);
+  box-shadow: 0 0 0 3px rgba(117,170,219,.2);
+}

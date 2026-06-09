@@ -2,20 +2,27 @@
 
 import type { Location } from '@/types/booking'
 
-const OPTIONS: { value: Location; label: string; sublabel: string; img: string }[] = [
-  {
-    value: 'local',
-    label: 'Estudio de Santiago',
-    sublabel: 'Congreso 1865, Belgrano',
-    img: '/sillon-transparente.png',
-  },
-  {
-    value: 'domicilio',
-    label: 'A domicilio',
-    sublabel: 'Santiago va hasta vos',
-    img: '/pin-tijera-transparente.png',
-  },
+const OPTIONS: { value: Location; label: string; sublabel: string }[] = [
+  { value: 'local',     label: 'Barbería Rieck', sublabel: 'Congreso 1865, Belgrano' },
+  { value: 'domicilio', label: 'A domicilio',    sublabel: 'Santiago va hasta vos' },
 ]
+
+/* SVG inline para cada opción */
+function IconShop() {
+  return (
+    <svg viewBox="0 0 24 24" width={26} height={26} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l1-5h16l1 5"/><path d="M4 9v11h16V9"/><path d="M9 20v-6h6v6"/>
+    </svg>
+  )
+}
+function IconScooter() {
+  return (
+    <svg viewBox="0 0 24 24" width={26} height={26} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="6" cy="17" r="2.5"/><circle cx="17" cy="17" r="2.5"/>
+      <path d="M8.5 17h6M17 14.5V9h-3"/><path d="M5 13l1.5-5H11l2 4"/>
+    </svg>
+  )
+}
 
 interface Props {
   selected: Location | null
@@ -24,41 +31,40 @@ interface Props {
 
 export default function StepLocation({ selected, onSelect }: Props) {
   return (
-    <div>
-      <h2 className="font-playfair text-2xl sm:text-3xl mb-2" style={{color:'var(--text)'}}>¿Dónde querés el turno?</h2>
-      <p className="text-sm mb-8" style={{color:'var(--text-muted)'}}>Elegí la modalidad que más te convenga</p>
+    <div className="step-enter">
+      <div style={{ fontFamily: 'var(--font-anton, "Anton"), sans-serif', fontSize: 25, letterSpacing: '.3px', margin: '0 0 3px', color: 'var(--text)' }}>
+        ¿Dónde te atendés?
+      </div>
+      <p style={{ fontSize: 12.5, color: 'var(--text-mut)', fontWeight: 600, margin: '0 0 18px' }}>
+        Elegí la modalidad que más te convenga
+      </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18 }}>
         {OPTIONS.map((opt) => {
           const isSelected = selected === opt.value
           return (
-            <button
+            <div
               key={opt.value}
+              className={`opt-card${isSelected ? ' selected' : ''}`}
               onClick={() => onSelect(opt.value)}
-              className="relative text-left rounded-xl border transition-all duration-200 cursor-pointer overflow-hidden"
-              style={{
-                background: isSelected ? 'var(--bg-active)' : 'var(--bg-card)',
-                borderColor: isSelected ? 'var(--text-muted)' : 'var(--border-2)',
-              }}
+              style={{ padding: '15px 14px' }}
             >
-              {isSelected && (
-                <span className="absolute top-3 right-3 z-10 w-5 h-5 rounded-full flex items-center justify-center"
-                  style={{background:'var(--text)'}}>
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}
-                    style={{color:'var(--bg)'}}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                </span>
-              )}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <div className="w-full h-36 flex items-center justify-center p-4">
-                <img src={opt.img} alt={opt.label} className="h-full w-full object-contain" />
+              {/* Chip de ícono */}
+              <div style={{
+                width: 46, height: 46, borderRadius: 13,
+                background: 'var(--chip-bg)', border: '2px solid var(--celeste)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                marginBottom: 11, color: 'var(--celeste-deep)',
+              }}>
+                {opt.value === 'local' ? <IconShop /> : <IconScooter />}
               </div>
-              <div className="px-5 pb-5">
-                <p className="font-semibold text-lg leading-tight" style={{color:'var(--text)'}}>{opt.label}</p>
-                <p className="text-sm mt-1" style={{color:'var(--text-muted)'}}>{opt.sublabel}</p>
-              </div>
-            </button>
+              <b style={{ display: 'block', fontSize: 15, color: 'var(--text)', marginBottom: 2, fontWeight: 800 }}>
+                {opt.label}
+              </b>
+              <span style={{ fontSize: 11.5, color: 'var(--text-mut)', fontWeight: 600, lineHeight: 1.3 }}>
+                {opt.sublabel}
+              </span>
+            </div>
           )
         })}
       </div>

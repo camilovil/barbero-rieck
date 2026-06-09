@@ -1,18 +1,18 @@
 import type { Metadata, Viewport } from 'next'
-import { Playfair_Display, DM_Sans, Permanent_Marker } from 'next/font/google'
+import { Anton, Barlow, Permanent_Marker } from 'next/font/google'
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration'
 import './globals.css'
 
-const playfair = Playfair_Display({
+const anton = Anton({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-playfair',
+  weight: ['400'],
+  variable: '--font-anton',
 })
 
-const dmSans = DM_Sans({
+const barlow = Barlow({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600'],
-  variable: '--font-dm-sans',
+  weight: ['400', '500', '600', '700', '800', '900'],
+  variable: '--font-barlow',
 })
 
 const permanentMarker = Permanent_Marker({
@@ -22,33 +22,31 @@ const permanentMarker = Permanent_Marker({
 })
 
 export const metadata: Metadata = {
-  title: 'Barbería Rieck — Turnos online',
+  title: 'Santi Barber · Turnos online · Edición Mundial 2026',
   description: 'Reservá tu turno con Santiago Rieck. Corte, barba y combo. En el local o a domicilio.',
   appleWebApp: {
     capable: true,
-    title: 'Barbería Rieck',
+    title: 'Santi Barber',
     statusBarStyle: 'black-translucent',
   },
 }
 
 export const viewport: Viewport = {
-  themeColor: '#1a1a1a',
+  themeColor: '#3F86C4',
   width: 'device-width',
   initialScale: 1,
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`h-full ${playfair.variable} ${dmSans.variable} ${permanentMarker.variable}`}>
+    <html lang="es" className={`h-full ${anton.variable} ${barlow.variable} ${permanentMarker.variable}`}>
       <head>
-        {/* PWA — iOS */}
         <meta name="mobile-web-app-capable" content="yes" />
         <link rel="apple-touch-icon" href="/apple-icon.png" />
-        {/* Genera los iconos 192/512 para el manifest */}
         <link rel="icon" sizes="192x192" href="/icon-192.png" />
         <link rel="icon" sizes="512x512" href="/icon-512.png" />
       </head>
-      <body className="min-h-full flex flex-col bg-[#1a1a1a] antialiased">
+      <body className="min-h-full flex flex-col antialiased">
         {children}
         <ServiceWorkerRegistration />
       </body>
