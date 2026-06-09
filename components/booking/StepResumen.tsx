@@ -5,6 +5,7 @@ import type { BookingState } from '@/types/booking'
 interface Props {
   booking: BookingState
   onConfirm: () => void
+  onBack: () => void
   loading: boolean
 }
 
@@ -33,7 +34,7 @@ function Row({ label, value, isTot }: { label: string; value: string; isTot?: bo
   )
 }
 
-export default function StepResumen({ booking, onConfirm, loading }: Props) {
+export default function StepResumen({ booking, onConfirm, onBack, loading }: Props) {
   const dateStr = booking.date
     ? booking.date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
     : '—'
@@ -77,22 +78,37 @@ export default function StepResumen({ booking, onConfirm, loading }: Props) {
         <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="var(--gold-deep)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
           <polygon points="12 2 15.1 8.3 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 8.9 8.3 12 2"/>
         </svg>
-        <span>Confirmación por mail y WhatsApp. Podés cancelar hasta 2 hs antes.</span>
+        <span>Confirmación por mail y WhatsApp. Podés cancelar hasta 24 hs antes.</span>
       </div>
 
-      {/* CTA */}
-      <button
-        onClick={onConfirm}
-        disabled={loading}
-        className="btn-cta final"
-        style={{ width: '100%', justifyContent: 'center', padding: '14px 26px' }}
-      >
-        <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-          <circle cx="12" cy="12" r="10"/>
-          <path d="M12 7l3.5 2.5-1.3 4h-4.4l-1.3-4z" fill="currentColor" stroke="none"/>
-        </svg>
-        {loading ? 'CONFIRMANDO...' : 'CONFIRMAR TURNO'}
-      </button>
+      {/* Nav */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button
+          onClick={onBack}
+          disabled={loading}
+          style={{
+            background: 'none', border: 'none',
+            color: 'var(--text-mut)', fontWeight: 800, fontSize: 12.5,
+            fontFamily: 'inherit', letterSpacing: '.3px',
+            cursor: 'pointer', padding: '6px 4px', transition: 'color .15s',
+          }}
+        >
+          ← Atrás
+        </button>
+
+        <button
+          onClick={onConfirm}
+          disabled={loading}
+          className="btn-cta final"
+          style={{ marginLeft: 'auto', justifyContent: 'center', padding: '14px 26px' }}
+        >
+          <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 7l3.5 2.5-1.3 4h-4.4l-1.3-4z" fill="currentColor" stroke="none"/>
+          </svg>
+          {loading ? 'CONFIRMANDO...' : 'CONFIRMAR TURNO'}
+        </button>
+      </div>
     </div>
   )
 }

@@ -139,6 +139,7 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
           <StepResumen
             booking={state}
             onConfirm={handleConfirm}
+            onBack={goBack}
             loading={loading}
           />
         )}

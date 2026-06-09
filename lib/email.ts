@@ -209,7 +209,7 @@ function clientHtml(b: BookingState, cancelLink?: string, modLink?: string, even
           <td style="background:#EEF6FD;border-radius:10px;padding:13px 16px">
             <p style="margin:0;font-family:Arial,sans-serif;font-size:11.5px;color:#7D8AA3;line-height:1.5">
               <span style="color:#D6991C">&#9733;</span>
-              Pod&eacute;s cancelar o reprogramar sin costo hasta <strong style="color:#0B1F47">2 hs antes</strong>.
+              Pod&eacute;s cancelar o reprogramar sin costo hasta <strong style="color:#0B1F47">24 hs antes</strong>.
               C&oacute;digo de turno: <strong style="color:#0B1F47">${code}</strong>.
             </p>
           </td>
