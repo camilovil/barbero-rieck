@@ -42,8 +42,11 @@ export default function AdminDashboard() {
   const [cancelling, setCancelling] = useState<string | null>(null)
   const [cancelTarget, setCancelTarget] = useState<BookingEvent | null>(null)
   const [cancelReason, setCancelReason] = useState('')
-  const [filter, setFilter] = useState<'upcoming' | 'today' | 'week'>('upcoming')
+  const [filter, setFilter] = useState<'upcoming' | 'today' | 'week' | 'history'>('upcoming')
   const [search, setSearch] = useState('')
+  const [history, setHistory] = useState<BookingEvent[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [historyLoaded, setHistoryLoaded] = useState(false)
 
   // Modificar turno
   const [editing, setEditing] = useState<BookingEvent | null>(null)
@@ -144,6 +147,18 @@ export default function AdminDashboard() {
       .finally(() => setLoadingEditSlots(false))
   }
 
+  function handleFilterChange(f: 'upcoming' | 'today' | 'week' | 'history') {
+    setFilter(f)
+    if (f === 'history' && !historyLoaded) {
+      setLoadingHistory(true)
+      fetch('/api/admin/bookings/history')
+        .then(r => r.json())
+        .then(data => { setHistory(data.events ?? []); setHistoryLoaded(true) })
+        .catch(() => {})
+        .finally(() => setLoadingHistory(false))
+    }
+  }
+
   function openEdit(ev: BookingEvent) {
     const d = new Date(ev.start)
     const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
@@ -207,15 +222,15 @@ export default function AdminDashboard() {
 
   const weekDays = getWeekDays()
 
-  const filtered = (filter === 'today'
+  const filteredBase = filter === 'history'
+    ? history
+    : filter === 'today'
     ? events.filter(e => new Date(e.start).toDateString() === new Date().toDateString())
     : filter === 'week'
-    ? events.filter(e => {
-        const d = new Date(e.start)
-        return d >= weekDays[0] && d <= weekDays[6]
-      })
+    ? events.filter(e => { const d = new Date(e.start); return d >= weekDays[0] && d <= weekDays[6] })
     : events
-  ).filter(e =>
+
+  const filtered = filteredBase.filter(e =>
     !search.trim() ||
     e.nombre.toLowerCase().includes(search.toLowerCase()) ||
     e.servicio.toLowerCase().includes(search.toLowerCase()) ||
@@ -309,16 +324,16 @@ export default function AdminDashboard() {
 
         {/* Filtros */}
         <div className="flex items-center gap-2 mb-6 flex-wrap">
-          {(['upcoming', 'today', 'week'] as const).map(f => (
+          {(['upcoming', 'today', 'week', 'history'] as const).map(f => (
             <button
               key={f}
-              onClick={() => setFilter(f)}
+              onClick={() => handleFilterChange(f)}
               className="px-4 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wide transition-all"
               style={filter === f
                 ? {background:'var(--celeste-deep)', color:'#fff'}
                 : {border:'1px solid var(--border)', color:'var(--text-mut)'}}
             >
-              {f === 'today' ? 'Hoy' : f === 'week' ? 'Semana' : 'Todos'}
+              {f === 'today' ? 'Hoy' : f === 'week' ? 'Semana' : f === 'history' ? 'Historial' : 'Todos'}
             </button>
           ))}
           <button onClick={fetchEvents} className="ml-auto text-xs transition-colors" style={{color:'var(--celeste)'}}>
@@ -363,15 +378,18 @@ export default function AdminDashboard() {
         )}
 
         {/* Lista */}
-        {loading ? (
+        {(filter === 'history' ? loadingHistory : loading) ? (
           <div className="space-y-3">
             {[1,2,3].map(i => (
               <div key={i} className="h-24 rounded-xl animate-pulse border" style={{background:'var(--surface)', borderColor:'var(--border)'}} />
             ))}
           </div>
         ) : grouped.length === 0 ? (
-          <div className="text-center py-16 text-sm" style={{color:'var(--text-faint)'}}>
-            {filter === 'today' ? 'No hay turnos para hoy' : filter === 'week' ? 'No hay turnos esta semana' : 'No hay turnos próximos'}
+          <div className="text-center py-16 text-sm" style={{color:'var(--text-mut)'}}>
+            {filter === 'today' ? 'No hay turnos para hoy'
+              : filter === 'week' ? 'No hay turnos esta semana'
+              : filter === 'history' ? 'No hay turnos en los últimos 60 días'
+              : 'No hay turnos próximos'}
           </div>
         ) : (
           <div className="space-y-8">
@@ -382,10 +400,15 @@ export default function AdminDashboard() {
                 </h2>
                 <div className="space-y-2">
                   {dayEvents.map(ev => (
-                    <div key={ev.id} className="border rounded-xl p-4 flex items-start gap-3" style={{background:'var(--surface)', borderColor:'var(--border)'}}>
+                    <div key={ev.id} className="border rounded-xl p-4 flex items-start gap-3" style={{
+                      background:'var(--surface)',
+                      borderColor:'var(--border)',
+                      opacity: filter === 'history' ? 0.72 : 1,
+                    }}>
                       {/* Hora */}
                       <div className="shrink-0 min-w-[52px]" style={{
-                        fontFamily:'var(--font-anton)', fontSize:'1.1rem', color:'var(--celeste)',
+                        fontFamily:'var(--font-anton)', fontSize:'1.1rem',
+                        color: filter === 'history' ? 'var(--text-mut)' : 'var(--celeste)',
                       }}>
                         {formatTime(ev.start)}
                       </div>
@@ -397,6 +420,11 @@ export default function AdminDashboard() {
                           <span className="text-[10px] uppercase tracking-wide border px-2 py-0.5 rounded" style={{color:'var(--text-mut)', borderColor:'var(--border-soft)', background:'var(--chip-bg)'}}>
                             {ev.modalidad?.includes('domicilio') ? '🏠 domicilio' : '✂️ local'}
                           </span>
+                          {filter === 'history' && (
+                            <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded" style={{color:'var(--text-mut)', background:'var(--chip-bg)'}}>
+                              pasado
+                            </span>
+                          )}
                         </div>
                         <div className="text-sm mt-0.5" style={{color:'var(--text-mut)'}}>{ev.servicio}</div>
                         {ev.nota && (
@@ -424,23 +452,25 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
-                      {/* Actions */}
-                      <div className="flex flex-col gap-1.5 shrink-0">
-                        <button
-                          onClick={() => openEdit(ev)}
-                          className="text-xs px-3 py-1 rounded-lg whitespace-nowrap transition-colors"
-                          style={{color:'var(--celeste)', border:'1px solid var(--celeste)', background:'transparent'}}
-                        >
-                          ✏️ Modificar
-                        </button>
-                        <button
-                          onClick={() => { setCancelTarget(ev); setCancelReason('') }}
-                          disabled={cancelling === ev.id}
-                          className="text-red-400 border border-red-400/40 hover:bg-red-400/10 transition-colors text-xs disabled:opacity-50 px-3 py-1 rounded-lg whitespace-nowrap"
-                        >
-                          {cancelling === ev.id ? 'Cancelando...' : 'Cancelar'}
-                        </button>
-                      </div>
+                      {/* Actions — solo para turnos futuros */}
+                      {filter !== 'history' && (
+                        <div className="flex flex-col gap-1.5 shrink-0">
+                          <button
+                            onClick={() => openEdit(ev)}
+                            className="text-xs px-3 py-1 rounded-lg whitespace-nowrap transition-colors"
+                            style={{color:'var(--celeste)', border:'1px solid var(--celeste)', background:'transparent'}}
+                          >
+                            ✏️ Modificar
+                          </button>
+                          <button
+                            onClick={() => { setCancelTarget(ev); setCancelReason('') }}
+                            disabled={cancelling === ev.id}
+                            className="text-red-400 border border-red-400/40 hover:bg-red-400/10 transition-colors text-xs disabled:opacity-50 px-3 py-1 rounded-lg whitespace-nowrap"
+                          >
+                            {cancelling === ev.id ? 'Cancelando...' : 'Cancelar'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
