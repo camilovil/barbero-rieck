@@ -21,18 +21,37 @@ export async function GET() {
   }
 }
 
-// POST — block a date { date: 'YYYY-MM-DD' }
+// POST — block a date or range
+// Single: { date: 'YYYY-MM-DD' }
+// Range:  { dateFrom: 'YYYY-MM-DD', dateTo: 'YYYY-MM-DD' }
 export async function POST(req: NextRequest) {
   if (!(await isAdmin())) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
   try {
-    const { date } = await req.json()
-    if (!date) return NextResponse.json({ error: 'Falta date' }, { status: 400 })
-    const [year, month, day] = date.split('-').map(Number)
-    const d = new Date(year, month - 1, day)
-    const id = await blockDate(d)
-    return NextResponse.json({ success: true, id, date })
+    const body = await req.json()
+
+    // Normalize to always work with a range
+    const from = body.dateFrom ?? body.date
+    const to   = body.dateTo   ?? body.date
+    if (!from) return NextResponse.json({ error: 'Falta date / dateFrom' }, { status: 400 })
+
+    const parseDate = (s: string) => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d) }
+    const fromDate = parseDate(from)
+    const toDate   = parseDate(to)
+    if (fromDate > toDate) return NextResponse.json({ error: 'dateFrom debe ser <= dateTo' }, { status: 400 })
+
+    // Block each day in range
+    const blocked: { id: string; date: string }[] = []
+    const cur = new Date(fromDate)
+    while (cur <= toDate) {
+      const id = await blockDate(new Date(cur))
+      const dateStr = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`
+      blocked.push({ id, date: dateStr })
+      cur.setDate(cur.getDate() + 1)
+    }
+
+    return NextResponse.json({ success: true, blocked })
   } catch (err) {
     console.error('[admin/blocked-dates POST] error:', err)
     return NextResponse.json({ error: 'Error al bloquear fecha' }, { status: 500 })

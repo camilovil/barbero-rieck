@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { getCalendarEvent, deleteCalendarEvent, createCalendarEvent } from '@/lib/googleCalendar'
 import { sendRescheduleEmails } from '@/lib/email'
+import { sendRescheduleNotification } from '@/lib/whatsapp'
 import type { BookingState } from '@/types/booking'
 
 function parseDescription(desc: string): Record<string, string> {
@@ -67,21 +68,32 @@ export async function POST(req: NextRequest) {
     const newEventId = await createCalendarEvent(booking)
 
     // Notify client and Santiago
-    if (desc['email']) {
-      const newDateStr = new Date(newDate).toLocaleDateString('es-AR', {
-        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-      })
-      await sendRescheduleEmails(
+    const newDateStr = new Date(newDate).toLocaleDateString('es-AR', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    })
+
+    await Promise.all([
+      desc['email']
+        ? sendRescheduleEmails(
+            desc['cliente'] ?? 'Cliente',
+            desc['email'],
+            oldDateStr,
+            oldTime,
+            newDateStr,
+            newTime,
+            desc['servicio'] ?? '—',
+            newEventId,
+          )
+        : Promise.resolve(),
+      sendRescheduleNotification(
         desc['cliente'] ?? 'Cliente',
-        desc['email'],
         oldDateStr,
         oldTime,
         newDateStr,
         newTime,
         desc['servicio'] ?? '—',
-        newEventId,
-      )
-    }
+      ),
+    ])
 
     return NextResponse.json({ success: true, newEventId })
   } catch (err) {

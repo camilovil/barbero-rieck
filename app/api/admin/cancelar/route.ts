@@ -13,7 +13,7 @@ function parseDescription(desc: string): Record<string, string> {
 
 export async function POST(req: NextRequest) {
   try {
-    const { eventId } = await req.json()
+    const { eventId, reason } = await req.json()
     if (!eventId) return NextResponse.json({ error: 'Falta eventId' }, { status: 400 })
 
     const event = await getCalendarEvent(eventId)
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
       })
       const time = startTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
-      await sendCancellationEmails(desc['cliente'] ?? 'Cliente', desc['email'], dateStr, time, desc['servicio'] ?? '—')
+      await sendCancellationEmails(desc['cliente'] ?? 'Cliente', desc['email'], dateStr, time, desc['servicio'] ?? '—', undefined, undefined, undefined, undefined, reason)
     }
 
     return NextResponse.json({ success: true })

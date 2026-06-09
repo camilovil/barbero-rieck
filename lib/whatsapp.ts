@@ -27,6 +27,35 @@ export async function sendBookingNotification(booking: BookingState): Promise<vo
   // })
 }
 
+export async function sendRescheduleNotification(
+  nombre: string,
+  oldDateStr: string,
+  oldTime: string,
+  newDateStr: string,
+  newTime: string,
+  servicio: string,
+): Promise<void> {
+  const message = [
+    `🔄 *Turno reprogramado*`,
+    `Cliente: ${nombre}`,
+    `Servicio: ${servicio.split(' — ')[0]}`,
+    `Antes: ${oldDateStr} a las ${oldTime}`,
+    `Ahora: ${newDateStr} a las ${newTime}`,
+  ].join('\n')
+
+  if (!process.env.TWILIO_ACCOUNT_SID) {
+    console.log('[whatsapp] stub reschedule notification:', message)
+    return
+  }
+  // TODO: activar cuando Twilio esté configurado
+  // const twilio = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+  // await twilio.messages.create({
+  //   from: `whatsapp:${process.env.TWILIO_WHATSAPP_FROM}`,
+  //   to: `whatsapp:${process.env.SANTIAGO_WHATSAPP}`,
+  //   body: message,
+  // })
+}
+
 function buildMessage(booking: BookingState): string {
   const dateStr = booking.date ? formatDate(booking.date) : '—'
   const lines = [

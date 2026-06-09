@@ -250,6 +250,7 @@ function clientCancelHtml(
   lugarSub: string,
   code: string,
   rebookUrl: string,
+  reasonBlock = '',
 ): string {
   const jerseyNo = JERSEY[servicio] ?? '★'
   const servicioLabel = `${servicio} &middot; N&deg;${jerseyNo}`
@@ -300,6 +301,8 @@ function clientCancelHtml(
         ${detailRowNew('C&oacute;digo', code, undefined, true)}
       </table>
     </td></tr>
+
+    ${reasonBlock}
 
     <!-- CTA: Reservar otro turno -->
     <tr><td style="padding:0 24px 20px;text-align:center">
@@ -655,6 +658,7 @@ export async function sendCancellationEmails(
   location?: string,
   direccion?: string,
   duration?: string,
+  reason?: string,
 ): Promise<void> {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
     console.log('[email] stub — cancelación de', nombre)
@@ -669,10 +673,20 @@ export async function sendCancellationEmails(
   const lugarMain = location === 'domicilio' ? 'A domicilio' : 'Barbería Rieck'
   const lugarSub = location === 'domicilio' ? (direccion || '') : 'CABA'
 
+  const reasonBlock = reason
+    ? `<tr><td style="padding:0 28px 20px">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fff8f0;border:1.5px solid #fcd5a0;border-radius:10px;padding:14px 16px">
+          <tr><td style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#c47a1e;padding-bottom:4px">Motivo</td></tr>
+          <tr><td style="font-size:13px;color:#7a4a0a">${reason}</td></tr>
+        </table>
+      </td></tr>`
+    : ''
+
   const cancelHtmlClient = clientCancelHtml(
     nombre, dateStr, time, servicio,
     duration ? `${duration} min` : '',
     lugarMain, lugarSub, code, rebookUrl,
+    reasonBlock,
   )
 
   const santiagoCancelHtml = `<!DOCTYPE html>

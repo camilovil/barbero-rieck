@@ -40,7 +40,10 @@ export default function AdminDashboard() {
   const [events, setEvents] = useState<BookingEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState<string | null>(null)
+  const [cancelTarget, setCancelTarget] = useState<BookingEvent | null>(null)
+  const [cancelReason, setCancelReason] = useState('')
   const [filter, setFilter] = useState<'upcoming' | 'today' | 'week'>('upcoming')
+  const [search, setSearch] = useState('')
 
   // Modificar turno
   const [editing, setEditing] = useState<BookingEvent | null>(null)
@@ -52,7 +55,8 @@ export default function AdminDashboard() {
 
   // Blocked dates
   const [blockedDates, setBlockedDates] = useState<{ id: string; date: string }[]>([])
-  const [blockInput, setBlockInput] = useState('')
+  const [blockFrom, setBlockFrom] = useState('')
+  const [blockTo, setBlockTo] = useState('')
   const [blockingDate, setBlockingDate] = useState(false)
   const [showBlocked, setShowBlocked] = useState(false)
 
@@ -89,29 +93,32 @@ export default function AdminDashboard() {
     router.push('/admin/login')
   }
 
-  async function handleCancel(eventId: string, nombre: string) {
-    if (!confirm(`¿Cancelar el turno de ${nombre}?`)) return
-    setCancelling(eventId)
+  async function confirmCancel() {
+    if (!cancelTarget) return
+    setCancelling(cancelTarget.id)
     const res = await fetch('/api/admin/cancelar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ eventId }),
+      body: JSON.stringify({ eventId: cancelTarget.id, reason: cancelReason.trim() || undefined }),
     })
-    if (res.ok) setEvents(prev => prev.filter(e => e.id !== eventId))
+    if (res.ok) setEvents(prev => prev.filter(e => e.id !== cancelTarget.id))
     setCancelling(null)
+    setCancelTarget(null)
+    setCancelReason('')
   }
 
   async function handleBlockDate() {
-    if (!blockInput) return
+    if (!blockFrom) return
     setBlockingDate(true)
     const res = await fetch('/api/admin/blocked-dates', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date: blockInput }),
+      body: JSON.stringify({ dateFrom: blockFrom, dateTo: blockTo || blockFrom }),
     })
     if (res.ok) {
       await fetchBlockedDates()
-      setBlockInput('')
+      setBlockFrom('')
+      setBlockTo('')
     }
     setBlockingDate(false)
   }
@@ -200,7 +207,7 @@ export default function AdminDashboard() {
 
   const weekDays = getWeekDays()
 
-  const filtered = filter === 'today'
+  const filtered = (filter === 'today'
     ? events.filter(e => new Date(e.start).toDateString() === new Date().toDateString())
     : filter === 'week'
     ? events.filter(e => {
@@ -208,6 +215,12 @@ export default function AdminDashboard() {
         return d >= weekDays[0] && d <= weekDays[6]
       })
     : events
+  ).filter(e =>
+    !search.trim() ||
+    e.nombre.toLowerCase().includes(search.toLowerCase()) ||
+    e.servicio.toLowerCase().includes(search.toLowerCase()) ||
+    e.whatsapp.includes(search)
+  )
 
   const grouped = groupByDay(filtered)
   const totalHoy = events.filter(e => new Date(e.start).toDateString() === new Date().toDateString()).length
@@ -269,6 +282,29 @@ export default function AdminDashboard() {
               <div className="text-xs mt-1 uppercase tracking-widest" style={{color:'var(--text-mut)'}}>{label}</div>
             </div>
           ))}
+        </div>
+
+        {/* Búsqueda */}
+        <div className="relative mb-4">
+          <svg style={{position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', pointerEvents:'none'}} width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="var(--text-mut)" strokeWidth={2.5} strokeLinecap="round">
+            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar por nombre, servicio o teléfono..."
+            style={{
+              width:'100%', padding:'10px 12px 10px 34px', borderRadius:12,
+              border:'2px solid var(--border)', background:'var(--surface)',
+              color:'var(--text)', fontSize:13, outline:'none', boxSizing:'border-box',
+            }}
+          />
+          {search && (
+            <button onClick={() => setSearch('')} style={{position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--text-mut)', fontSize:16, lineHeight:1}}>
+              ×
+            </button>
+          )}
         </div>
 
         {/* Filtros */}
@@ -398,7 +434,7 @@ export default function AdminDashboard() {
                           ✏️ Modificar
                         </button>
                         <button
-                          onClick={() => handleCancel(ev.id, ev.nombre)}
+                          onClick={() => { setCancelTarget(ev); setCancelReason('') }}
                           disabled={cancelling === ev.id}
                           className="text-red-400 border border-red-400/40 hover:bg-red-400/10 transition-colors text-xs disabled:opacity-50 px-3 py-1 rounded-lg whitespace-nowrap"
                         >
@@ -461,23 +497,39 @@ export default function AdminDashboard() {
 
           {showBlocked && (
             <div>
-              {/* Input para bloquear */}
-              <div className="flex gap-2 mb-5">
-                <input
-                  type="date"
-                  value={blockInput}
-                  onChange={e => setBlockInput(e.target.value)}
-                  min={toDateParam(new Date())}
-                  className="flex-1 rounded-lg border px-3 py-2 text-sm outline-none"
-                  style={{background:'var(--surface)', borderColor:'var(--border)', color:'var(--text)'}}
-                />
+              {/* Inputs para bloquear — rango o día suelto */}
+              <div className="space-y-2 mb-5">
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="block text-[10px] uppercase tracking-widest font-bold mb-1" style={{color:'var(--text-mut)'}}>Desde</label>
+                    <input
+                      type="date"
+                      value={blockFrom}
+                      onChange={e => { setBlockFrom(e.target.value); if (!blockTo || e.target.value > blockTo) setBlockTo(e.target.value) }}
+                      min={toDateParam(new Date())}
+                      className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
+                      style={{background:'var(--app-bg)', borderColor:'var(--border)', color:'var(--text)'}}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-[10px] uppercase tracking-widest font-bold mb-1" style={{color:'var(--text-mut)'}}>Hasta</label>
+                    <input
+                      type="date"
+                      value={blockTo}
+                      onChange={e => setBlockTo(e.target.value)}
+                      min={blockFrom || toDateParam(new Date())}
+                      className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
+                      style={{background:'var(--app-bg)', borderColor:'var(--border)', color:'var(--text)'}}
+                    />
+                  </div>
+                </div>
                 <button
                   onClick={handleBlockDate}
-                  disabled={!blockInput || blockingDate}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50 transition-all"
+                  disabled={!blockFrom || blockingDate}
+                  className="w-full py-2 rounded-lg text-sm font-semibold disabled:opacity-50 transition-all"
                   style={{background:'var(--celeste-deep)', color:'#fff'}}
                 >
-                  {blockingDate ? '...' : 'Bloquear'}
+                  {blockingDate ? 'Bloqueando...' : blockTo && blockTo !== blockFrom ? `Bloquear rango (${blockFrom} → ${blockTo})` : 'Bloquear día'}
                 </button>
               </div>
 
@@ -510,6 +562,54 @@ export default function AdminDashboard() {
         </div>
 
       </main>
+
+      {/* ─── Modal cancelar turno ─── */}
+      {cancelTarget && (
+        <div
+          style={{ position:'fixed', inset:0, zIndex:200, background:'rgba(0,0,0,.65)', backdropFilter:'blur(4px)', display:'flex', alignItems:'flex-end', justifyContent:'center' }}
+          onClick={e => { if (e.target === e.currentTarget) { setCancelTarget(null); setCancelReason('') } }}
+        >
+          <div style={{ width:'100%', maxWidth:480, background:'var(--surface)', borderRadius:'20px 20px 0 0', border:'2px solid var(--border)', borderBottom:'none', padding:'24px 20px 36px' }}>
+            <div style={{ width:40, height:4, borderRadius:2, background:'var(--border)', margin:'0 auto 20px' }} />
+
+            <p style={{ margin:'0 0 4px', fontFamily:'var(--font-anton)', fontSize:18, color:'#f87171', letterSpacing:'.3px' }}>
+              CANCELAR TURNO
+            </p>
+            <p style={{ margin:'0 0 20px', fontSize:13, color:'var(--text-mut)', fontWeight:600 }}>
+              {cancelTarget.nombre} · {new Date(cancelTarget.start).toLocaleString('es-AR', { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' })}
+            </p>
+
+            <div style={{ marginBottom:20 }}>
+              <label style={{ display:'block', fontSize:10, fontWeight:800, textTransform:'uppercase', letterSpacing:'.1em', color:'var(--text-mut)', marginBottom:6 }}>
+                Motivo (opcional — se incluye en el email al cliente)
+              </label>
+              <textarea
+                value={cancelReason}
+                onChange={e => setCancelReason(e.target.value)}
+                placeholder="Ej: Problema de agenda, emergencia personal..."
+                rows={2}
+                style={{ width:'100%', padding:'12px 14px', borderRadius:12, border:'2px solid var(--border)', background:'var(--app-bg)', color:'var(--text)', fontSize:13, resize:'none', outline:'none', boxSizing:'border-box', fontFamily:'inherit' }}
+              />
+            </div>
+
+            <div style={{ display:'flex', gap:10 }}>
+              <button
+                onClick={() => { setCancelTarget(null); setCancelReason('') }}
+                style={{ flex:1, padding:'14px', borderRadius:14, border:'2px solid var(--border)', background:'none', color:'var(--text-mut)', fontFamily:'var(--font-anton)', fontSize:13, letterSpacing:'1px', cursor:'pointer' }}
+              >
+                VOLVER
+              </button>
+              <button
+                onClick={confirmCancel}
+                disabled={!!cancelling}
+                style={{ flex:2, padding:'14px', borderRadius:14, background:'linear-gradient(135deg,#ef4444,#b91c1c)', color:'#fff', border:'none', fontFamily:'var(--font-anton)', fontSize:13, letterSpacing:'1px', cursor:'pointer', opacity: cancelling ? .7 : 1 }}
+              >
+                {cancelling ? 'CANCELANDO...' : 'CONFIRMAR CANCELACIÓN'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ─── Modal modificar turno ─── */}
       {editing && (
