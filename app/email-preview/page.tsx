@@ -1,4 +1,7 @@
 // Vista previa de los emails — solo para desarrollo
+import { notFound } from 'next/navigation'
+
+if (process.env.NODE_ENV === 'production') notFound()
 
 import { sendBookingEmails } from '@/lib/email'
 import type { BookingState } from '@/types/booking'

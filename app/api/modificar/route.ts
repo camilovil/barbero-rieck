@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCalendarEvent, deleteCalendarEvent, createCalendarEvent } from '@/lib/googleCalendar'
-import { sendBookingEmails } from '@/lib/email'
+import { sendRescheduleEmails } from '@/lib/email'
 import { CANCELLATION_MIN_HOURS } from '@/lib/constants'
 import type { BookingState } from '@/types/booking'
 
@@ -89,14 +89,30 @@ export async function POST(req: NextRequest) {
       },
     }
 
-    // Delete old event
-    await deleteCalendarEvent(eventId)
+    // Capture old date/time for the reschedule email
+    const oldDateStr = startTime.toLocaleDateString('es-AR', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    })
+    const oldTime = startTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
 
-    // Create new event with updated date/time
+    // Delete old event and create updated one
+    await deleteCalendarEvent(eventId)
     const newEventId = await createCalendarEvent(booking)
 
-    // Send new confirmation email
-    await sendBookingEmails(booking, newEventId)
+    // Send reschedule email (shows old date crossed out + new date)
+    const newDateStr = new Date(newDate).toLocaleDateString('es-AR', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    })
+    await sendRescheduleEmails(
+      booking.nombre,
+      booking.email,
+      oldDateStr,
+      oldTime,
+      newDateStr,
+      newTime,
+      booking.service.name,
+      newEventId,
+    )
 
     return NextResponse.json({ success: true, eventId: newEventId })
   } catch (err) {

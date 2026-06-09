@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import { getCalendarEvent, deleteCalendarEvent, createCalendarEvent } from '@/lib/googleCalendar'
 import { sendRescheduleEmails } from '@/lib/email'
 import { sendRescheduleNotification } from '@/lib/whatsapp'
@@ -15,12 +14,7 @@ function parseDescription(desc: string): Record<string, string> {
 }
 
 export async function POST(req: NextRequest) {
-  // Auth check
-  const cookieStore = await cookies()
-  if (cookieStore.get('admin-auth')?.value !== 'true') {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-  }
-
+  // Auth is handled by middleware — all /api/admin/* routes are protected
   try {
     const { eventId, newDate, newTime } = await req.json()
 

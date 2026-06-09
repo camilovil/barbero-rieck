@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export function middleware(req: NextRequest) {
-  // No proteger la página de login
-  if (req.nextUrl.pathname.startsWith('/admin/login')) {
+  const { pathname } = req.nextUrl
+
+  // No proteger el login (página ni API)
+  if (pathname === '/admin/login' || pathname === '/api/admin/login') {
     return NextResponse.next()
   }
 
@@ -10,6 +12,10 @@ export function middleware(req: NextRequest) {
   const secret = process.env.ADMIN_SECRET
 
   if (!token || !secret || token !== secret) {
+    // Las rutas API devuelven 401 JSON, las páginas redirigen al login
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
     return NextResponse.redirect(new URL('/admin/login', req.url))
   }
 
@@ -17,5 +23,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/api/admin/:path*'],
 }
