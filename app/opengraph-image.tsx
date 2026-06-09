@@ -6,6 +6,10 @@ export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
 export default async function Image() {
+  const permanentMarker = await fetch(
+    'https://fonts.gstatic.com/s/permanentmarker/v16/Fh4uPib9Iyv2ucM6pGQMWimMp004La2Cfw.woff2'
+  ).then(r => r.arrayBuffer())
+
   return new ImageResponse(
     (
       <div
@@ -16,68 +20,138 @@ export default async function Image() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(160deg, #75AADB 0%, #0B1F47 60%)',
+          background: '#75AADB',
           position: 'relative',
           overflow: 'hidden',
         }}
       >
-        {/* Background diagonal stripes */}
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'repeating-linear-gradient(135deg, rgba(255,255,255,.03) 0px, rgba(255,255,255,.03) 2px, transparent 2px, transparent 40px)',
-          display: 'flex',
-        }} />
+        {/* Jersey vertical stripes — left side */}
+        {[0,1,2,3,4].map(i => (
+          <div key={`l${i}`} style={{
+            position: 'absolute',
+            left: i * 22,
+            top: 0, bottom: 0,
+            width: 11,
+            background: 'rgba(255,255,255,0.18)',
+            display: 'flex',
+          }} />
+        ))}
+        {/* Jersey vertical stripes — right side */}
+        {[0,1,2,3,4].map(i => (
+          <div key={`r${i}`} style={{
+            position: 'absolute',
+            right: i * 22,
+            top: 0, bottom: 0,
+            width: 11,
+            background: 'rgba(255,255,255,0.18)',
+            display: 'flex',
+          }} />
+        ))}
 
-        {/* Left celeste stripe */}
-        <div style={{
-          position: 'absolute', left: 0, top: 0, bottom: 0, width: 12,
-          background: '#75AADB', display: 'flex',
-        }} />
-        {/* Right celeste stripe */}
-        <div style={{
-          position: 'absolute', right: 0, top: 0, bottom: 0, width: 12,
-          background: '#75AADB', display: 'flex',
-        }} />
-
-        {/* Stars row */}
-        <div style={{
-          display: 'flex', gap: 24, marginBottom: 20, color: '#F2B63C', fontSize: 32,
-        }}>
-          <span>★</span><span>★</span><span>★</span>
+        {/* Stars + years */}
+        <div style={{ display: 'flex', gap: 64, marginBottom: 18 }}>
+          {[['★','1978'],['★','1986'],['★','2022']].map(([star, year]) => (
+            <div key={year} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: 44, color: '#F2B63C', lineHeight: 1 }}>{star}</span>
+              <span style={{ fontSize: 22, fontWeight: 700, color: '#0B1F47', letterSpacing: 1, fontFamily: 'sans-serif' }}>{year}</span>
+            </div>
+          ))}
         </div>
 
-        {/* Brand name */}
-        <div style={{
-          fontSize: 90, fontWeight: 900, color: '#fff', letterSpacing: '-2px',
-          lineHeight: 1, marginBottom: 14, display: 'flex',
-        }}>
-          Santi Barber
+        {/* SANTI BARBER */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 28, marginBottom: 6 }}>
+          <span style={{
+            fontFamily: '"Permanent Marker"',
+            fontSize: 148,
+            color: '#ffffff',
+            lineHeight: 1,
+            textShadow: '3px 3px 0 rgba(0,0,0,0.15)',
+          }}>
+            Santi
+          </span>
+          <span style={{
+            fontFamily: '"Permanent Marker"',
+            fontSize: 148,
+            color: '#0B1F47',
+            lineHeight: 1,
+            textShadow: '3px 3px 0 rgba(0,0,0,0.15)',
+          }}>
+            Barber
+          </span>
         </div>
 
-        {/* Tag line */}
+        {/* EDICIÓN MUNDIAL */}
         <div style={{
-          fontSize: 28, fontWeight: 700, color: 'rgba(255,255,255,.8)',
-          letterSpacing: '6px', textTransform: 'uppercase', marginBottom: 40,
           display: 'flex',
+          fontSize: 28,
+          fontWeight: 700,
+          color: '#ffffff',
+          letterSpacing: '8px',
+          textTransform: 'uppercase',
+          fontFamily: 'sans-serif',
+          marginBottom: 28,
         }}>
           EDICIÓN MUNDIAL · 2026
         </div>
 
-        {/* Gold divider */}
-        <div style={{ width: 120, height: 4, background: '#F2B63C', borderRadius: 2, marginBottom: 36, display: 'flex' }} />
-
-        {/* CTA pill */}
+        {/* Subtitle */}
         <div style={{
-          background: 'rgba(255,255,255,.12)',
-          border: '2px solid rgba(255,255,255,.25)',
-          borderRadius: 50, padding: '14px 40px',
-          fontSize: 22, fontWeight: 700, color: '#fff',
-          letterSpacing: '2px', textTransform: 'uppercase', display: 'flex',
+          display: 'flex',
+          fontSize: 26,
+          color: 'rgba(255,255,255,0.9)',
+          fontFamily: 'sans-serif',
+          fontWeight: 500,
+          marginBottom: 40,
+          letterSpacing: 0.5,
         }}>
-          Reservá tu turno
+          Corte · Barba · Combo — en el local o a domicilio
+        </div>
+
+        {/* CTA row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+          {/* Gold pill */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            background: '#F2B63C',
+            borderRadius: 50,
+            padding: '18px 44px',
+            fontSize: 24,
+            fontWeight: 900,
+            color: '#0B1F47',
+            letterSpacing: '2px',
+            textTransform: 'uppercase',
+            fontFamily: 'sans-serif',
+          }}>
+            <span style={{ fontSize: 26 }}>📅</span>
+            RESERVÁ TU TURNO
+          </div>
+
+          {/* URL */}
+          <div style={{
+            display: 'flex',
+            fontSize: 24,
+            color: 'rgba(255,255,255,0.85)',
+            fontFamily: 'monospace',
+            fontWeight: 600,
+            letterSpacing: 0.5,
+          }}>
+            barbero-rieck<span style={{ color: '#ffffff', fontWeight: 900 }}>.vercel.app</span>
+          </div>
         </div>
       </div>
     ),
-    { ...size }
+    {
+      ...size,
+      fonts: [
+        {
+          name: 'Permanent Marker',
+          data: permanentMarker,
+          style: 'normal',
+          weight: 400,
+        },
+      ],
+    }
   )
 }
