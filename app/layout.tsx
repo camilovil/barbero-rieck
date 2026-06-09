@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     siteName: 'Santi Barber',
     images: [
       {
-        url: '/opengraph-image',
+        url: '/opengraph-image?v=2',
         width: 1200,
         height: 630,
         alt: 'Santi Barber — Edición Mundial 2026',
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Santi Barber · Turnos online',
     description: 'Reservá tu turno con Santiago Rieck. Corte, barba y combo.',
-    images: ['/opengraph-image'],
+    images: ['/opengraph-image?v=2'],
   },
 }
 
