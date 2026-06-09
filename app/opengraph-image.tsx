@@ -34,7 +34,7 @@ export default function Image() {
         <div style={{ display:'flex', gap:64, marginBottom:20 }}>
           {['1978','1986','2022'].map(year => (
             <div key={year} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
-              <div style={{ fontSize:42, lineHeight:1, color:'#F2B63C' }}>★</div>
+              <div style={{ width:36, height:36, background:'#F2B63C', borderRadius:'50%', display:'flex' }} />
               <div style={{ fontSize:20, fontWeight:700, color:'#0B1F47', fontFamily:'sans-serif' }}>{year}</div>
             </div>
           ))}
