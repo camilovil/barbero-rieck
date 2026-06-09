@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
       oldTime,
       newDateStr,
       newTime,
-      booking.service.name,
+      booking.service?.name ?? serviceNameRaw,
       newEventId,
     )
 

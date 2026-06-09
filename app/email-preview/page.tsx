@@ -1,9 +1,5 @@
 // Vista previa de los emails — solo para desarrollo
 import { notFound } from 'next/navigation'
-
-if (process.env.NODE_ENV === 'production') notFound()
-
-import { sendBookingEmails } from '@/lib/email'
 import type { BookingState } from '@/types/booking'
 
 // Importamos las funciones de HTML directamente para renderizarlas
@@ -56,6 +52,7 @@ function EmailShell({ label, children }: { label: string; children: React.ReactN
 }
 
 export default function EmailPreviewPage() {
+  if (process.env.NODE_ENV === 'production') notFound()
   const b = MOCK
   const dateStr = b.date ? capitalize(formatDate(b.date)) : '—'
   const dateParts = dateStr.split(' de ')
