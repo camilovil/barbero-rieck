@@ -3,6 +3,13 @@ import type { BookingState } from '@/types/booking'
 import { TIME_SLOTS, TRAVEL_BUFFER_MINUTES } from './constants'
 import type { Location } from '@/types/booking'
 
+// Argentina never observes DST — UTC-3 all year
+const BA_OFFSET = '-03:00'
+
+function toUTCDateStr(d: Date): string {
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
+}
+
 function getAuth() {
   return new google.auth.GoogleAuth({
     credentials: {
@@ -27,11 +34,11 @@ export async function createCalendarEvent(booking: BookingState): Promise<string
   const calendar = google.calendar({ version: 'v3', auth: getAuth() })
 
   const [hours, minutes] = booking.time.split(':').map(Number)
-  const start = new Date(booking.date)
-  start.setHours(hours, minutes, 0, 0)
-
-  const end = new Date(start)
-  end.setMinutes(end.getMinutes() + booking.service.duration)
+  const dateStr = toUTCDateStr(booking.date)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const startStr = `${dateStr}T${pad(hours)}:${pad(minutes)}:00${BA_OFFSET}`
+  const totalEndMin = hours * 60 + minutes + booking.service.duration
+  const endStr = `${dateStr}T${pad(Math.floor(totalEndMin / 60))}:${pad(totalEndMin % 60)}:00${BA_OFFSET}`
 
   const locationLabel =
     booking.location === 'domicilio'
@@ -59,8 +66,8 @@ export async function createCalendarEvent(booking: BookingState): Promise<string
       summary: `✂️ ${booking.service.name} — ${booking.nombre}`,
       description,
       location: locationLabel,
-      start: { dateTime: start.toISOString(), timeZone: 'America/Argentina/Buenos_Aires' },
-      end: { dateTime: end.toISOString(), timeZone: 'America/Argentina/Buenos_Aires' },
+      start: { dateTime: startStr, timeZone: 'America/Argentina/Buenos_Aires' },
+      end: { dateTime: endStr, timeZone: 'America/Argentina/Buenos_Aires' },
     },
   })
 
@@ -291,8 +298,9 @@ export async function isDateBlocked(date: Date): Promise<boolean> {
 export async function getDayBookingCount(date: Date): Promise<number> {
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return 0
   const calendar = google.calendar({ version: 'v3', auth: getAuth() })
-  const dayStart = new Date(date); dayStart.setHours(0, 0, 0, 0)
-  const dayEnd = new Date(date); dayEnd.setHours(23, 59, 59, 999)
+  const ds = toUTCDateStr(date)
+  const dayStart = new Date(`${ds}T00:00:00${BA_OFFSET}`)
+  const dayEnd = new Date(`${ds}T23:59:59${BA_OFFSET}`)
   const res = await calendar.events.list({
     calendarId: process.env.GOOGLE_CALENDAR_ID!,
     timeMin: dayStart.toISOString(),
@@ -305,8 +313,9 @@ export async function getDayBookingCount(date: Date): Promise<number> {
 export async function getEventsForDate(date: Date): Promise<BookingEvent[]> {
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return []
   const calendar = google.calendar({ version: 'v3', auth: getAuth() })
-  const dayStart = new Date(date); dayStart.setHours(0, 0, 0, 0)
-  const dayEnd = new Date(date); dayEnd.setHours(23, 59, 59, 999)
+  const ds = toUTCDateStr(date)
+  const dayStart = new Date(`${ds}T00:00:00${BA_OFFSET}`)
+  const dayEnd = new Date(`${ds}T23:59:59${BA_OFFSET}`)
   const res = await calendar.events.list({
     calendarId: process.env.GOOGLE_CALENDAR_ID!,
     timeMin: dayStart.toISOString(),
@@ -350,10 +359,11 @@ export async function getBookedSlots(date: Date, location: Location): Promise<st
   // Duración máxima del servicio según modalidad (para calcular fin del slot)
   const slotDurationMs = (location === 'local' ? 60 : 90) * 60 * 1000
 
+  const ds = toUTCDateStr(date)
   return slots.filter((time) => {
     const [h, m] = time.split(':').map(Number)
-    const slotStart = new Date(date)
-    slotStart.setHours(h, m, 0, 0)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const slotStart = new Date(`${ds}T${pad(h)}:${pad(m)}:00${BA_OFFSET}`)
     const slotEnd = new Date(slotStart.getTime() + slotDurationMs)
 
     return events.some((ev) => {
