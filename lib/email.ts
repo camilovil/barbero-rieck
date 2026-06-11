@@ -119,7 +119,7 @@ function clientHtml(b: BookingState, cancelLink?: string, modLink?: string, even
   const servicioLabel = `${b.service?.name} &middot; N&deg;${jerseyNo}`
   const servicioSub = `${b.service?.duration} min`
   const lugarMain = b.location === 'domicilio' ? 'A domicilio' : 'Barber&iacute;a Rieck'
-  const lugarSub = b.location === 'domicilio' ? (b.direccion || '') : 'Av. Corrientes 1234, CABA'
+  const lugarSub = b.location === 'domicilio' ? (b.direccion || '') : 'Congreso 1865, Belgrano, CABA'
   const totalLabel = b.service ? `$${b.service.price.toLocaleString('es-AR')}` : '—'
   const code = eventId ? bookingCode(eventId) : 'SR-2026'
   const manageUrl = modLink ?? 'https://barbero-rieck.vercel.app'
@@ -223,10 +223,10 @@ function clientHtml(b: BookingState, cancelLink?: string, modLink?: string, even
         Santi <span style="color:#75AADB">Barber</span>
       </p>
       <p style="margin:3px 0;font-family:Arial,sans-serif;font-size:11px;color:rgba(255,255,255,.55)">
-        Av. Corrientes 1234, CABA &middot; Lun a S&aacute;b
+        Congreso 1865, Belgrano, CABA &middot; Lun a S&aacute;b
       </p>
       <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:rgba(255,255,255,.55)">
-        WhatsApp +54 9 11 5555 1234 &middot; @santibarber
+        WhatsApp ${process.env.SANTIAGO_WHATSAPP ?? ''}
       </p>
     </td></tr>
 
@@ -330,10 +330,10 @@ function clientCancelHtml(
         Santi <span style="color:#75AADB">Barber</span>
       </p>
       <p style="margin:3px 0;font-family:Arial,sans-serif;font-size:11px;color:rgba(255,255,255,.55)">
-        Av. Corrientes 1234, CABA &middot; Lun a S&aacute;b
+        Congreso 1865, Belgrano, CABA &middot; Lun a S&aacute;b
       </p>
       <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:rgba(255,255,255,.55)">
-        WhatsApp +54 9 11 5555 1234 &middot; @santibarber
+        WhatsApp ${process.env.SANTIAGO_WHATSAPP ?? ''}
       </p>
     </td></tr>
 
@@ -539,7 +539,7 @@ export async function sendReminderEmail(
   const jerseyNo = JERSEY[servicio.split(' — ')[0]] ?? '★'
   const lugar = location === 'domicilio'
     ? { main: 'A domicilio', sub: '' }
-    : { main: 'Barbería Rieck', sub: 'CABA · Corrientes 1234' }
+    : { main: 'Barbería Rieck', sub: 'Belgrano, CABA' }
   const waNumber = process.env.SANTIAGO_WHATSAPP ? process.env.SANTIAGO_WHATSAPP.replace(/\D/g,'') : ''
 
   const html = `<!DOCTYPE html>
