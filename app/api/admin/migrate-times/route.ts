@@ -53,19 +53,45 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Credenciales no configuradas' }, { status: 500 })
   }
 
+  const run = req.nextUrl.searchParams.get('run') === 'true'
+
   try {
     const stale = await getStaleEvents()
-    return NextResponse.json({
-      total: stale.length,
-      events: stale.map(e => ({
-        id: e.id,
-        summary: e.summary,
-        startActual: e.start!.dateTime,
-        startFixed: fixDateTime(e.start!.dateTime!),
-      })),
-    })
+
+    if (!run) {
+      return NextResponse.json({
+        total: stale.length,
+        message: 'Dry run. Agregá &run=true a la URL para ejecutar.',
+        events: stale.map(e => ({
+          id: e.id,
+          summary: e.summary,
+          startActual: e.start!.dateTime,
+          startFixed: fixDateTime(e.start!.dateTime!),
+        })),
+      })
+    }
+
+    // run=true → ejecutar migración
+    const calendar = google.calendar({ version: 'v3', auth: getAuth() })
+    const results: { summary: string; before: string; after: string }[] = []
+
+    for (const ev of stale) {
+      const newStart = fixDateTime(ev.start!.dateTime!)
+      const newEnd = ev.end?.dateTime ? fixDateTime(ev.end.dateTime) : undefined
+      await calendar.events.patch({
+        calendarId: process.env.GOOGLE_CALENDAR_ID!,
+        eventId: ev.id!,
+        requestBody: {
+          start: { dateTime: newStart, timeZone: 'America/Argentina/Buenos_Aires' },
+          ...(newEnd ? { end: { dateTime: newEnd, timeZone: 'America/Argentina/Buenos_Aires' } } : {}),
+        },
+      })
+      results.push({ summary: ev.summary ?? '', before: ev.start!.dateTime!, after: newStart })
+    }
+
+    return NextResponse.json({ migrated: results.length, results })
   } catch (err) {
-    console.error('[migrate-times] GET error:', err)
+    console.error('[migrate-times] error:', err)
     return NextResponse.json({ error: String(err) }, { status: 500 })
   }
 }
