@@ -1,0 +1,18 @@
+name: Migrate calendar event times
+on:
+  workflow_dispatch:
+    inputs:
+      secret:
+        description: 'Admin secret'
+        required: true
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dry run
+        run: |
+          curl -sf "https://barbero-rieck.vercel.app/api/admin/migrate-times?secret=${{ inputs.secret }}"
+
+      - name: Execute migration
+        run: |
+          curl -sf "https://barbero-rieck.vercel.app/api/admin/migrate-times?secret=${{ inputs.secret }}&run=true"
