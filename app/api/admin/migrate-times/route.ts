@@ -13,6 +13,14 @@ function getAuth() {
 
 // GET  → dry run: lista los eventos que se corregirían
 // POST → ejecuta la migración
+// Acepta ?secret=ADMIN_SECRET como alternativa a la cookie (para uso remoto)
+function isAuthorized(req: NextRequest): boolean {
+  const secret = process.env.ADMIN_SECRET
+  if (!secret) return false
+  const cookie = req.cookies.get('admin_token')?.value
+  const param = req.nextUrl.searchParams.get('secret')
+  return cookie === secret || param === secret
+}
 
 async function getStaleEvents() {
   const calendar = google.calendar({ version: 'v3', auth: getAuth() })
@@ -40,6 +48,7 @@ function fixDateTime(utcStr: string): string {
 }
 
 export async function GET(req: NextRequest) {
+  if (!isAuthorized(req)) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) {
     return NextResponse.json({ error: 'Credenciales no configuradas' }, { status: 500 })
   }
@@ -62,6 +71,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  if (!isAuthorized(req)) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) {
     return NextResponse.json({ error: 'Credenciales no configuradas' }, { status: 500 })
   }
