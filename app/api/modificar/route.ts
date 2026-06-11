@@ -69,8 +69,10 @@ export async function POST(req: NextRequest) {
 
     // Rebuild booking state from calendar event description
     const isLocal = !desc['modalidad']?.toLowerCase().includes('domicilio')
-    const serviceNameRaw = (desc['servicio'] ?? '').split(' — ')[0].split(' — ')[0].trim()
-    const durationMatch = serviceNameRaw.toLowerCase().includes('barba') ? 60 : 40
+    const serviceNameRaw = (desc['servicio'] ?? '').split(' — ')[0].trim()
+    const durationMatch = serviceNameRaw.toLowerCase().includes('barba')
+      ? (isLocal ? 60 : 90)
+      : (isLocal ? 40 : 90)
 
     const booking: BookingState = {
       step: 5,
