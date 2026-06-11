@@ -45,10 +45,6 @@ export async function POST(req: NextRequest) {
       }, { status: 400 })
     }
 
-    // Borrar el evento — el slot queda libre automáticamente en la app
-    await deleteCalendarEvent(eventId)
-
-    // Enviar emails de aviso
     const dateStr = startTime.toLocaleDateString('es-AR', {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
     })
@@ -56,7 +52,15 @@ export async function POST(req: NextRequest) {
     const nombre = desc['cliente'] ?? 'Cliente'
     const servicio = desc['servicio'] ?? '—'
 
-    await sendCancellationEmails(nombre, email, dateStr, time, servicio)
+    // Borrar el evento — el slot queda libre automáticamente en la app
+    await deleteCalendarEvent(eventId)
+
+    // Enviar emails de aviso (no bloquea la cancelación si falla)
+    try {
+      await sendCancellationEmails(nombre, email, dateStr, time, servicio, eventId)
+    } catch (emailErr) {
+      console.error('[api/cancelar] email error (non-fatal):', emailErr)
+    }
 
     return NextResponse.json({ success: true })
   } catch (err) {
