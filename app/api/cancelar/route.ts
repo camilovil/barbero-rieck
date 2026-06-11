@@ -51,13 +51,15 @@ export async function POST(req: NextRequest) {
     const time = startTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
     const nombre = desc['cliente'] ?? 'Cliente'
     const servicio = desc['servicio'] ?? '—'
+    const location = desc['modalidad']?.toLowerCase().includes('domicilio') ? 'domicilio' : 'local'
+    const direccion = desc['dirección cliente'] ?? ''
 
     // Borrar el evento — el slot queda libre automáticamente en la app
     await deleteCalendarEvent(eventId)
 
     // Enviar emails de aviso (no bloquea la cancelación si falla)
     try {
-      await sendCancellationEmails(nombre, email, dateStr, time, servicio, eventId)
+      await sendCancellationEmails(nombre, email, dateStr, time, servicio, eventId, location, direccion)
     } catch (emailErr) {
       console.error('[api/cancelar] email error (non-fatal):', emailErr)
     }

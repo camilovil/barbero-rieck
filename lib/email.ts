@@ -644,7 +644,7 @@ export async function sendCancellationEmails(
   const rebookUrl = getAppUrl()
   const code = eventId ? bookingCode(eventId) : 'SR-2026'
   const lugarMain = location === 'domicilio' ? 'A domicilio' : 'Barbería Rieck'
-  const lugarSub = location === 'domicilio' ? (direccion || '') : 'CABA'
+  const lugarSub = location === 'domicilio' ? (direccion || '') : 'Congreso 1865, Belgrano, CABA'
 
   const reasonBlock = reason
     ? `<tr><td style="padding:0 28px 20px">
