@@ -156,7 +156,7 @@ function clientHtml(b: BookingState, cancelLink?: string, modLink?: string, even
       <p style="margin:0 0 10px;font-family:'Anton',Arial,sans-serif;font-size:24px;font-weight:400;color:#0B1F47">
         &iexcl;Turno confirmado!
       </p>
-      <p style="margin:0 0 24px;font-family:Arial,sans-serif;font-size:13px;color:#7D8AA3;line-height:1.55;max-width:320px;margin-left:auto;margin-right:auto">
+      <p style="margin:0 0 24px;font-family:'Barlow',Arial,sans-serif;font-size:13px;font-weight:600;color:#7D8AA3;line-height:1.55;max-width:320px;margin-left:auto;margin-right:auto">
         Te esperamos, ${b.nombre}. Guard&aacute; este mail &ndash; Santiago te escribe por WhatsApp para coordinar.
       </p>
 
@@ -197,7 +197,7 @@ function clientHtml(b: BookingState, cancelLink?: string, modLink?: string, even
 
     <!-- Gestionar turno link -->
     <tr><td style="padding:0 24px 20px;text-align:center">
-      <a href="${manageUrl}" style="font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:#3F86C4;text-decoration:none">
+      <a href="${manageUrl}" style="font-family:'Barlow',Arial,sans-serif;font-size:13px;font-weight:700;color:#3F86C4;text-decoration:none">
         Ver o gestionar mi turno &rarr;
       </a>
     </td></tr>
@@ -207,7 +207,7 @@ function clientHtml(b: BookingState, cancelLink?: string, modLink?: string, even
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
           <td style="background:#EEF6FD;border-radius:10px;padding:13px 16px">
-            <p style="margin:0;font-family:Arial,sans-serif;font-size:11.5px;color:#7D8AA3;line-height:1.5">
+            <p style="margin:0;font-family:'Barlow',Arial,sans-serif;font-size:11.5px;font-weight:600;color:#7D8AA3;line-height:1.5">
               <span style="color:#D6991C">&#9733;</span>
               Pod&eacute;s cancelar o reprogramar sin costo hasta <strong style="color:#0B1F47">24 hs antes</strong>.
               C&oacute;digo de turno: <strong style="color:#0B1F47">${code}</strong>.
@@ -226,7 +226,7 @@ function clientHtml(b: BookingState, cancelLink?: string, modLink?: string, even
         Congreso 1865, Belgrano, CABA &middot; Lun a S&aacute;b
       </p>
       <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:rgba(255,255,255,.55)">
-        WhatsApp ${process.env.SANTIAGO_WHATSAPP ?? ''}
+        WhatsApp ${process.env.SANTIAGO_WHATSAPP ?? ''} &middot; @santii_barber07
       </p>
     </td></tr>
 
@@ -287,7 +287,7 @@ function clientCancelHtml(
       <p style="margin:0 0 10px;font-family:'Anton',Arial,sans-serif;font-size:24px;font-weight:400;color:#0B1F47">
         Turno cancelado
       </p>
-      <p style="margin:0 0 24px;font-family:Arial,sans-serif;font-size:13px;color:#7D8AA3;line-height:1.55;max-width:340px;margin-left:auto;margin-right:auto">
+      <p style="margin:0 0 24px;font-family:'Barlow',Arial,sans-serif;font-size:13px;font-weight:600;color:#7D8AA3;line-height:1.55;max-width:340px;margin-left:auto;margin-right:auto">
         Liberamos el horario del <strong style="color:#0B1F47">${dateStr} a las ${time} hs</strong>. No se aplic&oacute; ning&uacute;n cargo.
       </p>
 
@@ -319,7 +319,7 @@ function clientCancelHtml(
 
     <!-- Note -->
     <tr><td style="padding:0 24px 28px">
-      <p style="margin:0;font-family:Arial,sans-serif;font-size:12px;color:#7D8AA3;text-align:center;line-height:1.5">
+      <p style="margin:0;font-family:'Barlow',Arial,sans-serif;font-size:12px;font-weight:600;color:#7D8AA3;text-align:center;line-height:1.5">
         Cuando quieras volv&eacute;s a reservar &mdash; siempre hay lugar para una buena pinta. &iexcl;Vamos Argentina! &#127942;
       </p>
     </td></tr>
@@ -333,7 +333,7 @@ function clientCancelHtml(
         Congreso 1865, Belgrano, CABA &middot; Lun a S&aacute;b
       </p>
       <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:rgba(255,255,255,.55)">
-        WhatsApp ${process.env.SANTIAGO_WHATSAPP ?? ''}
+        WhatsApp ${process.env.SANTIAGO_WHATSAPP ?? ''} &middot; @santii_barber07
       </p>
     </td></tr>
 

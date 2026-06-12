@@ -16,6 +16,7 @@ interface TurnoInfo {
   hora: string
   horasRestantes: number
   puedeMod: boolean
+  santiWa: string
 }
 
 function toDateParam(d: Date): string {
@@ -114,13 +115,21 @@ export default function ModificarClient() {
                 <h2 style={{ fontFamily: 'var(--font-anton,"Anton"),sans-serif', fontSize: 24, color: 'var(--text)', margin: '0 0 10px' }}>
                   Ya no es posible modificar
                 </h2>
-                <p className="text-sm font-semibold mb-4" style={{ color: 'var(--text-mut)', lineHeight: 1.6 }}>
+                <p className="text-sm font-semibold mb-6" style={{ color: 'var(--text-mut)', lineHeight: 1.6 }}>
                   Solo se puede modificar con al menos 24 horas de anticipación.<br />
                   Tu turno es el <strong style={{ color: 'var(--text)' }}>{turno.fecha} a las {turno.hora}</strong>.
                 </p>
-                <p className="text-sm font-semibold" style={{ color: 'var(--text-mut)', opacity: .7 }}>
-                  Para cambiar el turno, contactá a Santiago directamente por WhatsApp.
-                </p>
+                {turno.santiWa && (
+                  <a
+                    href={`https://wa.me/${turno.santiWa.replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-cta final"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 28px', textDecoration: 'none', background: '#25D366', borderColor: '#25D366' }}
+                  >
+                    💬 ESCRIBIR A SANTIAGO
+                  </a>
+                )}
               </div>
             )}
 

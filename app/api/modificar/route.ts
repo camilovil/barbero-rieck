@@ -40,6 +40,7 @@ export async function GET(req: NextRequest) {
     hora: startTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
     horasRestantes: Math.round(hoursUntil),
     puedeMod: hoursUntil >= CANCELLATION_MIN_HOURS,
+    santiWa: process.env.SANTIAGO_WHATSAPP ?? '',
   })
 }
 
