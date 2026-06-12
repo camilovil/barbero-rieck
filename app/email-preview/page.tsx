@@ -101,7 +101,7 @@ export default function EmailPreviewPage() {
               <tbody>
                 <DetailRow label="Servicio" value={`${b.service?.name} — $${b.service?.price?.toLocaleString('es-AR')}`} />
                 <DetailRow label="Duración" value={`${b.service?.duration} min`} />
-                <DetailRow label="Modalidad" value="Barbería Rieck — Av. Corrientes 1234, CABA" />
+                <DetailRow label="Modalidad" value="Barbería Rieck — Congreso 1865, Belgrano, CABA" />
                 {b.nota && <DetailRow label="Nota" value={b.nota} />}
               </tbody>
             </table>

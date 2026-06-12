@@ -20,7 +20,7 @@ export default function StepSuccess({ booking, eventId, onReset }: Props) {
 
   const lugar = booking.location === 'domicilio'
     ? { main: 'A domicilio', sub: booking.direccion || '' }
-    : { main: 'Barbería Rieck', sub: 'CABA · Corrientes 1234' }
+    : { main: 'Barbería Rieck', sub: 'Congreso 1865, Belgrano, CABA' }
 
   const jerseyNo = booking.service?.name === 'Corte y barba' ? '10' : '7'
   const servicioSub = `${booking.service?.name ?? '—'} · N°${jerseyNo}`
