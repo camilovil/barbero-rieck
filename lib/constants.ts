@@ -6,8 +6,8 @@ export const SERVICES: Record<Location, Service[]> = {
     { name: 'Corte y barba', duration: 60, price: 17000 },
   ],
   domicilio: [
-    { name: 'Corte', duration: 90, price: 30000 },
-    { name: 'Corte y barba', duration: 90, price: 35000 },
+    { name: 'Corte', duration: 120, price: 30000 },
+    { name: 'Corte y barba', duration: 120, price: 35000 },
   ],
 }
 
@@ -27,9 +27,6 @@ export const BARBER_ADDRESS = 'Congreso 1865, Belgrano, CABA'
 
 // Horas mínimas de anticipación para poder cancelar
 export const CANCELLATION_MIN_HOURS = 24
-
-// Minutos de buffer de viaje entre turno en estudio y turno a domicilio (y viceversa)
-export const TRAVEL_BUFFER_MINUTES = 30
 
 // Máximo de turnos por día (evita sobrecarga)
 export const MAX_DAILY_BOOKINGS = 8

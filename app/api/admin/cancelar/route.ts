@@ -23,10 +23,9 @@ export async function POST(req: NextRequest) {
     const startTime = new Date(event.start?.dateTime ?? '')
     const location = desc['modalidad']?.toLowerCase().includes('domicilio') ? 'domicilio' : 'local'
     const direccion = desc['dirección cliente'] ?? ''
-    const serviceNameRaw = (desc['servicio'] ?? '').split(' — ')[0].trim()
-    const durationMins = serviceNameRaw.toLowerCase().includes('barba')
-      ? (location === 'domicilio' ? 90 : 60)
-      : (location === 'domicilio' ? 90 : 40)
+    const durationMins = event.end?.dateTime
+      ? Math.round((new Date(event.end.dateTime).getTime() - startTime.getTime()) / 60000)
+      : (location === 'domicilio' ? 120 : 40)
 
     await deleteCalendarEvent(eventId)
 
