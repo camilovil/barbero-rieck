@@ -35,10 +35,14 @@ export async function POST(req: NextRequest) {
     const eventId = await createCalendarEvent(booking)
 
     // Luego enviamos emails con el link de cancelación incluido
-    await Promise.all([
-      sendBookingEmails(booking, eventId),
-      sendBookingNotification(booking),
-    ])
+    try {
+      await Promise.all([
+        sendBookingEmails(booking, eventId),
+        sendBookingNotification(booking),
+      ])
+    } catch (emailErr) {
+      console.error('[api/booking] email error (non-fatal):', emailErr)
+    }
 
     return NextResponse.json({ success: true, eventId })
   } catch (err) {

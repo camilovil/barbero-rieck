@@ -1,6 +1,6 @@
 import { google } from 'googleapis'
 import type { BookingState } from '@/types/booking'
-import { TIME_SLOTS, TRAVEL_BUFFER_MINUTES } from './constants'
+import { TIME_SLOTS } from './constants'
 import type { Location } from '@/types/booking'
 
 // Argentina never observes DST — UTC-3 all year
@@ -354,10 +354,7 @@ export async function getBookedSlots(date: Date, location: Location): Promise<st
   if (events.length === 0) return []
 
   const slots = TIME_SLOTS[location]
-  const TRAVEL_MS = TRAVEL_BUFFER_MINUTES * 60 * 1000
-
-  // Duración máxima del servicio según modalidad (para calcular fin del slot)
-  const slotDurationMs = (location === 'local' ? 60 : 90) * 60 * 1000
+  const slotDurationMs = (location === 'local' ? 60 : 120) * 60 * 1000
 
   const ds = toUTCDateStr(date)
   return slots.filter((time) => {
@@ -368,18 +365,8 @@ export async function getBookedSlots(date: Date, location: Location): Promise<st
 
     return events.some((ev) => {
       const evStart = new Date(ev.start)
-      const evEnd = new Date(ev.end || ev.start) // fallback si end está vacío
-
-      const evIsLocal = !ev.modalidad.toLowerCase().includes('domicilio')
-      const slotIsLocal = location === 'local'
-
-      // Si las modalidades son distintas, aplicar buffer en ambas direcciones:
-      // - hacia adelante: el slot no puede empezar hasta TRAVEL_MS después del fin del evento
-      // - hacia atrás: el slot no puede terminar hasta TRAVEL_MS antes del inicio del evento
-      const buffer = evIsLocal !== slotIsLocal ? TRAVEL_MS : 0
-
-      return slotStart < new Date(evEnd.getTime() + buffer)
-          && new Date(slotEnd.getTime() + buffer) > evStart
+      const evEnd = new Date(ev.end || ev.start)
+      return slotStart < evEnd && slotEnd > evStart
     })
   })
 }

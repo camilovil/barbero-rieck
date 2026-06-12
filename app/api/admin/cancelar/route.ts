@@ -23,6 +23,9 @@ export async function POST(req: NextRequest) {
     const startTime = new Date(event.start?.dateTime ?? '')
     const location = desc['modalidad']?.toLowerCase().includes('domicilio') ? 'domicilio' : 'local'
     const direccion = desc['dirección cliente'] ?? ''
+    const durationMins = event.end?.dateTime
+      ? Math.round((new Date(event.end.dateTime).getTime() - startTime.getTime()) / 60000)
+      : (location === 'domicilio' ? 120 : 40)
 
     await deleteCalendarEvent(eventId)
 
@@ -33,7 +36,7 @@ export async function POST(req: NextRequest) {
       })
       const time = startTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
       try {
-        await sendCancellationEmails(desc['cliente'] ?? 'Cliente', desc['email'], dateStr, time, desc['servicio'] ?? '—', eventId, location, direccion, undefined, reason)
+        await sendCancellationEmails(desc['cliente'] ?? 'Cliente', desc['email'], dateStr, time, desc['servicio'] ?? '—', eventId, location, direccion, String(durationMins), reason)
       } catch (emailErr) {
         console.error('[api/admin/cancelar] email error (non-fatal):', emailErr)
       }
