@@ -46,9 +46,9 @@ export async function POST(req: NextRequest) {
     }
 
     const dateStr = startTime.toLocaleDateString('es-AR', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires',
     })
-    const time = startTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+    const time = startTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
     const nombre = desc['cliente'] ?? 'Cliente'
     const servicio = desc['servicio'] ?? '—'
     const location = desc['modalidad']?.toLowerCase().includes('domicilio') ? 'domicilio' : 'local'
@@ -100,8 +100,8 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     nombre: desc['cliente'] ?? 'Cliente',
     servicio: desc['servicio'] ?? '—',
-    fecha: startTime.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
-    hora: startTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
+    fecha: startTime.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' }),
+    hora: startTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' }),
     horasRestantes: Math.round(hoursUntil),
     puedeCancel: hoursUntil >= CANCELLATION_MIN_HOURS,
   })

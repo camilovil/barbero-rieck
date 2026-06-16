@@ -32,9 +32,9 @@ export async function POST(req: NextRequest) {
     // Notificar al cliente si tiene email (no bloquea si falla)
     if (desc['email']) {
       const dateStr = startTime.toLocaleDateString('es-AR', {
-        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires',
       })
-      const time = startTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+      const time = startTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
       try {
         await sendCancellationEmails(desc['cliente'] ?? 'Cliente', desc['email'], dateStr, time, desc['servicio'] ?? '—', eventId, location, direccion, String(durationMins), reason)
       } catch (emailErr) {
