@@ -28,10 +28,10 @@ export async function GET(req: NextRequest) {
     for (const ev of events) {
       if (!ev.email) continue
       const dateStr = new Date(ev.start).toLocaleDateString('es-AR', {
-        weekday: 'long', day: 'numeric', month: 'long',
+        weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Argentina/Buenos_Aires',
       })
       const time = new Date(ev.start).toLocaleTimeString('es-AR', {
-        hour: '2-digit', minute: '2-digit',
+        hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires',
       })
       const location = ev.modalidad?.toLowerCase().includes('domicilio') ? 'domicilio' : 'local'
       await sendReminderEmail(

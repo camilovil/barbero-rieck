@@ -20,7 +20,7 @@ const MOCK: BookingState = {
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString('es-AR', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires',
   })
 }
 function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }

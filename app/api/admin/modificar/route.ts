@@ -36,9 +36,9 @@ export async function POST(req: NextRequest) {
 
     const oldStart = new Date(event.start?.dateTime ?? '')
     const oldDateStr = oldStart.toLocaleDateString('es-AR', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires',
     })
-    const oldTime = oldStart.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+    const oldTime = oldStart.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
 
     const booking: BookingState = {
       step: 5,
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
 
     // Notify client and Santiago
     const newDateStr = new Date(newDate).toLocaleDateString('es-AR', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires',
     })
 
     await Promise.all([

@@ -12,11 +12,11 @@ function formatDay(dateStr: string): string {
   tomorrow.setDate(today.getDate() + 1)
   if (d.toDateString() === today.toDateString()) return 'Hoy'
   if (d.toDateString() === tomorrow.toDateString()) return 'Mañana'
-  return d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+  return d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Argentina/Buenos_Aires' })
 }
 
 function formatTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+  return new Date(dateStr).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
 }
 
 function groupByDay(events: BookingEvent[]): [string, BookingEvent[]][] {
@@ -162,7 +162,7 @@ export default function AdminDashboard() {
   function openEdit(ev: BookingEvent) {
     const d = new Date(ev.start)
     const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-    const timeStr = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false })
+    const timeStr = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Argentina/Buenos_Aires' })
     setEditing(ev)
     setEditDate(dateStr)
     setEditTime(timeStr)
@@ -182,12 +182,14 @@ export default function AdminDashboard() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Error')
       // Update local state: replace old event with updated times
+      // Build the new start as an explicit Buenos Aires offset string — using
+      // setHours() here would interpret h:m in the browser's local timezone,
+      // which can silently shift the displayed time if it differs from -03:00.
+      const durationMs = new Date(editing.end).getTime() - new Date(editing.start).getTime()
+      const newStart = new Date(`${editDate}T${editTime}:00-03:00`)
+      const newEnd = new Date(newStart.getTime() + durationMs)
       setEvents(prev => prev.map(e => {
         if (e.id !== editing.id) return e
-        const [h, m] = editTime.split(':').map(Number)
-        const newStart = new Date(editDate)
-        newStart.setHours(h, m, 0, 0)
-        const newEnd = new Date(newStart.getTime() + 60 * 60000)
         return { ...e, id: data.newEventId, start: newStart.toISOString(), end: newEnd.toISOString() }
       }))
       setEditing(null)

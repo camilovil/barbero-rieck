@@ -5,6 +5,7 @@ function formatDate(date: Date): string {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
+    timeZone: 'America/Argentina/Buenos_Aires',
   })
 }
 

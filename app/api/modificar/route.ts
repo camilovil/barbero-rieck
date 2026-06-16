@@ -36,8 +36,8 @@ export async function GET(req: NextRequest) {
     nombre: desc['cliente'] ?? 'Cliente',
     servicio: desc['servicio'] ?? '—',
     modalidad: desc['modalidad'] ?? '—',
-    fecha: startTime.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
-    hora: startTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
+    fecha: startTime.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' }),
+    hora: startTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' }),
     horasRestantes: Math.round(hoursUntil),
     puedeMod: hoursUntil >= CANCELLATION_MIN_HOURS,
     santiWa: process.env.SANTIAGO_WHATSAPP ?? '',
@@ -94,9 +94,9 @@ export async function POST(req: NextRequest) {
 
     // Capture old date/time for the reschedule email
     const oldDateStr = startTime.toLocaleDateString('es-AR', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires',
     })
-    const oldTime = startTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+    const oldTime = startTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
 
     // Delete old event and create updated one
     await deleteCalendarEvent(eventId)
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
 
     // Send reschedule email (shows old date crossed out + new date)
     const newDateStr = new Date(newDate).toLocaleDateString('es-AR', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires',
     })
     await sendRescheduleEmails(
       booking.nombre,

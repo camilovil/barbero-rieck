@@ -14,13 +14,13 @@ function getTransporter() {
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString('es-AR', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires',
   })
 }
 
 function formatDateShort(date: Date): string {
   return date.toLocaleDateString('es-AR', {
-    weekday: 'long', day: 'numeric', month: 'long',
+    weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Argentina/Buenos_Aires',
   })
 }
 
@@ -921,14 +921,14 @@ export async function sendDailySummaryEmail(events: BookingEvent[], date: Date):
 
   const transporter = getTransporter()
   const from = `"Santi Barber" <${process.env.GMAIL_USER}>`
-  const dateStr = capitalize(date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))
+  const dateStr = capitalize(date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' }))
 
   const turnosHtml = events.length === 0
     ? `<tr><td colspan="4" style="padding:24px;text-align:center;font-size:14px;color:#888;font-family:Arial,sans-serif">
         🎉 Sin turnos para hoy — día libre
        </td></tr>`
     : events.map((ev, i) => {
-        const time = new Date(ev.start).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+        const time = new Date(ev.start).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
         const waNumber = ev.whatsapp.replace(/https:\/\/wa\.me\//,'').replace(/\D/g,'')
         const isLast = i === events.length - 1
         const modalIcon = ev.modalidad?.toLowerCase().includes('domicilio') ? '🏠' : '✂️'
@@ -980,8 +980,8 @@ export async function sendDailySummaryEmail(events: BookingEvent[], date: Date):
                 ${events.length > 0 ? `
                 <td style="padding-left:16px;vertical-align:middle">
                   <p style="margin:0;font-size:13px;color:#555;font-family:Arial,sans-serif;line-height:1.5">
-                    Primer turno: <strong style="color:#0B1F47">${new Date(events[0].start).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}</strong><br>
-                    Último turno: <strong style="color:#0B1F47">${new Date(events[events.length-1].start).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}</strong>
+                    Primer turno: <strong style="color:#0B1F47">${new Date(events[0].start).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Argentina/Buenos_Aires'})}</strong><br>
+                    Último turno: <strong style="color:#0B1F47">${new Date(events[events.length-1].start).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Argentina/Buenos_Aires'})}</strong>
                   </p>
                 </td>` : ''}
               </tr>
