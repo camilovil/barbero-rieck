@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import type { BookingEvent } from '@/lib/googleCalendar'
 import ThemeToggle from '@/components/ThemeToggle'
+import { TIME_SLOTS } from '@/lib/constants'
 
 function formatDay(dateStr: string): string {
   const d = new Date(dateStr)
@@ -721,10 +722,7 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
-                  {(editing.modalidad?.toLowerCase().includes('domicilio')
-                    ? ['10:00','11:30','13:00','15:00','15:30','17:00']
-                    : ['10:00','10:30','11:00','11:30','12:00','12:30','13:00','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30']
-                  ).map(slot => {
+                  {TIME_SLOTS[editing.modalidad?.toLowerCase().includes('domicilio') ? 'domicilio' : 'local'].map(slot => {
                     const isOccupied = editBlockedSlots.includes(slot)
                     const isSelected = editTime === slot
                     return (
