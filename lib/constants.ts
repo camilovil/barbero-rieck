@@ -2,12 +2,12 @@ import type { Location, Service } from '@/types/booking'
 
 export const SERVICES: Record<Location, Service[]> = {
   local: [
-    { name: 'Corte', duration: 40, price: 15000 },
-    { name: 'Corte y barba', duration: 60, price: 17000 },
+    { name: 'Corte', duration: 40, price: 16000 },
+    { name: 'Corte y barba', duration: 60, price: 20000 },
   ],
   domicilio: [
-    { name: 'Corte', duration: 120, price: 30000 },
-    { name: 'Corte y barba', duration: 120, price: 35000 },
+    { name: 'Corte', duration: 120, price: 40000 },
+    { name: 'Corte y barba', duration: 120, price: 45000 },
   ],
 }
 
