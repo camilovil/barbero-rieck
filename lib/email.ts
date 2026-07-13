@@ -35,6 +35,7 @@ function bookingCode(eventId: string): string {
 const JERSEY: Record<string, string> = {
   'Corte': '7',
   'Corte y barba': '10',
+  'Corte (incluye barba)': '10',
 }
 
 // ─── Shared: header celeste + brand ──────────────────────────────────────────
