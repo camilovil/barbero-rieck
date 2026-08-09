@@ -119,13 +119,21 @@ html.papel {
   --overlay:     rgba(12,12,13,.62);
 
   --text:        #0C0C0D;
-  /* Un punto más oscuro que el #6E6C67 histórico: ese llegaba a 4.81:1
-     sobre la tarjeta pero se quedaba en 4.44:1 sobre el fondo de app,
-     que es donde vive el pie. Ahora pasa en las dos superficies. */
-  --text-mut:    #6C6A65;   /* prosa secundaria · 4.6:1 sobre el fondo */
+  /* Se oscureció dos veces, y cada vez porque apareció una superficie
+     más honda que la anterior. Primero fue #6E6C67, que llegaba a
+     4.81:1 sobre la tarjeta pero se quedaba en 4.44:1 sobre el fondo
+     de app. Después #6C6A65, que pasaba en las dos pero caía a 4.20:1
+     sobre la barra lateral —#E4E3DE, la superficie hundida— en cuanto
+     el panel empezó a usarla, y a 4.45:1 sobre la fila al pasar.
+
+     Este pasa en las CUATRO: lateral 4.53, fila 4.79, fondo 4.92,
+     tarjeta 5.34. Y sigue a 3.36:1 de la tinta principal, así que el
+     escalón de jerarquía no se pierde. Antes de bajarlo de tono,
+     medirlo contra --surface-baja, que es la más oscura de todas. */
+  --text-mut:    #676560;   /* prosa secundaria · 4.5:1 en la peor superficie */
   /* Los dos escalones coinciden: el sistema de dos tintas no daba
      para más. El token existe igual porque en la cueva sí se separan. */
-  --text-meta:   #6C6A65;
+  --text-meta:   #676560;
   --text-faint:  #A8A7A3;   /* sólo placeholders */
   --off:         #8B8A87;   /* no disponible · 3.2:1, legible tachado */
   --on-primary:  #F6F5F3;   /* encima de tinta plena */
@@ -134,8 +142,10 @@ html.papel {
   --border-soft:   #EAE9E5;
   /* El filete que dibuja un control. El #8B8A87 histórico daba 3.17:1
      sobre la tarjeta pero 2.92:1 sobre el fondo de app — y en el panel
-     hay controles ahí mismo (el segmentado y el buscador). */
-  --border-strong: #878683;   /* 3.08:1 sobre el fondo, 3.34:1 sobre la tarjeta */
+     hay controles ahí mismo (el segmentado y el buscador). El #878683
+     que lo reemplazó arreglaba eso y se quedaba en 2.83:1 sobre la
+     barra lateral, donde ahora vive el botón de cerrar sesión. */
+  --border-strong: #82817E;   /* lateral 3.03 · fila 3.21 · fondo 3.30 · tarjeta 3.58 */
 
   --btn-bg:       #0C0C0D;
   --btn-bg-hover: #2A2A28;
@@ -1146,9 +1156,250 @@ textarea.w-input { line-height: 1.5; }
   transition: color .16s;
 }
 .panel-tabs button[aria-current="page"] { color: var(--acento-txt); }
+/* Las pestañas se reparten la fila solas: cuántas son lo decide la
+   navegación, no esta hoja. */
+.panel-tabs { grid-auto-flow: column; grid-auto-columns: 1fr; }
 
 @media (min-width: 1024px) {
   .panel-tabs { display: none; }
+}
+
+/* Abajo de 1024 manda la columna: el cuerpo se estira y las pestañas
+   quedan apoyadas al pie aunque la agenda esté vacía. Con `sticky`
+   solo, una agenda corta las dejaba flotando a media pantalla. */
+@media (max-width: 1023px) {
+  .panel { display: flex; flex-direction: column; }
+  .panel-agenda { flex: 1; }
+}
+
+/* ─── Cabecera de celular ───
+   En PC la marca y la sesión viven en la barra lateral. Abajo de 1024
+   no hay barra, así que queda esta cabecera mínima. Va pegajosa y no
+   fija: dentro de la columna ya no hay que descontarle el alto al
+   cuerpo con un padding calculado a mano. */
+.panel-cabecera {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  padding-top: calc(10px + env(safe-area-inset-top));
+}
+@media (min-width: 1024px) {
+  .panel-cabecera { display: none; }
+}
+
+/* ─── La marca y la sesión, en la barra lateral ─── */
+.panel-marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+}
+/* La sesión se va al pie: es lo último que se toca en el día. */
+.panel-lateral-pie {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 14px 0;
+  border-top: 1px solid var(--border);
+}
+
+/* ─── La columna del medio ─── */
+.panel-agenda {
+  min-width: 0;
+  padding: 18px 16px 28px;
+  /* La agenda es el contenedor contra el que se mide la tabla. La
+     ventana no sirve de referencia: lo que le queda a la columna del
+     medio es la ventana menos los 562px fijos de las otras dos, y esa
+     resta cambia el ancho útil mucho antes que cualquier corte
+     redondo. */
+  container-type: inline-size;
+}
+@media (min-width: 1024px) {
+  .panel-agenda { padding: 26px 28px 44px; }
+}
+
+/* =============================================
+   LA AGENDA — dos presentaciones del mismo turno
+
+   En PC, la tabla del turno 7b: hora, cliente, servicio, dónde y el
+   cursor que abre el detalle. En celular, la tarjeta de siempre, que
+   ya trae todo adentro y no necesita una segunda columna.
+
+   La tabla no es una <table>: cada renglón es UN control, porque
+   tocarlo es elegir el turno. Los rótulos de arriba son la leyenda
+   de las columnas y no entran al árbol accesible — lo que se anuncia
+   es la fila entera, en el orden en que se lee.
+
+   La columna ESTADO que dibuja el diseño todavía no tiene con qué
+   llenarse: la seña llega en la fase que viene. En su lugar va
+   DÓNDE, que es el dato que hoy decide la mañana de Santiago.
+   ============================================= */
+.agenda-tabla { display: none; }
+
+@media (min-width: 1024px) {
+  .agenda-tabla { display: block; }
+  .agenda-cards { display: none; }
+}
+
+.agenda-tabla section + section,
+.agenda-cards section + section { margin-top: 30px; }
+
+/* El encabezado del día — el mismo filete fuerte en las dos vistas */
+.agenda-dia {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--text);
+  color: var(--text);
+}
+.agenda-dia > span:last-child { color: var(--text-mut); }
+
+.agenda-lista { list-style: none; margin: 10px 0 0; padding: 0; }
+
+.agenda-head,
+.agenda-fila {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1.15fr) minmax(0, 1.35fr) 106px 14px;
+  align-items: center;
+  gap: 14px;
+}
+/* Los 12px de la izquierda son 10 de padding más los 2 del filete
+   vivo de la fila: así la leyenda y los datos caen en el mismo eje. */
+.agenda-head { padding: 0 10px 9px 12px; }
+.agenda-tabla .agenda-dia { padding-inline: 12px 10px; }
+
+.agenda-fila {
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 10px;
+  text-align: left;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border-soft);
+  border-left: 2px solid transparent;
+  color: var(--text);
+  font-family: var(--font-sans);
+  transition: background .14s, color .14s;
+}
+.agenda-fila:hover { background: var(--hover); }
+/* El turno abierto se enciende con el filete vivo, igual que la
+   sección abierta de la navegación (regla 02). */
+.agenda-fila[aria-current="true"] {
+  background: var(--sel-bg);
+  border-left-color: var(--sel-borde);
+  color: var(--sel-fg);
+}
+
+.agenda-hora {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  font-weight: 500;
+}
+.agenda-nombre {
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+.agenda-srv { font-size: 12.5px; }
+.agenda-donde {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+/* Ninguna celda parte en dos renglones: la fila mide siempre lo
+   mismo y la columna se lee de un barrido. */
+.agenda-fila > * {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agenda-srv,
+.agenda-donde { color: var(--text-mut); }
+.agenda-fila[aria-current="true"] .agenda-srv,
+.agenda-fila[aria-current="true"] .agenda-donde { color: var(--sel-fg-mut); }
+
+.agenda-mas { text-align: right; color: var(--text-meta); }
+.agenda-fila[aria-current="true"] .agenda-mas { color: var(--sel-fg); }
+
+/* En un portátil de 1024 la agenda se queda con 391px útiles, y ahí
+   CLIENTE y SERVICIO se reparten 109px: el nombre entra en cinco
+   letras. Abajo de 560 el servicio baja abajo del nombre. Se pierde
+   la columna, no el dato — esconderlo sería esconder por qué viene. */
+@container (max-width: 560px) {
+  .agenda-head,
+  .agenda-fila { grid-template-columns: 72px minmax(0, 1fr) 98px 14px; }
+
+  /* El rótulo SERVICIO ya no encabeza una columna propia */
+  .agenda-head > :nth-child(3) { display: none; }
+
+  .agenda-fila { row-gap: 2px; padding-block: 9px; }
+  .agenda-fila .agenda-hora   { grid-area: 1 / 1 / 3 / 2; align-self: center; }
+  .agenda-fila .agenda-nombre { grid-area: 1 / 2 / 2 / 3; }
+  .agenda-fila .agenda-srv    { grid-area: 2 / 2 / 3 / 3; font-size: 11.5px; }
+  .agenda-fila .agenda-donde  { grid-area: 1 / 3 / 3 / 4; align-self: center; }
+  .agenda-fila .agenda-mas    { grid-area: 1 / 4 / 3 / 5; align-self: center; }
+}
+
+/* =============================================
+   EL DETALLE — la tercera columna
+
+   Se puebla con lo que en celular vive suelto adentro de la tarjeta:
+   servicio, plata, contacto, dirección y nota, más las dos acciones
+   que ya funcionan. Sin turno elegido no se esconde: dice que hay
+   que elegir uno. Una columna en blanco se lee como una pantalla
+   rota.
+   ============================================= */
+.detalle-cuerpo { padding: 26px 22px 34px; }
+
+.detalle-hora {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 21px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--text);
+  margin: 13px 0 0;
+}
+/* Montserrat no tiene itálica y el sistema prohíbe fingirla: el <i>
+   acá es sólo el gancho para bajar de tono la hora de fin. */
+.detalle-hora i { font-style: normal; color: var(--text-mut); }
+.detalle-fecha { margin: 11px 0 0; }
+
+.detalle-nombre {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1.05;
+  color: var(--text);
+  text-wrap: balance;
+  margin: 9px 0 18px;
+}
+/* Una debajo de la otra: la columna mide 366px y en fila los dos
+   botones quedarían en 150px cada uno, con el texto partido. */
+.detalle-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+}
+.detalle-vacio {
+  padding: 40px 22px;
+  line-height: 1.9;
 }
 
 /* =============================================

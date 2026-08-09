@@ -11,6 +11,13 @@ function aplicar(papel: boolean) {
   document.documentElement.classList.toggle('papel', papel)
 }
 
+/* El panel monta DOS conmutadores —el de la barra lateral en PC y el
+   de la cabecera en celular—, y sólo uno se ve por vez. El tema vive
+   en <html>, así que el que está oculto igual tiene que enterarse:
+   sin este aviso se quedaba dibujando el círculo al revés y aparecía
+   mal al cruzar el corte de 1024px. */
+const AVISO = 'hohle-theme-cambio'
+
 export default function ThemeToggle() {
   const [papel, setPapel] = useState(false)
 
@@ -18,17 +25,27 @@ export default function ThemeToggle() {
     const guardado = localStorage.getItem('hohle-theme') === 'papel'
     setPapel(guardado)
     aplicar(guardado)
+
+    function sincronizar(e: Event) {
+      setPapel((e as CustomEvent<boolean>).detail)
+    }
+    window.addEventListener(AVISO, sincronizar)
+
     /* Al salir del panel el documento vuelve a la cueva: la clase vive
        en <html>, así que sin esto una navegación blanda a la portada
        se la llevaría puesta. */
-    return () => aplicar(false)
+    return () => {
+      window.removeEventListener(AVISO, sincronizar)
+      aplicar(false)
+    }
   }, [])
 
   function toggle() {
     const next = !papel
-    setPapel(next)
     localStorage.setItem('hohle-theme', next ? 'papel' : 'hohle')
     aplicar(next)
+    // El aviso es síncrono: también actualiza a este mismo conmutador.
+    window.dispatchEvent(new CustomEvent(AVISO, { detail: next }))
   }
 
   /* El toggle es el propio sistema en miniatura: un círculo partido,
