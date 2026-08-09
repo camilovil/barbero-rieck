@@ -1,23 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
-  <defs>
-    <pattern id="arg" width="15" height="15" patternUnits="userSpaceOnUse" patternTransform="rotate(56)">
-      <rect width="15" height="15" fill="#ffffff"></rect>
-      <rect width="7.5" height="15" x="0" fill="#75AADB"></rect>
-    </pattern>
-    <radialGradient id="navyG" cx="50%" cy="36%" r="80%">
-      <stop offset="0" stop-color="#16315c"></stop><stop offset="1" stop-color="#0B1F47"></stop>
-    </radialGradient>
-    <linearGradient id="goldG" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#FAD06A"></stop><stop offset="1" stop-color="#D99B22"></stop>
-    </linearGradient>
-  </defs>
-  <rect width="120" height="120" rx="27" fill="#4F93CF"></rect>
-  <g stroke="#161616" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round">
-    <circle cx="60" cy="30" r="15" fill="#fff"></circle>
-    <path d="M60 22 L66 27 L64 34 L56 34 L54 27 Z" fill="#161616" stroke-width="2.5"></path>
-    <rect x="38" y="48" width="44" height="8" rx="3.5" fill="url(#goldG)"></rect>
-    <rect x="38" y="94" width="44" height="8" rx="3.5" fill="url(#goldG)"></rect>
-    <rect x="43" y="56" width="34" height="38" rx="5" fill="url(#arg)"></rect>
-    <rect x="48" y="102" width="24" height="7" rx="3" fill="#0a1733"></rect>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="0" fill="#0A0908"/>
+  <g fill="#C9974A" transform="translate(59.65 365.08) scale(0.27616 -0.27616)">
+    <path d="M538.0 0V700H736.0V0ZM70.0 0V700H268.0V0ZM254.0 273V437H552.0V273Z"/>
+    <path d="M1089.0 -9Q1000.0 -9 931.0 27.0Q862.0 63 822.5 126.5Q783.0 190 783.0 272Q783.0 354 822.5 417.0Q862.0 480 931.0 515.5Q1000.0 551 1089.0 551Q1178.0 551 1247.5 515.5Q1317.0 480 1356.0 417.0Q1395.0 354 1395.0 272Q1395.0 190 1356.0 126.5Q1317.0 63 1247.5 27.0Q1178.0 -9 1089.0 -9ZM1089.0 142Q1122.0 142 1147.5 157.0Q1173.0 172 1188.0 201.5Q1203.0 231 1203.0 272Q1203.0 313 1188.0 341.5Q1173.0 370 1147.5 385.0Q1122.0 400 1089.0 400Q1057.0 400 1031.5 385.0Q1006.0 370 990.5 341.5Q975.0 313 975.0 272Q975.0 231 990.5 201.5Q1006.0 172 1031.5 157.0Q1057.0 142 1089.0 142ZM1193.0 606Q1160.0 606 1137.0 627.5Q1114.0 649 1114.0 684Q1114.0 719 1137.0 741.0Q1160.0 763 1193.0 763Q1226.0 763 1249.0 741.0Q1272.0 719 1272.0 684Q1272.0 649 1249.0 627.5Q1226.0 606 1193.0 606ZM981.0 606Q948.0 606 925.0 627.5Q902.0 649 902.0 684Q902.0 719 925.0 741.0Q948.0 763 981.0 763Q1014.0 763 1037.0 741.0Q1060.0 719 1060.0 684Q1060.0 649 1037.0 627.5Q1014.0 606 981.0 606Z"/>
   </g>
 </svg>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import ThemeToggle from '@/components/ThemeToggle'
 
@@ -23,7 +24,7 @@ export default function LoginPage() {
       router.push('/admin')
     } else {
       const data = await res.json()
-      setError(data.error ?? 'Error')
+      setError(data.error ?? 'No pudimos entrar. Probá de nuevo en unos segundos.')
       setLoading(false)
     }
   }
@@ -31,87 +32,84 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col" style={{background:'var(--app-bg)'}}>
 
-      {/* ThemeToggle — esquina superior derecha */}
-      <div style={{position:'fixed', top:12, right:16, zIndex:50}}>
-        <ThemeToggle variant="admin" />
-      </div>
+      {/* Header — el mismo lockup que la web pública. Lleva la roca:
+          el login es pantalla de marca, no la herramienta de trabajo.
+          Adentro del panel ya no aparece.
 
-      {/* Header celeste — igual que el dashboard */}
-      <header style={{
-        background: 'linear-gradient(135deg, #75AADB 0%, #0B1F47 100%)',
-        boxShadow: '0 2px 16px rgba(11,31,71,.45)',
-      }}>
-        <div style={{height: 4, background: '#75AADB', opacity: .45}} />
+          El conmutador va DENTRO de la cabecera, no fijo a la ventana:
+          fijo se le montaba encima al rótulo «Admin», que ocupa esa
+          misma esquina. */}
+      <header className="roca" style={{ borderBottom: '1px solid var(--border)' }}>
         <div style={{
-          maxWidth: 384, margin: '0 auto', padding: '14px 24px',
-          display: 'flex', alignItems: 'center', gap: 10,
+          maxWidth: 384, margin: '0 auto', padding: '16px 24px 15px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
         }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon.svg" alt="" width={28} height={28} style={{filter:'drop-shadow(0 1px 4px rgba(0,0,0,.35))'}} />
-          <div>
-            <div style={{fontFamily:'var(--font-permanent-marker)', fontSize:'1rem', color:'#fff', lineHeight:1.1}}>
-              Santi Barber
-            </div>
-            <div style={{fontFamily:'var(--font-anton)', fontSize:'0.5rem', letterSpacing:'0.2em', textTransform:'uppercase', color:'rgba(255,255,255,.6)', lineHeight:1, marginTop:2}}>
-              PANEL ADMIN
-            </div>
-          </div>
+          <span style={{ display: 'block', width: 130 }}>
+            <span className="sr-only">barber Höhle</span>
+            <span className="logo-ink">
+              <Image src="/logo-black.png" alt="" width={1522} height={253} sizes="130px" priority
+                style={{ width: '100%', height: 'auto', display: 'block' }} />
+            </span>
+            <span className="logo-paper">
+              <Image src="/logo-white.png" alt="" width={1522} height={253} sizes="130px" priority
+                style={{ width: '100%', height: 'auto', display: 'block' }} />
+            </span>
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+            <span className="rotulo" style={{ letterSpacing: '.14em' }}>Admin</span>
+            <ThemeToggle />
+          </span>
         </div>
       </header>
 
-      {/* Login card */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
+      {/* Login */}
+      <main className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
 
-          {/* Stars */}
-          <div style={{textAlign:'center', marginBottom:28}}>
-            <div style={{fontSize:18, color:'var(--gold)', letterSpacing:10, marginBottom:10}}>★ ★ ★</div>
-            <h1 style={{fontFamily:'var(--font-anton)', fontSize:'1.5rem', color:'var(--text)', letterSpacing:'.5px', margin:0}}>
-              ACCESO ADMIN
-            </h1>
-            <p style={{fontSize:'0.65rem', letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--text-mut)', marginTop:6}}>
-              Edición Mundial 2026
-            </p>
-          </div>
+          <div className="rotulo">Acceso restringido</div>
+          <h1
+            className="font-display"
+            style={{
+              fontSize: 'clamp(30px, 9vw, 38px)', fontWeight: 800, lineHeight: 1,
+              letterSpacing: '-.04em', color: 'var(--text)', margin: '14px 0 10px',
+            }}
+          >
+            Panel
+          </h1>
+          <p style={{ fontSize: 13, color: 'var(--text-mut)', lineHeight: 1.6, margin: '0 0 28px' }}>
+            Ingresá tu contraseña para gestionar los turnos.
+          </p>
 
-          <div className="border rounded-2xl p-6" style={{background:'var(--surface)', borderColor:'var(--border)'}}>
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="block text-xs uppercase tracking-widest mb-2" style={{color:'var(--text-mut)'}}>
-                  Contraseña
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full rounded-xl px-4 py-3 text-sm border focus:outline-none transition-all"
-                  style={{
-                    background: 'var(--app-bg)',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text)',
-                  }}
-                  required
-                />
-              </div>
+          <form onSubmit={handleSubmit}>
+            <label className="field-label" htmlFor="admin-pass">Contraseña</label>
+            <input
+              id="admin-pass"
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-input mono"
+              autoComplete="current-password"
+              aria-invalid={!!error}
+              aria-describedby={error ? 'admin-pass-error' : undefined}
+              required
+            />
 
-              {error && <p className="text-red-400 text-sm">{error}</p>}
+            {error && (
+              <p id="admin-pass-error" role="alert" className="mono" style={{
+                fontSize: 11, lineHeight: 1.6, color: 'var(--text)',
+                border: '1px solid var(--text)', padding: '11px 13px', margin: '18px 0 0',
+              }}>
+                {error}
+              </p>
+            )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 rounded-xl text-sm font-bold tracking-widest uppercase transition-all"
-                style={loading
-                  ? {background:'var(--chip-bg)', color:'var(--text-mut)', cursor:'not-allowed'}
-                  : {background:'linear-gradient(135deg, #75AADB, #0B1F47)', color:'#fff'}
-                }
-              >
-                {loading ? 'Entrando…' : 'Entrar'}
-              </button>
-            </form>
-          </div>
+            <button type="submit" disabled={loading} className="btn-cta" style={{ width: '100%', marginTop: 24 }}>
+              {loading ? 'Entrando…' : 'Entrar'}
+            </button>
+          </form>
         </div>
-      </div>
+      </main>
     </div>
   )
 }

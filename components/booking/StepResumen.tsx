@@ -1,114 +1,83 @@
 'use client'
 
 import type { BookingState } from '@/types/booking'
+import { CANCELLATION_MIN_HOURS, LOCATION_LABELS } from '@/lib/constants'
+import { capitalize as upperFirst, diaCorto as shortDate } from '@/lib/format'
 
 interface Props {
   booking: BookingState
-  onConfirm: () => void
-  onBack: () => void
-  loading: boolean
 }
 
-function Row({ label, value, isTot }: { label: string; value: string; isTot?: boolean }) {
-  if (isTot) {
-    return (
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        gap: 14, padding: '13px 16px',
-        background: 'linear-gradient(160deg, var(--celeste), var(--celeste-deep))',
-      }}>
-        <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.6px', color: 'rgba(255,255,255,.9)' }}>{label}</span>
-        <span style={{ fontFamily: 'var(--font-anton, "Anton"), sans-serif', fontSize: 22, color: '#fff' }}>{value}</span>
-      </div>
-    )
-  }
+function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      gap: 14, padding: '13px 16px',
-      borderBottom: '2px dashed var(--border-soft)',
-    }}>
-      <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text-mut)' }}>{label}</span>
-      <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', textAlign: 'right', maxWidth: '62%', lineHeight: 1.25 }}>{value}</span>
+    <div className="kv">
+      <span className="kv-k">{k}</span>
+      <span className={`kv-v${mono ? ' mono' : ''}`}>{v}</span>
     </div>
   )
 }
 
-export default function StepResumen({ booking, onConfirm, onBack, loading }: Props) {
+export default function StepResumen({ booking }: Props) {
   const dateStr = booking.date
-    ? booking.date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+    ? upperFirst(booking.date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }))
     : '—'
 
   const priceLabel = booking.service?.priceLabel ?? `$${booking.service?.price?.toLocaleString('es-AR') ?? '—'}`
+  const lugar = LOCATION_LABELS[booking.location ?? 'local']
 
   return (
     <div className="step-enter">
-      <div style={{ fontFamily: 'var(--font-anton, "Anton"), sans-serif', fontSize: 25, letterSpacing: '.3px', margin: '0 0 3px', color: 'var(--text)' }}>
-        Confirmá tu turno
+      <div className="h-step lineas"><span>Revisá y</span><span>confirmá</span></div>
+
+      {/* El turno, en display. Es el dato que importa. */}
+      <div
+        className="font-display lineas"
+        style={{
+          fontSize: 'clamp(34px, 10vw, 42px)',
+          fontWeight: 800,
+          lineHeight: .95,
+          letterSpacing: '-.045em',
+          color: 'var(--text)',
+          paddingBottom: 14,
+          borderBottom: '1px solid var(--text)',
+          marginTop: 4,
+        }}
+      >
+        <span>{booking.date ? shortDate(booking.date) : '—'}</span>
+        <span className="mono" style={{ fontWeight: 500, letterSpacing: '-.02em' }}>
+          {booking.time ?? '—'}
+        </span>
       </div>
-      <p style={{ fontSize: 12.5, color: 'var(--text-mut)', fontWeight: 600, margin: '0 0 18px' }}>
-        Revisá que esté todo bien
+
+      <div style={{ marginBottom: 20 }}>
+        <Row k="Lugar" v={lugar} />
+        {booking.location === 'domicilio' && booking.direccion
+          ? <Row k="Dirección" v={booking.direccion} />
+          : <Row k="Dirección" v="Congreso 1865, Belgrano" />}
+        <Row k="Fecha" v={dateStr} />
+        <Row k="Servicio" v={`${booking.service?.name ?? '—'} · ${booking.service?.duration ?? 60}'`} />
+        <Row k="A nombre de" v={booking.nombre || '—'} />
+        <Row k="WhatsApp" v={booking.whatsapp || '—'} mono />
+        <Row k="Email" v={booking.email || '—'} />
+        {booking.nota && <Row k="Nota" v={booking.nota} />}
+
+        {/* Total — el único renglón con filete de tinta */}
+        <div
+          className="kv"
+          style={{ borderBottom: 'none', borderTop: '1px solid var(--text)', marginTop: 4, paddingTop: 14 }}
+        >
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Total</span>
+          <span className="mono" style={{ fontSize: 20, fontWeight: 500, color: 'var(--text)' }}>
+            {priceLabel}
+          </span>
+        </div>
+      </div>
+
+      <p className="mono" style={{ fontSize: 10.5, lineHeight: 1.7, color: 'var(--text-meta)', margin: 0 }}>
+        SE PAGA EN EL LUGAR · CONFIRMACIÓN POR MAIL Y WHATSAPP
+        <br />
+        CANCELÁS HASTA {CANCELLATION_MIN_HOURS} H ANTES
       </p>
-
-      <div style={{
-        border: '2.5px solid var(--border)', borderRadius: 16,
-        overflow: 'hidden', background: 'var(--surface)', marginBottom: 14,
-      }}>
-        <Row label="Modalidad"  value={booking.location === 'domicilio' ? 'A domicilio' : 'Barbería Rieck'} />
-        <Row label="Servicio"   value={booking.service?.name ?? '—'} />
-        <Row label="Duración"   value={`${booking.service?.duration ?? '—'} min`} />
-        <Row label="Fecha"      value={dateStr} />
-        <Row label="Horario"    value={booking.time ?? '—'} />
-        <Row label="Nombre"     value={booking.nombre} />
-        <Row label="Email"      value={booking.email} />
-        <Row label="WhatsApp"   value={booking.whatsapp} />
-        {booking.location === 'domicilio' && booking.direccion && (
-          <Row label="Dirección" value={booking.direccion} />
-        )}
-        {booking.nota && <Row label="Nota" value={booking.nota} />}
-        <Row label="Total" value={priceLabel} isTot />
-      </div>
-
-      {/* Nota al pie */}
-      <div style={{
-        display: 'flex', gap: 9, alignItems: 'flex-start',
-        fontSize: 11.5, fontWeight: 600, color: 'var(--text-mut)',
-        lineHeight: 1.5, padding: '0 2px', marginBottom: 14,
-      }}>
-        <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="var(--gold-deep)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
-          <polygon points="12 2 15.1 8.3 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 8.9 8.3 12 2"/>
-        </svg>
-        <span>Confirmación por mail y WhatsApp. Podés cancelar hasta 24 hs antes.</span>
-      </div>
-
-      {/* Nav */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button
-          onClick={onBack}
-          disabled={loading}
-          style={{
-            background: 'none', border: 'none',
-            color: 'var(--text-mut)', fontWeight: 800, fontSize: 12.5,
-            fontFamily: 'inherit', letterSpacing: '.3px',
-            cursor: 'pointer', padding: '6px 4px', transition: 'color .15s',
-          }}
-        >
-          ← Atrás
-        </button>
-
-        <button
-          onClick={onConfirm}
-          disabled={loading}
-          className="btn-cta final"
-          style={{ marginLeft: 'auto', justifyContent: 'center', padding: '14px 26px' }}
-        >
-          <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M12 7l3.5 2.5-1.3 4h-4.4l-1.3-4z" fill="currentColor" stroke="none"/>
-          </svg>
-          {loading ? 'CONFIRMANDO...' : 'CONFIRMAR TURNO'}
-        </button>
-      </div>
     </div>
   )
 }

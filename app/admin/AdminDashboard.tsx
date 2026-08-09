@@ -1,10 +1,19 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import type { BookingEvent } from '@/lib/googleCalendar'
 import ThemeToggle from '@/components/ThemeToggle'
-import { TIME_SLOTS } from '@/lib/constants'
+import { TIME_SLOTS, LOCATION_LABELS } from '@/lib/constants'
+import {
+  capitalize as upperFirst,
+  fechaLarga,
+  hhmm as formatTime,
+  nombreServicio,
+  precioServicio,
+  toDateParam,
+} from '@/lib/format'
 
 function formatDay(dateStr: string): string {
   const d = new Date(dateStr)
@@ -13,28 +22,79 @@ function formatDay(dateStr: string): string {
   tomorrow.setDate(today.getDate() + 1)
   if (d.toDateString() === today.toDateString()) return 'Hoy'
   if (d.toDateString() === tomorrow.toDateString()) return 'Mañana'
-  return d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Argentina/Buenos_Aires' })
+  return upperFirst(fechaLarga(d))
 }
 
-function formatTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
-}
-
-function groupByDay(events: BookingEvent[]): [string, BookingEvent[]][] {
+/* Se devuelve también la fecha cruda: la etiqueta formateada no sirve
+   como clave porque en el historial dos días de años distintos se ven
+   iguales ("jueves, 4 de agosto") y colisionan. */
+function groupByDay(events: BookingEvent[]): { key: string; label: string; items: BookingEvent[] }[] {
   const map = new Map<string, BookingEvent[]>()
   for (const e of events) {
     const day = new Date(e.start).toDateString()
     if (!map.has(day)) map.set(day, [])
     map.get(day)!.push(e)
   }
-  return Array.from(map.entries()).map(([day, evs]) => [formatDay(evs[0].start), evs])
+  return Array.from(map.entries()).map(([key, items]) => ({
+    key,
+    label: formatDay(items[0].start),
+    items,
+  }))
 }
 
-function toDateParam(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+/* "2026-08-11" → "11 de agosto". Nunca mostrar la fecha ISO cruda en
+   la interfaz: es el formato de la API, no el del idioma. */
+function shortDay(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })
 }
 
-const WEEK_DAYS_SHORT = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+function isDomicilio(modalidad: string): boolean {
+  return !!modalidad?.toLowerCase().includes('domicilio')
+}
+
+/* El WhatsApp se guarda en el calendario como "https://wa.me/54911…"
+   y el panel lo mostraba tal cual, con el link entero donde tendría
+   que ir el teléfono. Acá se queda sólo con los dígitos. */
+function soloDigitos(whatsapp: string): string {
+  return (whatsapp ?? '').replace(/\D/g, '')
+}
+
+/* "5491136413741" → "11 3641-3741". Se sacan el 54 y el 9 de
+   marcación, que no se leen en voz alta ni se tipean acá.
+
+   Los prefijos se recortan sólo si sobran dígitos: un número local
+   ya tiene diez y sacarle el 54 lo dejaría en ocho. Y si la forma no
+   se reconoce se muestran los dígitos crudos, nunca el texto de
+   entrada — devolver la entrada hacía reaparecer el "https://wa.me/…"
+   justo en el renglón del teléfono. Lo que se ve tiene que ser
+   siempre lo que marca el link. */
+function telVisible(whatsapp: string): string {
+  const digitos = soloDigitos(whatsapp)
+  let d = digitos
+  if (d.length > 10 && d.startsWith('54')) d = d.slice(2)
+  if (d.length > 10 && d.startsWith('9')) d = d.slice(1)
+  if (d.length === 10) return `${d.slice(0, 2)} ${d.slice(2, 6)}-${d.slice(6)}`
+  return digitos
+}
+
+function money(n: number): string {
+  return `$${n.toLocaleString('es-AR')}`
+}
+
+function mapsUrl(direccion: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`
+}
+
+const WEEK_DAYS_SHORT = ['D', 'L', 'M', 'M', 'J', 'V', 'S']
+const FILTERS = [
+  { key: 'upcoming', label: 'Próximos' },
+  { key: 'today', label: 'Hoy' },
+  { key: 'week', label: 'Semana' },
+  { key: 'history', label: 'Historial' },
+] as const
+
+type Filter = (typeof FILTERS)[number]['key']
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -43,7 +103,7 @@ export default function AdminDashboard() {
   const [cancelling, setCancelling] = useState<string | null>(null)
   const [cancelTarget, setCancelTarget] = useState<BookingEvent | null>(null)
   const [cancelReason, setCancelReason] = useState('')
-  const [filter, setFilter] = useState<'upcoming' | 'today' | 'week' | 'history'>('upcoming')
+  const [filter, setFilter] = useState<Filter>('upcoming')
   const [search, setSearch] = useState('')
   const [history, setHistory] = useState<BookingEvent[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
@@ -56,18 +116,23 @@ export default function AdminDashboard() {
   const [saving, setSaving] = useState(false)
   const [editBlockedSlots, setEditBlockedSlots] = useState<string[]>([])
   const [loadingEditSlots, setLoadingEditSlots] = useState(false)
+  const [editError, setEditError] = useState('')
 
-  // Blocked dates
+  // Días bloqueados
   const [blockedDates, setBlockedDates] = useState<{ id: string; date: string }[]>([])
   const [blockFrom, setBlockFrom] = useState('')
   const [blockTo, setBlockTo] = useState('')
   const [blockingDate, setBlockingDate] = useState(false)
   const [showBlocked, setShowBlocked] = useState(false)
 
-  // Settings
+  // Ajustes
   const [maxDaily, setMaxDaily] = useState(8)
   const [maxDailyInput, setMaxDailyInput] = useState(8)
   const [savingSettings, setSavingSettings] = useState(false)
+
+  // Lo que se anuncia al lector de pantalla cuando una acción cambia
+  // la pantalla sin decir nada
+  const [status, setStatus] = useState('')
 
   const fetchEvents = useCallback(async () => {
     setLoading(true)
@@ -92,6 +157,37 @@ export default function AdminDashboard() {
       .catch(() => {})
   }, [fetchEvents, fetchBlockedDates])
 
+  /* Al abrir una hoja el foco tiene que entrar en ella; al cerrarla,
+     volver al botón que la abrió. Sin esto, quien navega con teclado
+     queda atrás del overlay y tiene que recorrer toda la página. */
+  const sheetRef = useRef<HTMLDivElement>(null)
+  const openerRef = useRef<HTMLElement | null>(null)
+  const sheetOpen = !!cancelTarget || !!editing
+
+  function closeSheets() {
+    setCancelTarget(null)
+    setCancelReason('')
+    setEditing(null)
+  }
+
+  useEffect(() => {
+    if (!sheetOpen) {
+      openerRef.current?.focus()
+      openerRef.current = null
+      return
+    }
+    openerRef.current = document.activeElement as HTMLElement | null
+    sheetRef.current?.querySelector<HTMLElement>(
+      'button, [href], input, textarea, select'
+    )?.focus()
+
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') closeSheets()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [sheetOpen])
+
   async function handleLogout() {
     await fetch('/api/admin/login', { method: 'DELETE' })
     router.push('/admin/login')
@@ -105,7 +201,10 @@ export default function AdminDashboard() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ eventId: cancelTarget.id, reason: cancelReason.trim() || undefined }),
     })
-    if (res.ok) setEvents(prev => prev.filter(e => e.id !== cancelTarget.id))
+    if (res.ok) {
+      setEvents(prev => prev.filter(e => e.id !== cancelTarget.id))
+      setStatus(`Turno de ${cancelTarget.nombre} cancelado. Le avisamos por mail.`)
+    }
     setCancelling(null)
     setCancelTarget(null)
     setCancelReason('')
@@ -121,6 +220,7 @@ export default function AdminDashboard() {
     })
     if (res.ok) {
       await fetchBlockedDates()
+      setStatus('Días bloqueados. Ya no se pueden reservar turnos.')
       setBlockFrom('')
       setBlockTo('')
     }
@@ -134,12 +234,15 @@ export default function AdminDashboard() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ maxDailyBookings: maxDailyInput }),
     })
-    if (res.ok) setMaxDaily(maxDailyInput)
+    if (res.ok) {
+      setMaxDaily(maxDailyInput)
+      setStatus(`Tope guardado: ${maxDailyInput} turnos por día.`)
+    }
     setSavingSettings(false)
   }
 
   function fetchEditSlots(dateStr: string, modalidad: string) {
-    const loc = modalidad.toLowerCase().includes('domicilio') ? 'domicilio' : 'local'
+    const loc = isDomicilio(modalidad) ? 'domicilio' : 'local'
     setLoadingEditSlots(true)
     fetch(`/api/availability?date=${dateStr}&location=${loc}`)
       .then(r => r.json())
@@ -148,7 +251,7 @@ export default function AdminDashboard() {
       .finally(() => setLoadingEditSlots(false))
   }
 
-  function handleFilterChange(f: 'upcoming' | 'today' | 'week' | 'history') {
+  function handleFilterChange(f: Filter) {
     setFilter(f)
     if (f === 'history' && !historyLoaded) {
       setLoadingHistory(true)
@@ -162,18 +265,20 @@ export default function AdminDashboard() {
 
   function openEdit(ev: BookingEvent) {
     const d = new Date(ev.start)
-    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-    const timeStr = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Argentina/Buenos_Aires' })
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const timeStr = formatTime(d)
     setEditing(ev)
     setEditDate(dateStr)
     setEditTime(timeStr)
     setEditBlockedSlots([])
+    setEditError('')
     fetchEditSlots(dateStr, ev.modalidad)
   }
 
   async function handleSaveEdit() {
     if (!editing || !editDate || !editTime) return
     setSaving(true)
+    setEditError('')
     try {
       const res = await fetch('/api/admin/modificar', {
         method: 'POST',
@@ -182,10 +287,9 @@ export default function AdminDashboard() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Error')
-      // Update local state: replace old event with updated times
-      // Build the new start as an explicit Buenos Aires offset string — using
-      // setHours() here would interpret h:m in the browser's local timezone,
-      // which can silently shift the displayed time if it differs from -03:00.
+      // Se arma el nuevo inicio con el offset explícito de Buenos Aires:
+      // setHours() interpretaría h:m en la zona del navegador y la hora
+      // mostrada se correría en silencio si no fuera -03:00.
       const durationMs = new Date(editing.end).getTime() - new Date(editing.start).getTime()
       const newStart = new Date(`${editDate}T${editTime}:00-03:00`)
       const newEnd = new Date(newStart.getTime() + durationMs)
@@ -193,9 +297,10 @@ export default function AdminDashboard() {
         if (e.id !== editing.id) return e
         return { ...e, id: data.newEventId, start: newStart.toISOString(), end: newEnd.toISOString() }
       }))
+      setStatus(`Turno de ${editing.nombre} movido al ${editDate} a las ${editTime}. Le avisamos por mail.`)
       setEditing(null)
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error al modificar')
+      setEditError(err instanceof Error ? err.message : 'No se pudo mover el turno. Probá de nuevo.')
     } finally {
       setSaving(false)
     }
@@ -207,10 +312,12 @@ export default function AdminDashboard() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ eventId }),
     })
-    if (res.ok) setBlockedDates(prev => prev.filter(b => b.id !== eventId))
+    if (res.ok) {
+      setBlockedDates(prev => prev.filter(b => b.id !== eventId))
+      setStatus('Día desbloqueado. Vuelve a estar disponible para reservar.')
+    }
   }
 
-  // Week view helpers
   function getWeekDays(): Date[] {
     const today = new Date()
     const day = today.getDay()
@@ -241,134 +348,197 @@ export default function AdminDashboard() {
   )
 
   const grouped = groupByDay(filtered)
-  const totalHoy = events.filter(e => new Date(e.start).toDateString() === new Date().toDateString()).length
+  const eventosHoy = events.filter(e => new Date(e.start).toDateString() === new Date().toDateString())
+  const totalHoy = eventosHoy.length
+  /* Lo que entra hoy si no se cae nada. Es el número por el que
+     Santiago abre el panel a la mañana, y hasta ahora no estaba: lo
+     calculaba sólo el mail del resumen diario. */
+  const previstoHoy = eventosHoy.reduce((sum, e) => sum + precioServicio(e.servicio), 0)
+  const totalSemana = events.filter(e => {
+    const d = new Date(e.start)
+    return d >= weekDays[0] && d <= weekDays[6]
+  }).length
+
+  const isHistory = filter === 'history'
+  const isLoading = isHistory ? loadingHistory : loading
+
+  /* Con una búsqueda activa, decir "no tenés turnos" es mentira: los
+     hay, no coinciden. Son dos vacíos distintos y llevan a acciones
+     distintas. */
+  const searching = search.trim().length > 0
+  const emptyText = searching
+    ? `Ningún turno coincide con «${search.trim()}».`
+    : filter === 'today' ? 'Hoy no tenés turnos.'
+    : filter === 'week' ? 'Esta semana no tenés turnos.'
+    : isHistory ? 'No hay turnos en los últimos 60 días.'
+    : 'No tenés turnos próximos.'
 
   return (
-    <div className="min-h-screen flex flex-col" style={{background:'var(--app-bg)'}}>
-      {/* Header — Argentina theme */}
-      <header className="fixed top-0 left-0 right-0 z-50" style={{
-        background: 'linear-gradient(135deg, #75AADB 0%, #0B1F47 100%)',
-        boxShadow: '0 2px 16px rgba(11,31,71,.45)',
-      }}>
-        {/* top celeste stripe */}
-        <div style={{height: 4, background: '#75AADB', opacity: .45}} />
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 flex items-center justify-between" style={{height:'calc(env(safe-area-inset-top) + 56px)', paddingTop:'env(safe-area-inset-top)'}}>
-          {/* Brand */}
-          <div className="flex items-center gap-2.5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icon.svg" alt="" width={30} height={30} style={{filter:'drop-shadow(0 1px 4px rgba(0,0,0,.35))'}} />
-            <div className="flex flex-col leading-none">
-              <span style={{fontFamily:'var(--font-permanent-marker)', fontSize:'1rem', color:'#fff', lineHeight:1.1}}>
-                Santi Barber
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--app-bg)' }}>
+
+      {/* ─── Cabecera ─── */}
+      <header
+        className="fixed top-0 left-0 right-0 z-50"
+        style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}
+      >
+        <div
+          className="max-w-3xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-3"
+          style={{ height: 'calc(env(safe-area-inset-top) + 60px)', paddingTop: 'env(safe-area-inset-top)' }}
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            {/* El alt va en un .sr-only aparte: la variante que el tema
+                oculta no aportaría su alt al árbol de accesibilidad. */}
+            <span style={{ display: 'block', width: 118, flexShrink: 0 }}>
+              <span className="sr-only">barber Höhle</span>
+              <span className="logo-ink">
+                <Image src="/logo-black.png" alt="" width={1522} height={253} sizes="118px" priority
+                  style={{ width: '100%', height: 'auto', display: 'block' }} />
               </span>
-              <span style={{fontFamily:'var(--font-anton)', fontSize:'0.52rem', letterSpacing:'0.2em', textTransform:'uppercase', color:'rgba(255,255,255,.6)', lineHeight:1, marginTop:2}}>
-                PANEL ADMIN
+              <span className="logo-paper">
+                <Image src="/logo-white.png" alt="" width={1522} height={253} sizes="118px" priority
+                  style={{ width: '100%', height: 'auto', display: 'block' }} />
               </span>
-            </div>
+            </span>
+            <span className="rotulo" style={{ letterSpacing: '.14em', flexShrink: 0 }}>Admin</span>
           </div>
-          {/* Actions */}
-          <div className="flex items-center gap-3">
-            <ThemeToggle variant="admin" />
-            <button
-              onClick={handleLogout}
-              style={{
-                fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase',
-                color: 'rgba(255,255,255,.75)', background: 'none', border: 'none', cursor: 'pointer',
-                padding: '6px 2px',
-              }}
-            >
-              Salir
+
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <button onClick={handleLogout} className="btn-ghost" style={{ minHeight: 44, padding: '0 4px' }}>
+              Cerrar sesión
             </button>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 pb-16 px-4 sm:px-6 max-w-3xl mx-auto w-full" style={{paddingTop:'calc(env(safe-area-inset-top) + 74px)'}}>
+      <main
+        className="flex-1 pb-20 px-4 sm:px-6 max-w-3xl mx-auto w-full"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 84px)' }}
+      >
+        <h1 className="sr-only">Panel admin — Barber Höhle</h1>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-8">
-          {[
-            ['Hoy', totalHoy],
-            ['30 días', events.length],
-            ['Semana', events.filter(e => {
-              const d = new Date(e.start)
-              return d >= weekDays[0] && d <= weekDays[6]
-            }).length],
-          ].map(([label, count]) => (
-            <div key={label as string} className="border rounded-xl p-4" style={{background:'var(--surface)', borderColor:'var(--border)'}}>
-              <div className="text-2xl font-bold" style={{fontFamily:'var(--font-anton)', color:'var(--celeste)'}}>{count}</div>
-              <div className="text-xs mt-1 uppercase tracking-widest" style={{color:'var(--text-mut)'}}>{label}</div>
-            </div>
-          ))}
-        </div>
+        {/* Una sola región de anuncios para todo el panel: las acciones
+            cambian la pantalla en silencio y hay que contarlas. */}
+        <p role="status" aria-live="polite" className="sr-only">{status}</p>
 
-        {/* Búsqueda */}
-        <div className="relative mb-4">
-          <svg style={{position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', pointerEvents:'none'}} width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="var(--text-mut)" strokeWidth={2.5} strokeLinecap="round">
-            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-          </svg>
+        {/* ─── Cifras ─── */}
+        <dl className="cifras">
+          {([
+            ['Turnos hoy', String(totalHoy)],
+            /* Sin turnos, "$0" se lee como un pronóstico de cero pesos.
+               No hay nada que prever todavía, y eso lo dice el guion. */
+            ['Previsto hoy', totalHoy > 0 ? money(previstoHoy) : '—'],
+            ['Semana', String(totalSemana)],
+            ['30 días', String(events.length)],
+          ] as [string, string][])
+            .map(([label, valor]) => (
+              <div key={label}>
+                {/* El término va antes en el DOM para que el lector diga
+                   "Hoy, 3" y no "3… Hoy"; el orden visual lo da flex. */}
+                <dt className="rotulo" style={{ order: 2, marginTop: 9 }}>{label}</dt>
+                <dd
+                  className="mono"
+                  style={{
+                    order: 1, margin: 0, lineHeight: 1, color: 'var(--text)', fontWeight: 500,
+                    /* La plata trae cinco o seis dígitos y un signo; al
+                       mismo cuerpo que un "3" desbordaría la columna. */
+                    fontSize: valor.length > 4 ? 19 : 28,
+                  }}
+                >
+                  {valor}
+                </dd>
+              </div>
+            ))}
+        </dl>
+
+        {/* ─── Buscador ─── */}
+        <div style={{ marginTop: 26, position: 'relative' }}>
+          <label className="field-label" htmlFor="admin-search">Buscar</label>
           <input
-            type="text"
+            id="admin-search"
+            type="search"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Buscar por nombre, servicio o teléfono..."
-            style={{
-              width:'100%', padding:'10px 12px 10px 34px', borderRadius:12,
-              border:'2px solid var(--border)', background:'var(--surface)',
-              color:'var(--text)', fontSize:13, outline:'none', boxSizing:'border-box',
-            }}
+            placeholder="Nombre, servicio o teléfono"
+            className="w-input"
+            style={{ paddingRight: 36 }}
           />
           {search && (
-            <button onClick={() => setSearch('')} style={{position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--text-mut)', fontSize:16, lineHeight:1}}>
-              ×
+            <button
+              onClick={() => setSearch('')}
+              aria-label="Borrar la búsqueda"
+              style={{
+                position: 'absolute', right: 0, bottom: 0,
+                width: 44, height: 44,
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--text-mut)', fontSize: 18, lineHeight: 1,
+              }}
+            >
+              <span aria-hidden="true">×</span>
             </button>
           )}
         </div>
 
-        {/* Filtros */}
-        <div className="flex items-center gap-2 mb-6 flex-wrap">
-          {(['upcoming', 'today', 'week', 'history'] as const).map(f => (
-            <button
-              key={f}
-              onClick={() => handleFilterChange(f)}
-              className="px-4 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wide transition-all"
-              style={filter === f
-                ? {background:'var(--celeste-deep)', color:'#fff'}
-                : {border:'1px solid var(--border)', color:'var(--text-mut)'}}
-            >
-              {f === 'today' ? 'Hoy' : f === 'week' ? 'Semana' : f === 'history' ? 'Historial' : 'Todos'}
-            </button>
-          ))}
-          <button onClick={fetchEvents} className="ml-auto text-xs transition-colors" style={{color:'var(--celeste)'}}>
-            ↻ Actualizar
+        {/* ─── Filtros ─── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 20 }}>
+          <div className="seg" role="group" aria-label="Filtrar turnos" style={{ flex: 1, minWidth: 0 }}>
+            {FILTERS.map(f => (
+              <button
+                key={f.key}
+                aria-pressed={filter === f.key}
+                onClick={() => handleFilterChange(f.key)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <button onClick={fetchEvents} className="link-btn" style={{ flexShrink: 0 }}>
+            Recargar
           </button>
         </div>
 
-        {/* Vista semanal */}
+        {/* ─── Vista semanal ─── */}
         {filter === 'week' && (
-          <div className="mb-6 border rounded-xl overflow-hidden" style={{borderColor:'var(--border)'}}>
-            <div className="grid grid-cols-7">
+          /* A 375px, siete columnas dejan 50px por día y los nombres se
+             truncan hasta no decir nada. Se le da un ancho mínimo real y
+             se arrastra al costado, como la tira de días del flujo. */
+          <div style={{ marginTop: 22, overflowX: 'auto' }}>
+            <div style={{
+              minWidth: 560, border: '1px solid var(--border)',
+              display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
+            }}>
               {weekDays.map((day, i) => {
                 const dayEvents = events.filter(e => new Date(e.start).toDateString() === day.toDateString())
                 const isToday = day.toDateString() === new Date().toDateString()
                 return (
-                  <div key={i} className="border-r last:border-r-0 min-h-[80px]" style={{borderColor:'var(--border)'}}>
-                    <div className="text-center py-2 border-b text-[10px] uppercase tracking-wide" style={{borderColor:'var(--border)', background:'var(--surface)'}}>
-                      <div style={{color:'var(--text-mut)'}}>{WEEK_DAYS_SHORT[day.getDay()]}</div>
-                      <div className="font-bold text-sm" style={{
-                        color: isToday ? '#fff' : 'var(--text-mut)',
-                        background: isToday ? 'var(--celeste-deep)' : 'transparent',
-                        borderRadius: '50%',
-                        width: 24, height: 24,
-                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
+                  <div key={i} style={{ borderLeft: i === 0 ? 'none' : '1px solid var(--border-soft)', minHeight: 96 }}>
+                    <div style={{ textAlign: 'center', padding: '9px 0 10px', borderBottom: '1px solid var(--border-soft)' }}>
+                      <div className="rotulo" style={{ letterSpacing: '.06em' }}>{WEEK_DAYS_SHORT[day.getDay()]}</div>
+                      {/* Hoy se marca con un filete corto bajo el número,
+                          nunca con relleno: el relleno significa "elegido". */}
+                      <div
+                        className="mono"
+                        style={{
+                          fontSize: 14, fontWeight: 500, marginTop: 7, color: 'var(--text)',
+                          textDecoration: isToday ? 'underline' : 'none',
+                          textUnderlineOffset: 3,
+                          textDecorationThickness: 1,
+                        }}
+                      >
                         {day.getDate()}
                       </div>
                     </div>
-                    <div className="p-1 space-y-1">
+                    <div style={{ padding: '4px 5px', display: 'flex', flexDirection: 'column', gap: 3 }}>
                       {dayEvents.map(ev => (
-                        <div key={ev.id} className="rounded px-1 py-0.5 text-[10px] leading-tight truncate"
-                          style={{background:'var(--chip-bg)', color:'var(--text-mut)'}}>
+                        <div
+                          key={ev.id}
+                          className="mono"
+                          style={{
+                            fontSize: 9.5, lineHeight: 1.5, paddingTop: 3,
+                            borderTop: '1px solid var(--border-soft)', color: 'var(--text)',
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          }}
+                        >
                           {formatTime(ev.start)} {ev.nombre.split(' ')[0]}
                         </div>
                       ))}
@@ -380,305 +550,385 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Lista */}
-        {(filter === 'history' ? loadingHistory : loading) ? (
-          <div className="space-y-3">
-            {[1,2,3].map(i => (
-              <div key={i} className="h-24 rounded-xl animate-pulse border" style={{background:'var(--surface)', borderColor:'var(--border)'}} />
-            ))}
-          </div>
-        ) : grouped.length === 0 ? (
-          <div className="text-center py-16 text-sm" style={{color:'var(--text-mut)'}}>
-            {filter === 'today' ? 'No hay turnos para hoy'
-              : filter === 'week' ? 'No hay turnos esta semana'
-              : filter === 'history' ? 'No hay turnos en los últimos 60 días'
-              : 'No hay turnos próximos'}
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {grouped.map(([day, dayEvents]) => (
-              <div key={day}>
-                <h2 className="text-xs uppercase tracking-widest mb-3 font-semibold capitalize" style={{fontFamily:'var(--font-anton)', color:'var(--text-mut)'}}>
-                  {day} · {dayEvents.length} {dayEvents.length === 1 ? 'turno' : 'turnos'}
+        {/* ─── Lista de turnos ─── */}
+        <div aria-live="polite" aria-busy={isLoading} style={{ marginTop: 30 }}>
+          {isLoading ? (
+            /* El esqueleto mide lo que mide una tarjeta: si midiera
+               menos, la lista saltaría al terminar de cargar. */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[1, 2, 3].map(i => (
+                <div key={i} style={{ height: 168, border: '1px solid var(--border-soft)', opacity: .5 }} />
+              ))}
+            </div>
+          ) : grouped.length === 0 ? (
+            <div style={{ padding: '44px 0', textAlign: 'center' }}>
+              <p className="rotulo" style={{ lineHeight: 1.8, margin: 0 }}>{emptyText}</p>
+              {searching && (
+                <button onClick={() => setSearch('')} className="link-btn" style={{ marginTop: 18 }}>
+                  Borrar la búsqueda
+                </button>
+              )}
+            </div>
+          ) : (
+            grouped.map((group, gi) => (
+              <section key={group.key} aria-labelledby={`dia-${group.key}`} style={{ marginTop: gi === 0 ? 0 : 34 }}>
+                <h2
+                  id={`dia-${group.key}`}
+                  className="rotulo"
+                  style={{
+                    display: 'flex', justifyContent: 'space-between', gap: 12,
+                    paddingBottom: 10, borderBottom: '1px solid var(--text)', color: 'var(--text)',
+                    margin: 0,
+                  }}
+                >
+                  <span>{group.label}</span>
+                  <span style={{ color: 'var(--text-mut)' }}>
+                    {group.items.length} {group.items.length === 1 ? 'turno' : 'turnos'}
+                  </span>
                 </h2>
-                <div className="space-y-2">
-                  {dayEvents.map(ev => (
-                    <div key={ev.id} className="border rounded-xl p-4 flex items-start gap-3" style={{
-                      background:'var(--surface)',
-                      borderColor:'var(--border)',
-                      opacity: filter === 'history' ? 0.72 : 1,
-                    }}>
-                      {/* Hora */}
-                      <div className="shrink-0 min-w-[52px]" style={{
-                        fontFamily:'var(--font-anton)', fontSize:'1.1rem',
-                        color: filter === 'history' ? 'var(--text-mut)' : 'var(--celeste)',
-                      }}>
+
+                <ul style={{ listStyle: 'none', margin: '10px 0 0', padding: 0 }}>
+                {group.items.map(ev => {
+                  const dom = isDomicilio(ev.modalidad)
+                  const tel = soloDigitos(ev.whatsapp)
+                  const precio = precioServicio(ev.servicio)
+                  const mins = ev.end
+                    ? Math.round((new Date(ev.end).getTime() - new Date(ev.start).getTime()) / 60000)
+                    : 0
+                  return (
+                  <li key={ev.id} className="turno">
+                    <div className="turno-head">
+                      <span className="turno-hora">
                         {formatTime(ev.start)}
+                        {ev.end && <i> – {formatTime(ev.end)}</i>}
+                      </span>
+                      <span className="rotulo">
+                        {dom ? LOCATION_LABELS.domicilio : LOCATION_LABELS.local}
+                        {isHistory && ' · Pasado'}
+                      </span>
+                    </div>
+
+                    <div className="turno-body">
+                      <div className="turno-nombre">{ev.nombre}</div>
+
+                      <div className="turno-srv">
+                        <span>
+                          {nombreServicio(ev.servicio)}
+                          {mins > 0 && ` · ${mins} min`}
+                        </span>
+                        {precio > 0 && <span className="turno-precio">{money(precio)}</span>}
                       </div>
 
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-sm" style={{color:'var(--text)'}}>{ev.nombre}</span>
-                          <span className="text-[10px] uppercase tracking-wide border px-2 py-0.5 rounded" style={{color:'var(--text-mut)', borderColor:'var(--border-soft)', background:'var(--chip-bg)'}}>
-                            {ev.modalidad?.includes('domicilio') ? '🏠 domicilio' : '✂️ local'}
-                          </span>
-                          {filter === 'history' && (
-                            <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded" style={{color:'var(--text-mut)', background:'var(--chip-bg)'}}>
-                              pasado
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-sm mt-0.5" style={{color:'var(--text-mut)'}}>{ev.servicio}</div>
-                        {ev.nota && (
-                          <div className="text-xs mt-1 italic" style={{color:'var(--text-mut)'}}>"{ev.nota}"</div>
-                        )}
-                        <div className="flex items-center gap-3 mt-2 flex-wrap">
-                          {ev.whatsapp && (
-                            <>
-                              <a href={`tel:${ev.whatsapp.replace(/\D/g, '')}`}
-                                className="text-xs transition-colors" style={{color:'var(--text-mut)'}}>
-                                {ev.whatsapp}
-                              </a>
-                              <a href={`https://wa.me/${ev.whatsapp.replace(/\D/g, '')}`}
-                                target="_blank" rel="noopener noreferrer"
-                                className="text-xs text-green-500 transition-colors">
-                                WhatsApp →
-                              </a>
-                            </>
-                          )}
-                          {ev.email && (
-                            <a href={`mailto:${ev.email}`} className="text-xs transition-colors" style={{color:'var(--text-mut)'}}>
-                              {ev.email}
+                      {/* A domicilio, la dirección es la información que
+                          define el turno y antes no aparecía en ninguna
+                          parte del panel.
+
+                          El nombre accesible arranca con el texto que se
+                          ve: con aria-label="Cómo llegar a…" el rótulo
+                          visible «Dónde ir» quedaba fuera del nombre, y
+                          quien dicta por voz no puede pedir un control
+                          por lo que lee en pantalla. */}
+                      {dom && ev.direccion && (
+                        <a
+                          className="turno-dir"
+                          href={mapsUrl(ev.direccion)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <b>Dónde ir</b>
+                          {ev.direccion}
+                          <span className="sr-only"> — abrir en Google Maps</span>
+                          {' '}<span aria-hidden="true">↗</span>
+                        </a>
+                      )}
+
+                      {ev.nota && <p className="turno-nota">{ev.nota}</p>}
+                    </div>
+
+                    <div className="turno-pie">
+                      <div className="turno-contacto">
+                        {tel && (
+                          <>
+                            <a href={`tel:${tel}`} className="btn-ghost turno-tel"
+                              aria-label={`Llamar a ${ev.nombre}`}>
+                              {telVisible(ev.whatsapp)}
                             </a>
-                          )}
-                        </div>
+                            <a href={`https://wa.me/${tel}`}
+                              target="_blank" rel="noopener noreferrer" className="btn-ghost"
+                              aria-label={`Escribirle a ${ev.nombre} por WhatsApp`}>
+                              WhatsApp <span aria-hidden="true">↗</span>
+                            </a>
+                          </>
+                        )}
+                        {ev.email && (
+                          <a href={`mailto:${ev.email}`} className="btn-ghost turno-mail"
+                            aria-label={`Escribirle a ${ev.nombre} por mail`}>
+                            {ev.email}
+                          </a>
+                        )}
                       </div>
 
-                      {/* Actions — solo para turnos futuros */}
-                      {filter !== 'history' && (
-                        <div className="flex flex-col gap-1.5 shrink-0">
-                          <button
-                            onClick={() => openEdit(ev)}
-                            className="text-xs px-3 py-1 rounded-lg whitespace-nowrap transition-colors"
-                            style={{color:'var(--celeste)', border:'1px solid var(--celeste)', background:'transparent'}}
-                          >
-                            ✏️ Modificar
-                          </button>
+                      {!isHistory && (
+                        <div className="turno-acciones">
                           <button
                             onClick={() => { setCancelTarget(ev); setCancelReason('') }}
                             disabled={cancelling === ev.id}
-                            className="text-red-400 border border-red-400/40 hover:bg-red-400/10 transition-colors text-xs disabled:opacity-50 px-3 py-1 rounded-lg whitespace-nowrap"
+                            className="btn-ghost"
+                            aria-label={`Cancelar el turno de ${ev.nombre}`}
                           >
-                            {cancelling === ev.id ? 'Cancelando...' : 'Cancelar'}
+                            {cancelling === ev.id ? 'Cancelando…' : 'Cancelar'}
+                          </button>
+                          <button
+                            onClick={() => openEdit(ev)}
+                            className="btn-outline btn-sm"
+                            aria-label={`Modificar el turno de ${ev.nombre}`}
+                          >
+                            Modificar
                           </button>
                         </div>
                       )}
                     </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* ─── Configuración ─── */}
-        <div className="mt-12 border-t pt-10" style={{borderColor:'var(--border-soft)'}}>
-          <h3 className="text-xs uppercase tracking-widest font-semibold mb-5" style={{fontFamily:'var(--font-anton)', color:'var(--text-mut)'}}>⚙️ Configuración</h3>
-          <div className="border rounded-xl p-5" style={{background:'var(--surface)', borderColor:'var(--border)'}}>
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div>
-                <p className="text-sm font-medium" style={{color:'var(--text)'}}>Límite de turnos por día</p>
-                <p className="text-xs mt-0.5" style={{color:'var(--text-mut)'}}>
-                  Actual: <strong style={{color:'var(--celeste)'}}>{maxDaily}</strong> turnos máximos
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min={1}
-                  max={30}
-                  value={maxDailyInput}
-                  onChange={e => setMaxDailyInput(Number(e.target.value))}
-                  className="w-16 text-center rounded-lg border px-2 py-2 text-sm outline-none"
-                  style={{background:'var(--app-bg)', borderColor:'var(--border)', color:'var(--text)'}}
-                />
-                <button
-                  onClick={handleSaveSettings}
-                  disabled={savingSettings || maxDailyInput === maxDaily}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-40 transition-all"
-                  style={{background:'var(--celeste-deep)', color:'#fff'}}
-                >
-                  {savingSettings ? '...' : 'Guardar'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ─── Gestión de días bloqueados ─── */}
-        <div className="mt-10 border-t pt-8" style={{borderColor:'var(--border-soft)'}}>
-          <button
-            onClick={() => setShowBlocked(v => !v)}
-            className="flex items-center gap-2 w-full text-left mb-5"
-          >
-            <span className="text-xs uppercase tracking-widest font-semibold" style={{fontFamily:'var(--font-anton)', color:'var(--text-mut)'}}>
-              🚫 Bloquear días sin turnos
-            </span>
-            <span className="ml-auto text-xs" style={{color:'var(--text-mut)'}}>{showBlocked ? '▲ Ocultar' : '▼ Ver'}</span>
-          </button>
-
-          {showBlocked && (
-            <div>
-              {/* Inputs para bloquear — rango o día suelto */}
-              <div className="space-y-2 mb-5">
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <label className="block text-[10px] uppercase tracking-widest font-bold mb-1" style={{color:'var(--text-mut)'}}>Desde</label>
-                    <input
-                      type="date"
-                      value={blockFrom}
-                      onChange={e => { setBlockFrom(e.target.value); if (!blockTo || e.target.value > blockTo) setBlockTo(e.target.value) }}
-                      min={toDateParam(new Date())}
-                      className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
-                      style={{background:'var(--app-bg)', borderColor:'var(--border)', color:'var(--text)'}}
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block text-[10px] uppercase tracking-widest font-bold mb-1" style={{color:'var(--text-mut)'}}>Hasta</label>
-                    <input
-                      type="date"
-                      value={blockTo}
-                      onChange={e => setBlockTo(e.target.value)}
-                      min={blockFrom || toDateParam(new Date())}
-                      className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
-                      style={{background:'var(--app-bg)', borderColor:'var(--border)', color:'var(--text)'}}
-                    />
-                  </div>
-                </div>
-                <button
-                  onClick={handleBlockDate}
-                  disabled={!blockFrom || blockingDate}
-                  className="w-full py-2 rounded-lg text-sm font-semibold disabled:opacity-50 transition-all"
-                  style={{background:'var(--celeste-deep)', color:'#fff'}}
-                >
-                  {blockingDate ? 'Bloqueando...' : blockTo && blockTo !== blockFrom ? `Bloquear rango (${blockFrom} → ${blockTo})` : 'Bloquear día'}
-                </button>
-              </div>
-
-              {/* Lista de días bloqueados */}
-              {blockedDates.length === 0 ? (
-                <p className="text-sm" style={{color:'var(--text-mut)'}}>No hay días bloqueados.</p>
-              ) : (
-                <div className="space-y-2">
-                  {blockedDates.map(b => {
-                    const [year, month, day] = b.date.split('-').map(Number)
-                    const d = new Date(year, month - 1, day)
-                    const label = d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-                    return (
-                      <div key={b.id} className="flex items-center justify-between border rounded-xl px-4 py-3"
-                        style={{background:'var(--surface)', borderColor:'var(--border)'}}>
-                        <span className="text-sm capitalize" style={{color:'var(--text)'}}>{label}</span>
-                        <button
-                          onClick={() => handleUnblock(b.id)}
-                          className="text-xs text-red-400 border border-red-400/40 hover:bg-red-400/10 transition-colors px-3 py-1 rounded-lg"
-                        >
-                          Desbloquear
-                        </button>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
+                  </li>
+                  )
+                })}
+                </ul>
+              </section>
+            ))
           )}
         </div>
 
+        {/* ─── Ajustes ─── */}
+        <section style={{ marginTop: 56 }}>
+          <h2 className="rotulo rotulo-rule">Ajustes</h2>
+
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 14, flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+              <label className="field-label" htmlFor="max-daily">Tope de turnos por día</label>
+              <input
+                id="max-daily"
+                type="number"
+                min={1}
+                max={30}
+                value={maxDailyInput}
+                onChange={e => setMaxDailyInput(Number(e.target.value))}
+                className="w-input mono"
+              />
+            </div>
+            <button
+              onClick={handleSaveSettings}
+              disabled={savingSettings || maxDailyInput === maxDaily}
+              className="btn-cta"
+              style={{ flexShrink: 0, minWidth: 130 }}
+            >
+              {savingSettings ? 'Guardando…' : 'Guardar'}
+            </button>
+          </div>
+          <p className="mono" style={{ fontSize: 10.5, letterSpacing: '.06em', color: 'var(--text-meta)', margin: '12px 0 0' }}>
+            AHORA MISMO EL TOPE ES DE {maxDaily} TURNOS POR DÍA
+          </p>
+        </section>
+
+        {/* ─── Días bloqueados ─── */}
+        <section style={{ marginTop: 44 }}>
+          <button
+            onClick={() => setShowBlocked(v => !v)}
+            aria-expanded={showBlocked}
+            aria-controls="dias-bloqueados"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+              width: '100%', minHeight: 44, background: 'none', border: 'none',
+              padding: '0 0 10px', borderBottom: '1px solid var(--border)', cursor: 'pointer',
+            }}
+          >
+            <span className="rotulo" style={{ color: 'var(--text)' }}>Días bloqueados</span>
+            <span className="rotulo">
+              {showBlocked ? 'Ocultar' : `Mostrar (${blockedDates.length})`}
+            </span>
+          </button>
+
+          {showBlocked && (
+            <div id="dias-bloqueados" style={{ marginTop: 20 }}>
+              <div style={{ display: 'flex', gap: 14 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <label className="field-label" htmlFor="block-from">Desde</label>
+                  <input
+                    id="block-from"
+                    type="date"
+                    value={blockFrom}
+                    onChange={e => { setBlockFrom(e.target.value); if (!blockTo || e.target.value > blockTo) setBlockTo(e.target.value) }}
+                    min={toDateParam(new Date())}
+                    className="w-input mono"
+                  />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <label className="field-label" htmlFor="block-to">Hasta</label>
+                  <input
+                    id="block-to"
+                    type="date"
+                    value={blockTo}
+                    onChange={e => setBlockTo(e.target.value)}
+                    min={blockFrom || toDateParam(new Date())}
+                    className="w-input mono"
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={handleBlockDate}
+                disabled={!blockFrom || blockingDate}
+                className="btn-cta"
+                style={{ width: '100%', marginTop: 20 }}
+              >
+                {blockingDate
+                  ? 'Bloqueando…'
+                  : blockTo && blockTo !== blockFrom
+                  ? `Bloquear del ${shortDay(blockFrom)} al ${shortDay(blockTo)}`
+                  : blockFrom
+                  ? `Bloquear el ${shortDay(blockFrom)}`
+                  : 'Bloquear el día'}
+              </button>
+
+              <div style={{ marginTop: 26 }}>
+                {blockedDates.length === 0 ? (
+                  <p className="rotulo" style={{ lineHeight: 1.8 }}>Ningún día bloqueado</p>
+                ) : (
+                  <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                  {blockedDates.map(b => {
+                    const [year, month, day] = b.date.split('-').map(Number)
+                    const d = new Date(year, month - 1, day)
+                    const label = upperFirst(d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))
+                    return (
+                      <li
+                        key={b.id}
+                        style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                          padding: '10px 0', borderBottom: '1px solid var(--border-soft)',
+                        }}
+                      >
+                        <span style={{ fontSize: 13, color: 'var(--text)' }}>{label}</span>
+                        <button
+                          onClick={() => handleUnblock(b.id)}
+                          className="btn-ghost"
+                          aria-label={`Desbloquear el ${label}`}
+                          style={{ minHeight: 44, flexShrink: 0 }}
+                        >
+                          Desbloquear
+                        </button>
+                      </li>
+                    )
+                  })}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
       </main>
 
-      {/* ─── Modal cancelar turno ─── */}
+      {/* ─── Hoja: cancelar turno ─── */}
       {cancelTarget && (
         <div
-          style={{ position:'fixed', inset:0, zIndex:200, background:'rgba(0,0,0,.65)', backdropFilter:'blur(4px)', display:'flex', alignItems:'flex-end', justifyContent:'center' }}
-          onClick={e => { if (e.target === e.currentTarget) { setCancelTarget(null); setCancelReason('') } }}
+          className="sheet-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cancel-title"
+          onClick={e => { if (e.target === e.currentTarget) closeSheets() }}
         >
-          <div style={{ width:'100%', maxWidth:480, background:'var(--surface)', borderRadius:'20px 20px 0 0', border:'2px solid var(--border)', borderBottom:'none', padding:'24px 20px 36px' }}>
-            <div style={{ width:40, height:4, borderRadius:2, background:'var(--border)', margin:'0 auto 20px' }} />
+          <div className="sheet" ref={sheetRef}>
+            <div className="rotulo">Cancelación</div>
+            <h2
+              id="cancel-title"
+              className="font-display"
+              style={{ fontSize: 30, fontWeight: 800, lineHeight: 1, letterSpacing: '-.04em', color: 'var(--text)', margin: '12px 0 0' }}
+            >
+              ¿Cancelar el turno de {cancelTarget.nombre.split(' ')[0]}?
+            </h2>
 
-            <p style={{ margin:'0 0 4px', fontFamily:'var(--font-anton)', fontSize:18, color:'#f87171', letterSpacing:'.3px' }}>
-              CANCELAR TURNO
-            </p>
-            <p style={{ margin:'0 0 20px', fontSize:13, color:'var(--text-mut)', fontWeight:600 }}>
-              {cancelTarget.nombre} · {new Date(cancelTarget.start).toLocaleString('es-AR', { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' })}
+            <div style={{ margin: '20px 0 0' }}>
+              <div className="kv">
+                <span className="kv-k">Cliente</span>
+                <span className="kv-v">{cancelTarget.nombre}</span>
+              </div>
+              <div className="kv">
+                <span className="kv-k">Turno</span>
+                <span className="kv-v mono">
+                  {`${upperFirst(fechaLarga(cancelTarget.start))} · ${formatTime(cancelTarget.start)}`}
+                </span>
+              </div>
+            </div>
+
+            <p className="mono" style={{ fontSize: 10.5, lineHeight: 1.7, color: 'var(--text-meta)', margin: '18px 0 0' }}>
+              EL TURNO SE BORRA DEL CALENDARIO Y EL HORARIO QUEDA LIBRE.
+              <br />
+              AL CLIENTE LE LLEGA UN MAIL AVISÁNDOLE. NO SE PUEDE DESHACER.
             </p>
 
-            <div style={{ marginBottom:20 }}>
-              <label style={{ display:'block', fontSize:10, fontWeight:800, textTransform:'uppercase', letterSpacing:'.1em', color:'var(--text-mut)', marginBottom:6 }}>
-                Motivo (opcional — se incluye en el email al cliente)
+            <div style={{ marginTop: 22 }}>
+              <label className="field-label" htmlFor="cancel-reason">
+                Motivo <span style={{ color: 'var(--text-meta)' }}>· opcional, va en el mail</span>
               </label>
               <textarea
+                id="cancel-reason"
                 value={cancelReason}
                 onChange={e => setCancelReason(e.target.value)}
-                placeholder="Ej: Problema de agenda, emergencia personal..."
+                placeholder="Se me complicó la agenda…"
                 rows={2}
-                style={{ width:'100%', padding:'12px 14px', borderRadius:12, border:'2px solid var(--border)', background:'var(--app-bg)', color:'var(--text)', fontSize:13, resize:'none', outline:'none', boxSizing:'border-box', fontFamily:'inherit' }}
+                className="w-input"
+                style={{ resize: 'none', minHeight: 62 }}
               />
             </div>
 
-            <div style={{ display:'flex', gap:10 }}>
-              <button
-                onClick={() => { setCancelTarget(null); setCancelReason('') }}
-                style={{ flex:1, padding:'14px', borderRadius:14, border:'2px solid var(--border)', background:'none', color:'var(--text-mut)', fontFamily:'var(--font-anton)', fontSize:13, letterSpacing:'1px', cursor:'pointer' }}
-              >
-                VOLVER
+            <div style={{ display: 'flex', gap: 10, marginTop: 26 }}>
+              <button onClick={closeSheets} className="btn-outline" style={{ flex: 1 }}>
+                Volver
               </button>
               <button
                 onClick={confirmCancel}
                 disabled={!!cancelling}
-                style={{ flex:2, padding:'14px', borderRadius:14, background:'linear-gradient(135deg,#ef4444,#b91c1c)', color:'#fff', border:'none', fontFamily:'var(--font-anton)', fontSize:13, letterSpacing:'1px', cursor:'pointer', opacity: cancelling ? .7 : 1 }}
+                className="btn-cta"
+                style={{ flex: 2 }}
               >
-                {cancelling ? 'CANCELANDO...' : 'CONFIRMAR CANCELACIÓN'}
+                {cancelling ? 'Cancelando…' : 'Cancelar el turno'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ─── Modal modificar turno ─── */}
+      {/* ─── Hoja: modificar turno ─── */}
       {editing && (
         <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 200,
-            background: 'rgba(0,0,0,.65)', backdropFilter: 'blur(4px)',
-            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-          }}
-          onClick={e => { if (e.target === e.currentTarget) setEditing(null) }}
+          className="sheet-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-title"
+          onClick={e => { if (e.target === e.currentTarget) closeSheets() }}
         >
-          <div style={{
-            width: '100%', maxWidth: 480,
-            background: 'var(--surface)', borderRadius: '20px 20px 0 0',
-            border: '2px solid var(--border)', borderBottom: 'none',
-            padding: '24px 20px 36px',
-          }}>
-            {/* Handle */}
-            <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0 auto 20px' }} />
+          <div className="sheet" ref={sheetRef}>
+            <div className="rotulo">Reprogramar</div>
+            <h2
+              id="edit-title"
+              className="font-display"
+              style={{ fontSize: 30, fontWeight: 800, lineHeight: 1, letterSpacing: '-.04em', color: 'var(--text)', margin: '12px 0 0' }}
+            >
+              Modificar turno
+            </h2>
 
-            {/* Header */}
-            <div style={{ marginBottom: 20 }}>
-              <p style={{ margin: 0, fontFamily: 'var(--font-anton)', fontSize: 18, color: 'var(--text)', letterSpacing: '.3px' }}>
-                MODIFICAR TURNO
-              </p>
-              <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-mut)', fontWeight: 600 }}>
-                {editing.nombre} · {editing.servicio.split(' — ')[0]}
-              </p>
+            <div style={{ margin: '20px 0 0' }}>
+              <div className="kv">
+                <span className="kv-k">Cliente</span>
+                <span className="kv-v">{editing.nombre}</span>
+              </div>
+              <div className="kv">
+                <span className="kv-k">Servicio</span>
+                <span className="kv-v">{editing.servicio.split(' — ')[0]}</span>
+              </div>
             </div>
 
-            {/* Fecha */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--text-mut)', marginBottom: 6 }}>
-                Nueva fecha
-              </label>
+            <div style={{ marginTop: 24 }}>
+              <label className="field-label" htmlFor="edit-date">Nueva fecha</label>
               <input
+                id="edit-date"
                 type="date"
                 value={editDate}
                 min={toDateParam(new Date())}
@@ -687,72 +937,38 @@ export default function AdminDashboard() {
                   setEditTime('')
                   if (e.target.value && editing) fetchEditSlots(e.target.value, editing.modalidad)
                 }}
-                style={{
-                  width: '100%', padding: '12px 14px', borderRadius: 12,
-                  border: '2px solid var(--border)', background: 'var(--app-bg)',
-                  color: 'var(--text)', fontSize: 15, fontWeight: 700,
-                  boxSizing: 'border-box', outline: 'none',
-                }}
+                className="w-input mono"
               />
             </div>
 
-            {/* Horario — grilla de slots */}
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                <label style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--text-mut)' }}>
-                  Nuevo horario
-                </label>
-                <div style={{ display: 'flex', gap: 10, fontSize: 9, fontWeight: 700, color: 'var(--text-mut)', alignItems: 'center' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--celeste-deep)', display: 'inline-block' }} />
-                    LIBRE
-                  </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--chip-bg)', border: '1px solid var(--border-soft)', display: 'inline-block' }} />
-                    OCUPADO
-                  </span>
+            <div style={{ marginTop: 26 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingBottom: 11, borderBottom: '1px solid var(--border)', marginBottom: 14 }}>
+                <span className="rotulo" id="nuevo-horario">Nuevo horario</span>
+                <div className="slot-legend">
+                  <span><i className="is-free" />Libre</span>
+                  <span><i className="is-busy" />Ocupado</span>
+                  <span><i className="is-pick" />Elegido</span>
                 </div>
               </div>
 
               {loadingEditSlots ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
+                <div className="slot-grid" aria-hidden="true" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
                   {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} style={{ height: 38, borderRadius: 10, background: 'var(--chip-bg)', opacity: .5 }} />
+                    <div key={i} className="slot-skeleton" />
                   ))}
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
-                  {TIME_SLOTS[editing.modalidad?.toLowerCase().includes('domicilio') ? 'domicilio' : 'local'].map(slot => {
+                <div className="slot-grid" role="group" aria-labelledby="nuevo-horario" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+                  {TIME_SLOTS[isDomicilio(editing.modalidad) ? 'domicilio' : 'local'].map(slot => {
                     const isOccupied = editBlockedSlots.includes(slot)
                     const isSelected = editTime === slot
                     return (
                       <button
                         key={slot}
-                        disabled={isOccupied}
-                        onClick={() => !isOccupied && setEditTime(slot)}
-                        title={isOccupied ? 'Horario ocupado' : 'Disponible'}
-                        style={{
-                          padding: '10px 4px',
-                          borderRadius: 10,
-                          border: isSelected
-                            ? '2px solid var(--celeste)'
-                            : isOccupied
-                            ? '2px solid var(--border-soft)'
-                            : '2px solid var(--border)',
-                          background: isSelected
-                            ? 'var(--celeste-deep)'
-                            : isOccupied
-                            ? 'var(--chip-bg)'
-                            : 'var(--app-bg)',
-                          color: isSelected ? '#fff' : isOccupied ? 'var(--text-mut)' : 'var(--text)',
-                          fontFamily: 'var(--font-anton)',
-                          fontSize: 13, letterSpacing: '.5px',
-                          cursor: isOccupied ? 'not-allowed' : 'pointer',
-                          opacity: isOccupied ? .45 : 1,
-                          transition: 'all .12s',
-                          textDecoration: isOccupied ? 'line-through' : 'none',
-                          position: 'relative',
-                        }}
+                        aria-disabled={isOccupied || undefined}
+                        onClick={() => { if (!isOccupied) setEditTime(slot) }}
+                        aria-label={`${slot} — ${isOccupied ? 'ocupado' : 'libre'}`}
+                        className={`slot${!isOccupied && isSelected ? ' is-pick' : ''}`}
                       >
                         {slot}
                       </button>
@@ -762,32 +978,26 @@ export default function AdminDashboard() {
               )}
             </div>
 
-            {/* Botones */}
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                onClick={() => setEditing(null)}
-                style={{
-                  flex: 1, padding: '14px', borderRadius: 14,
-                  border: '2px solid var(--border)', background: 'none',
-                  color: 'var(--text-mut)', fontFamily: 'var(--font-anton)',
-                  fontSize: 13, letterSpacing: '1px', cursor: 'pointer',
-                }}
-              >
-                CANCELAR
+            {editError && (
+              <p className="mono" role="alert" style={{
+                fontSize: 11, lineHeight: 1.6, color: 'var(--text)',
+                border: '1px solid var(--text)', padding: '11px 13px', margin: '22px 0 0',
+              }}>
+                {editError}
+              </p>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 28 }}>
+              <button onClick={closeSheets} className="btn-outline" style={{ flex: 1 }}>
+                Volver
               </button>
               <button
                 onClick={handleSaveEdit}
                 disabled={saving || !editDate || !editTime}
-                style={{
-                  flex: 2, padding: '14px', borderRadius: 14,
-                  background: (!editDate || !editTime) ? 'var(--border)' : 'linear-gradient(135deg, #75AADB, #0B1F47)',
-                  color: '#fff', border: 'none',
-                  fontFamily: 'var(--font-anton)', fontSize: 13, letterSpacing: '1px',
-                  cursor: (!editDate || !editTime) ? 'not-allowed' : 'pointer',
-                  opacity: saving ? .7 : 1,
-                }}
+                className="btn-cta"
+                style={{ flex: 2 }}
               >
-                {saving ? 'GUARDANDO...' : 'GUARDAR Y NOTIFICAR'}
+                {saving ? 'Guardando…' : 'Guardar y avisarle al cliente'}
               </button>
             </div>
           </div>

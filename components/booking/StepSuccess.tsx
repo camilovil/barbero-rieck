@@ -1,6 +1,9 @@
 'use client'
 
+import Image from 'next/image'
 import type { BookingState } from '@/types/booking'
+import { BARBER_ADDRESS, CANCELLATION_MIN_HOURS, LOCATION_LABELS } from '@/lib/constants'
+import { capitalize as upperFirst, diaCorto as shortDate } from '@/lib/format'
 
 interface Props {
   booking: BookingState
@@ -10,20 +13,29 @@ interface Props {
 
 function genCode(booking: BookingState): string {
   const ts = booking.date ? booking.date.getTime().toString(36).slice(-4).toUpperCase() : '0000'
-  return `SR-${ts}`
+  return `HO-${ts}`
+}
+
+function Row({ k, v }: { k: string; v: string }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14 }}>
+      <span style={{ fontSize: 12.5, fontWeight: 400, color: 'var(--text-mut)' }}>{k}</span>
+      <span style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--text)', textAlign: 'right', minWidth: 0 }}>{v}</span>
+    </div>
+  )
 }
 
 export default function StepSuccess({ booking, eventId, onReset }: Props) {
   const dateStr = booking.date
-    ? booking.date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+    ? upperFirst(booking.date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }))
     : '—'
 
   const lugar = booking.location === 'domicilio'
-    ? { main: 'A domicilio', sub: booking.direccion || '' }
-    : { main: 'Barbería Rieck', sub: 'Congreso 1865, Belgrano, CABA' }
+    ? { main: LOCATION_LABELS.domicilio, sub: booking.direccion || '' }
+    : { main: LOCATION_LABELS.local, sub: BARBER_ADDRESS }
 
-  const jerseyNo = booking.service?.name === 'Corte y barba' ? '10' : '7'
-  const servicioSub = `${booking.service?.name ?? '—'} · N°${jerseyNo}`
+  const priceLabel = booking.service?.priceLabel
+    ?? (booking.service ? `$${booking.service.price.toLocaleString('es-AR')}` : '—')
 
   const code = genCode(booking)
 
@@ -35,182 +47,117 @@ export default function StepSuccess({ booking, eventId, onReset }: Props) {
         const end = new Date(start.getTime() + (booking.service?.duration ?? 60) * 60000)
         const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
         const details = encodeURIComponent(`Servicio: ${booking.service?.name ?? ''}\nLugar: ${lugar.main} ${lugar.sub}`)
-        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('Turno Santi Barber')}&dates=${fmt(start)}/${fmt(end)}&details=${details}`
+        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('Turno Barber Höhle')}&dates=${fmt(start)}/${fmt(end)}&details=${details}`
       })()
     : null
 
+  /* Reemplaza al flujo entero, así que también hereda su alto:
+     el comprobante scrollea adentro, la pantalla no se estira. */
   return (
-    <div className="step-enter" style={{ padding: '0 0 6px' }}>
+    <div className="step-enter flow-body">
 
-      {/* Status banner */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 11,
-        padding: '13px 16px', fontWeight: 800, fontSize: 12.5, letterSpacing: '.3px',
-        borderBottom: '2px solid var(--border-soft)', background: 'var(--surface)',
-        margin: '0 -4px 20px',
-      }}>
-        <span style={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, background: '#2E9E6B', boxShadow: '0 0 0 4px rgba(46,158,107,.18)', display: 'inline-block' }} />
-        <span style={{ color: 'var(--text)' }}>Turno confirmado</span>
-        <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-anton,"Anton"),sans-serif', fontWeight: 400, letterSpacing: 1, color: 'var(--text-mut)', fontSize: 12 }}>{code}</span>
-      </div>
+      {/* El sello del turno: se apoya en la superficie de panel para
+          despegarse del flujo, que ya es la cueva. */}
+      <div className="comprobante">
 
-      {/* Trophy */}
-      <div style={{ textAlign: 'center', marginBottom: 20 }}>
-        <div style={{
-          width: 92, height: 92, margin: '0 auto 16px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          borderRadius: '50%',
-          background: 'linear-gradient(160deg, var(--celeste), var(--celeste-deep))',
-          boxShadow: '0 14px 30px rgba(63,134,196,.4)',
-          color: 'var(--gold)',
-        }}>
-          <svg viewBox="0 0 24 24" width={46} height={46} fill="currentColor">
-            <path d="M6 4h12v3a6 6 0 0 1-12 0z"/>
-            <path d="M6 5H3v1a3 3 0 0 0 3 3M18 5h3v1a3 3 0 0 1-3 3" fill="none" stroke="currentColor" strokeWidth="1.6"/>
-            <path d="M10 13h4v3h-4z"/>
-            <path d="M8 20h8M9 20l.5-4h5l.5 4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/>
-          </svg>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+          <span className="sr-only">barber Höhle</span>
+          <Image
+            src="/logo-white.png"
+            alt=""
+            width={1522}
+            height={253}
+            sizes="130px"
+            style={{ width: 130, height: 'auto', display: 'block' }}
+          />
+          <span className="monograma" style={{ fontSize: 20, color: 'var(--text)' }}>Hö</span>
         </div>
 
-        <h2 style={{ fontFamily: 'var(--font-anton,"Anton"),sans-serif', fontSize: 27, margin: '0 0 5px', color: 'var(--text)', letterSpacing: '.3px' }}>
-          ¡Turno confirmado!
-        </h2>
-        <p style={{ fontSize: 13, color: 'var(--text-mut)', fontWeight: 600, lineHeight: 1.5, maxWidth: 300, margin: '0 auto' }}>
-          Te esperamos. Te llega el detalle por mail y Santiago te escribe por WhatsApp para coordinar.
-        </p>
-      </div>
+        <div className="trama" style={{ height: 56, margin: '26px 0 0' }} aria-hidden />
 
-      {/* Detail card */}
-      <div style={{ border: '2.5px solid var(--border)', borderRadius: 16, overflow: 'hidden', background: 'var(--surface)', marginBottom: 14 }}>
-        {/* Lugar */}
-        <Row label="Lugar" value={lugar.main} sub={lugar.sub} />
-        {/* Servicio */}
-        <Row label="Servicio" value={servicioSub} sub={`${booking.service?.duration ?? 60} min`} />
-        {/* Día y hora */}
-        <Row label="Día y hora" value={dateStr} sub={booking.time ? `${booking.time} hs` : '—'} />
-        {/* A nombre de */}
-        <Row label="A nombre de" value={booking.nombre || '—'} sub={booking.whatsapp || ''} />
-        {/* Total */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14,
-          padding: '13px 16px',
-          background: 'linear-gradient(160deg, var(--celeste), var(--celeste-deep))',
-        }}>
-          <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.6px', color: 'rgba(255,255,255,.9)' }}>Total</span>
-          <span style={{ fontFamily: 'var(--font-anton,"Anton"),sans-serif', fontSize: 22, fontWeight: 400, color: '#fff' }}>
-            {booking.service ? `$${booking.service.price.toLocaleString('es-AR')}` : '—'}
+        {/* Lo único en oro del comprobante: el estado. Es lo que se
+            busca al abrirlo y lo que la regla 03 manda marcar. */}
+        <div className="rotulo" style={{ marginTop: 28, color: 'var(--acento-txt)' }}>Turno confirmado</div>
+
+        <div
+          className="font-display lineas"
+          style={{
+            fontSize: 'clamp(40px, 13vw, 50px)', fontWeight: 800, lineHeight: .95,
+            letterSpacing: '-.045em', color: 'var(--text)', marginTop: 14,
+          }}
+        >
+          <span>{booking.date ? shortDate(booking.date) : '—'}</span>
+          <span className="mono" style={{ fontWeight: 500, letterSpacing: '-.02em' }}>
+            {booking.time ?? '—'}
           </span>
         </div>
+
+        <div style={{
+          marginTop: 20, paddingTop: 14, borderTop: '1px solid var(--text)',
+          display: 'flex', flexDirection: 'column', gap: 10,
+        }}>
+          <Row k={lugar.main} v={booking.service?.name ?? '—'} />
+          <Row k="Fecha" v={dateStr} />
+          {lugar.sub && <Row k="Dirección" v={lugar.sub} />}
+          <Row k="A nombre de" v={booking.nombre || '—'} />
+          <Row k="A pagar en el lugar" v={priceLabel} />
+        </div>
+
+        <div style={{
+          marginTop: 22, paddingTop: 14, borderTop: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+        }}>
+          <span className="rotulo">Comprobante</span>
+          <span className="mono" style={{ fontSize: 12, color: 'var(--text)', letterSpacing: '.1em' }}>{code}</span>
+        </div>
+
+        {/* Acciones dentro del panel, en papel sobre tinta */}
+        <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
+          {calUrl ? (
+            <a href={calUrl} target="_blank" rel="noopener noreferrer" className="btn-outline" style={{ flex: 1 }}>
+              Agregar al calendario
+            </a>
+          ) : (
+            <button className="btn-outline" disabled style={{ flex: 1 }}>
+              Agregar al calendario
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Note */}
-      <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start', fontSize: 11.5, fontWeight: 600, color: 'var(--text-mut)', lineHeight: 1.5, marginBottom: 20 }}>
-        <svg viewBox="0 0 24 24" width={15} height={15} fill="#F2B63C" style={{ flexShrink: 0, marginTop: 2 }}>
-          <path d="M12 2l2.9 6.2 6.8.7-5 4.6 1.4 6.7L12 17.8 5.9 20.2l1.4-6.7-5-4.6 6.8-.7z"/>
-        </svg>
-        <span>Podés cancelar o reprogramar sin costo hasta 24 hs antes del turno.</span>
-      </div>
+      <p className="mono" style={{ fontSize: 10.5, lineHeight: 1.7, color: 'var(--text-meta)', margin: '20px 0 0' }}>
+        TE LLEGA EL DETALLE POR MAIL · SANTIAGO TE ESCRIBE POR WHATSAPP
+        <br />
+        CANCELÁS O REPROGRAMÁS SIN COSTO HASTA {CANCELLATION_MIN_HOURS} H ANTES
+      </p>
 
-      {/* Actions */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {/* Agregar al calendario */}
-        {calUrl ? (
-          <a
-            href={calUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-cta final"
-            style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9 }}
-          >
-            <svg viewBox="0 0 24 24" width={17} height={17} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4.5" width="18" height="16" rx="2"/>
-              <path d="M3 9h18M8 2.5v4M16 2.5v4M12 13v4M10 15h4"/>
-            </svg>
-            AGREGAR AL CALENDARIO
-          </a>
-        ) : (
-          <button className="btn-cta final" disabled style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9 }}>
-            <svg viewBox="0 0 24 24" width={17} height={17} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4.5" width="18" height="16" rx="2"/>
-              <path d="M3 9h18M8 2.5v4M16 2.5v4M12 13v4M10 15h4"/>
-            </svg>
-            AGREGAR AL CALENDARIO
-          </button>
-        )}
-
-        {/* Reprogramar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginTop: 22, flexWrap: 'wrap' }}>
         {eventId && booking.email ? (
-          <a
-            href={`/modificar?id=${encodeURIComponent(eventId)}&email=${encodeURIComponent(booking.email)}`}
-            style={{
-              background: 'none', border: '2px solid var(--border)',
-              color: 'var(--text)', borderRadius: 30, padding: '14px 22px',
-              fontFamily: 'var(--font-anton,"Anton"),sans-serif', fontSize: 13,
-              letterSpacing: '1.5px', textTransform: 'uppercase',
-              textDecoration: 'none', textAlign: 'center', width: '100%',
-              display: 'block', boxSizing: 'border-box',
-            }}
-          >
-            Reprogramar
-          </a>
+          <>
+            <a
+              href={`/modificar?id=${encodeURIComponent(eventId)}&email=${encodeURIComponent(booking.email)}`}
+              className="btn-outline"
+              style={{ flex: '1 1 200px' }}
+            >
+              Reprogramar
+            </a>
+            <a
+              href={`/cancelar?id=${encodeURIComponent(eventId)}&email=${encodeURIComponent(booking.email)}`}
+              className="btn-ghost"
+            >
+              Cancelar turno
+            </a>
+          </>
         ) : (
-          <button
-            onClick={onReset}
-            style={{
-              background: 'none', border: '2px solid var(--border)',
-              color: 'var(--text)', borderRadius: 30, padding: '14px 22px',
-              fontFamily: 'var(--font-anton,"Anton"),sans-serif', fontSize: 13,
-              letterSpacing: '1.5px', textTransform: 'uppercase',
-              cursor: 'pointer', transition: '.15s', width: '100%',
-            }}
-          >
-            Reprogramar
-          </button>
+          <>
+            <button onClick={onReset} className="btn-outline" style={{ flex: '1 1 200px' }}>
+              Reservar otro turno
+            </button>
+            <button onClick={onReset} className="btn-ghost">
+              Cancelar turno
+            </button>
+          </>
         )}
-
-        {/* Cancelar turno */}
-        {eventId && booking.email ? (
-          <a
-            href={`/cancelar?id=${encodeURIComponent(eventId)}&email=${encodeURIComponent(booking.email)}`}
-            style={{
-              background: 'none', border: 'none',
-              color: 'var(--text-mut)', fontWeight: 800,
-              fontSize: 12.5, letterSpacing: '.3px',
-              padding: '6px', textAlign: 'center', width: '100%',
-              display: 'block', textDecoration: 'none',
-            }}
-          >
-            Cancelar turno
-          </a>
-        ) : (
-          <button
-            onClick={onReset}
-            style={{
-              background: 'none', border: 'none',
-              color: 'var(--text-mut)', fontFamily: 'inherit', fontWeight: 800,
-              fontSize: 12.5, letterSpacing: '.3px', cursor: 'pointer',
-              padding: '6px', textAlign: 'center', width: '100%',
-            }}
-          >
-            Cancelar turno
-          </button>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function Row({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      gap: 14, padding: '13px 16px',
-      borderBottom: '2px dashed var(--border-soft)',
-    }}>
-      <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text-mut)', flexShrink: 0 }}>{label}</span>
-      <div style={{ textAlign: 'right', maxWidth: '64%' }}>
-        <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', lineHeight: 1.25, display: 'block' }}>{value}</span>
-        {sub && <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-mut)', marginTop: 1, display: 'block' }}>{sub}</span>}
       </div>
     </div>
   )

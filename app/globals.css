@@ -1,76 +1,165 @@
 @import "tailwindcss";
 
 /* =============================================
-   FUENTES — importadas via next/font en layout.tsx
-   ============================================= */
+   BARBER HÖHLE — SISTEMA VISUAL
+   Fuente: "Barber Höhle - Sistema" (Claude Design), turnos 7 y 8
 
-/* =============================================
-   TOKENS DE MARCA (invariantes entre temas)
+   Dos pieles sobre el MISMO plano. Tipografía, grillas, tamaños
+   y jerarquía son idénticos en las dos: cambia la piel, no el
+   plano. Lo editorial no viene de decoración: viene de escala
+   tipográfica extrema, filetes de 1px y mucho aire. La única
+   textura permitida es la diagonal — el poste de barbero
+   reducido a rayas finas.
+
+   Montserrat es la voz única (400/500/600/800).
+   JetBrains Mono, sólo para datos: horas, precios, rótulos.
+
+   :root      = HÖHLE, la cueva y el oro. Es EL sistema, no un modo:
+                la app de reserva se ve siempre así.
+   html.papel = el claro. Variante, y sólo del panel: Santiago
+                trabaja con el local iluminado y ahí el negro pleno
+                con sol de frente no se lee. Lo aplica app/admin.
+
+   LAS CUATRO REGLAS DEL ORO (turno 7a). Se respetan abajo y en
+   cada componente:
+     01. El oro es luz, no relleno: filetes, bordes vivos, un
+         botón por pantalla. Nunca fondos grandes dorados.
+     02. Lo seleccionado en una lista se invierte a claro sobre
+         oscuro — sigue siendo lo único «encendido».
+     03. Los estados se siguen diciendo con palabras en mono. El
+         oro marca sólo lo que pide acción.
+     04. Tipografía, grillas, tamaños y jerarquía, intactos.
    ============================================= */
+/* HÖHLE — la cueva. El sistema.
+   Cuatro superficies negro-cálidas y UNA sola luz: el oro. No queda
+   un gris neutro: hasta el texto secundario tiene temperatura, que es
+   lo que hace que el negro se lea como roca y no como interfaz
+   apagada. */
 :root {
-  --celeste:      #75AADB;
-  --celeste-deep: #3F86C4;
-  --sky:          #A9CFEC;
-  --ink:          #0B1F47;
-  --ink-soft:     #33476F;
-  --gold:         #F2B63C;
-  --gold-deep:    #D6991C;
+  /* Superficies */
+  --app-bg:      #0A0908;   /* fondo   */
+  --surface:     #0A0908;
+  /* --surface y --app-bg son el MISMO negro: una tarjeta pintada con
+     --surface no se despegaría del fondo y quedaría colgada de un
+     filete invisible. Este paso es el que da la separación. */
+  --surface-alta: #121110;  /* panel   */
+  --hover:       #1A1613;   /* fila    */
+  --overlay:     rgba(5,4,3,.78);
 
-  /* Superficies — tema CLARO (camiseta titular) */
-  --app-bg:      #F5F8FC;
-  --surface:     #FFFFFF;
-  --border:      #DDE6F1;
-  --border-soft: #E7EEF7;
-  --text:        #0B1F47;
-  --text-mut:    #7D8AA3;
-  --chip-bg:     #EEF6FD;
-  --hover:       #EEF6FD;
-  --input-bg:    #FFFFFF;
-  --btn-bg:      #0B1F47;
-  --stroke:      #0B1F47;
-  --off:         #C3CCDB;
+  /* Texto. Tres tonos, no dos: el diseño separa la PROSA secundaria
+     del RÓTULO / sublabel / leyenda. Si los dos comparten tono el
+     rótulo deja de retroceder y compite con el titular — que es
+     exactamente lo que pasaba con los sublabels en #B3A695. */
+  --text:        #F1EAE0;   /* principal          · 16.7:1 */
+  --text-mut:    #B3A695;   /* prosa secundaria   ·  8.3:1 */
+  --text-meta:   #8A7F71;   /* rótulo y sublabel  ·  5.1:1 */
+  --text-faint:  #6E6155;   /* SÓLO placeholders  ·  3.3:1 */
+  /* No disponible. El mockup lo apagaba hasta #4A423A (2.0:1) y ahí
+     un horario tachado deja de poder leerse: se queda en el filete
+     vivo apagado, que llega a 3.3:1 y sigue leyéndose como apagado. */
+  --off:         #6E6155;
+  --on-primary:  #0A0908;   /* encima de papel o de oro pleno */
 
-  /* Compatibilidad con componentes que aún usan las vars viejas */
-  --bg:          #F5F8FC;
-  --bg-2:        #FFFFFF;
-  --bg-card:     #FFFFFF;
-  --bg-hover:    #EEF6FD;
-  --bg-active:   #DDE6F1;
-  --border-2:    #DDE6F1;
-  --text-muted:  #7D8AA3;
-  --text-faint:  #A8B5C8;
-  --text-xfaint: #C3CCDB;
+  /* Los dos primeros son decorativos —separan, no delimitan—. El
+     tercero es el que dibuja un control y por eso llega a 3.3:1:
+     abajo de eso el control deja de leerse como control. */
+  --border:        #241F19;  /* filete  */
+  --border-soft:   #1F1A15;
+  --border-strong: #6E6155;
 
-  --font-sans: var(--font-barlow), system-ui, sans-serif;
-  --font-display: var(--font-anton), sans-serif;
-  --font-marker: var(--font-permanent-marker), cursive;
+  /* El botón primario es el único fondo dorado que el sistema
+     permite, y va uno por pantalla (regla 01). */
+  --btn-bg:       #C9974A;
+  --btn-bg-hover: #E8B96B;
+
+  --acento:            #C9974A;   /* acento */
+  --on-acento:         #0A0908;
+  --acento-txt:        #E8B96B;   /* realce */
+  --acento-borde:      #C9974A;
+  --acento-borde-mut:  #8A5F22;   /* borde vivo */
+
+  /* La fila elegida de una lista. Acá NO se rellena: el oro pleno
+     está reservado al botón que avanza (regla 01), así que la fila se
+     enciende con el filete vivo sobre la superficie de fila. En papel
+     el tratamiento es otro —se invierte—, y por eso vive en tokens y
+     no escrito en cada clase. */
+  --sel-bg:     #1A1613;
+  --sel-fg:     #F1EAE0;
+  --sel-fg-mut: #8A7F71;   /* 4.6:1 sobre la fila encendida */
+  --sel-borde:  #C9974A;
+
+  /* Trama diagonal — 115°, filete de 1px cada 9. Es la textura del
+     poste, no un fondo: se dibuja en oro y muy baja, como el reflejo
+     de la luz en la roca. */
+  --trama:      #C9974A;
+  --trama-step: 9px;
+  --trama-op:   .3;
+
+  --font-sans: var(--font-montserrat), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  /* Alto de la cabecera fija. El flujo se mide contra esto. */
+  --header-h: calc(env(safe-area-inset-top) + 65px);
 }
 
-/* Tema OSCURO (camiseta suplente / nocturno) */
-html.dark {
-  --app-bg:      #0A1730;
-  --surface:     #11233F;
-  --border:      #284468;
-  --border-soft: #1D3457;
-  --text:        #EAF2FB;
-  --text-mut:    #90A6C8;
-  --chip-bg:     #163050;
-  --hover:       #163050;
-  --input-bg:    #0D1D39;
-  --btn-bg:      #3F86C4;
-  --stroke:      #EAF2FB;
-  --off:         #43597C;
+/* PAPEL — el claro. Variante, y sólo del panel.
+   Es el sistema de dos tintas de los turnos 1–6: sin oro, porque acá
+   el acento es la tinta misma. No lleva la roca — una foto de roca
+   negra sobre papel no es el mismo sistema, es una mancha. */
+html.papel {
+  --app-bg:      #EDECE8;
+  --surface:     #F6F5F3;
+  /* En claro alcanza con --surface: el fondo ya es un paso más oscuro. */
+  --surface-alta: #F6F5F3;
+  --hover:       #EAE9E5;
+  --overlay:     rgba(12,12,13,.62);
 
-  /* Compatibilidad con vars viejas */
-  --bg:          #0A1730;
-  --bg-2:        #11233F;
-  --bg-card:     #11233F;
-  --bg-hover:    #163050;
-  --bg-active:   #1C3C61;
-  --border-2:    #284468;
-  --text-muted:  #90A6C8;
-  --text-faint:  #6B839E;
-  --text-xfaint: #43597C;
+  --text:        #0C0C0D;
+  /* Un punto más oscuro que el #6E6C67 histórico: ese llegaba a 4.81:1
+     sobre la tarjeta pero se quedaba en 4.44:1 sobre el fondo de app,
+     que es donde vive el pie. Ahora pasa en las dos superficies. */
+  --text-mut:    #6C6A65;   /* prosa secundaria · 4.6:1 sobre el fondo */
+  /* Los dos escalones coinciden: el sistema de dos tintas no daba
+     para más. El token existe igual porque en la cueva sí se separan. */
+  --text-meta:   #6C6A65;
+  --text-faint:  #A8A7A3;   /* sólo placeholders */
+  --off:         #8B8A87;   /* no disponible · 3.2:1, legible tachado */
+  --on-primary:  #F6F5F3;   /* encima de tinta plena */
+
+  --border:        #DBD9D3;
+  --border-soft:   #EAE9E5;
+  /* El filete que dibuja un control. El #8B8A87 histórico daba 3.17:1
+     sobre la tarjeta pero 2.92:1 sobre el fondo de app — y en el panel
+     hay controles ahí mismo (el segmentado y el buscador). */
+  --border-strong: #878683;   /* 3.08:1 sobre el fondo, 3.34:1 sobre la tarjeta */
+
+  --btn-bg:       #0C0C0D;
+  --btn-bg-hover: #2A2A28;
+
+  --acento:            #0C0C0D;
+  --on-acento:         #F6F5F3;
+  --acento-txt:        #0C0C0D;
+  --acento-borde:      #0C0C0D;
+  --acento-borde-mut:  #8B8A87;
+
+  /* Acá la fila elegida SÍ se invierte a tinta plena. */
+  --sel-bg:     #0C0C0D;
+  --sel-fg:     #F6F5F3;
+  --sel-fg-mut: #8B8A87;
+  --sel-borde:  #0C0C0D;
+
+  --trama:      #0C0C0D;
+  --trama-op:   .28;
+}
+
+/* El comprobante — el sello del turno, no una pantalla más del flujo.
+   Antes redefinía la paleta entera a mano para invertirse sobre el
+   papel; ahora la app del cliente ya ES la cueva, así que sólo
+   necesita despegarse: se apoya en la superficie de panel. */
+.comprobante {
+  background: var(--surface-alta);
+  border: 1px solid var(--border);
+  padding: 26px 22px 24px;
 }
 
 /* =============================================
@@ -83,139 +172,845 @@ html { height: 100%; }
 
 body {
   min-height: 100%;
-  font-family: var(--font-barlow, "Barlow"), system-ui, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   color: var(--text);
-  transition: background 0.25s, color 0.25s;
-}
-
-/* Fondo de jersey (camiseta titular) */
-body {
-  background:
-    repeating-linear-gradient(180deg, rgba(255,255,255,.04) 0 2px, transparent 2px 5px),
-    linear-gradient(105deg, var(--celeste) 0 33%, #EAF3FB 33% 67%, var(--celeste) 67% 100%);
-}
-
-/* Fondo de camiseta suplente (oscuro) */
-html.dark body {
-  background:
-    repeating-linear-gradient(180deg, rgba(255,255,255,.03) 0 2px, transparent 2px 5px),
-    linear-gradient(105deg, #0c1c33 0 33%, #15293f 33% 67%, #0c1c33 67% 100%);
-}
-
-/* Puntitos de estrellas sobre el fondo */
-body::before {
-  content: "";
-  position: fixed; inset: 0; pointer-events: none; opacity: .12;
-  background-image:
-    radial-gradient(circle at 12% 18%, #fff 0 2px, transparent 3px),
-    radial-gradient(circle at 80% 12%, #fff 0 2px, transparent 3px),
-    radial-gradient(circle at 67% 78%, #fff 0 2px, transparent 3px),
-    radial-gradient(circle at 22% 82%, #fff 0 2px, transparent 3px);
-  z-index: 0;
+  background: var(--app-bg);
+  transition: color .2s, background .2s;
 }
 
 button:not(:disabled) { cursor: pointer; }
 button:disabled { cursor: not-allowed; }
 
-/* =============================================
-   TIPOGRAFÍA UTILITARIA
-   ============================================= */
-.font-anton   { font-family: var(--font-anton, "Anton"), sans-serif; }
-.font-marker  { font-family: var(--font-permanent-marker, "Permanent Marker"), cursive; }
-.font-barlow  { font-family: var(--font-barlow, "Barlow"), sans-serif; }
-.font-playfair { font-family: var(--font-playfair, "Barlow"), sans-serif; }
+/* Foco visible — 2px, para que se vea sobre cualquier filete */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+  border-radius: 0;
+}
+
+/* Sólo para lectores de pantalla */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
 
 /* =============================================
-   CLASES UTILITARIAS TEMÁTICAS (backward compat)
+   TIPOGRAFÍA
+   Montserrat necesita tracking negativo en display para
+   no verse blanda, y positivo en versalitas. Sin eso el
+   sistema se cae. No tiene itálica: no usarla nunca.
    ============================================= */
-.t-bg       { background: var(--app-bg); }
-.t-bg-2     { background: var(--surface); }
-.t-bg-card  { background: var(--surface); }
-.t-bg-hover:hover { background: var(--hover); }
-.t-bg-active { background: var(--border-soft); }
-.t-border   { border-color: var(--border); }
-.t-border-2 { border-color: var(--border-soft); }
-.t-text     { color: var(--text); }
-.t-text-muted  { color: var(--text-mut); }
-.t-text-faint  { color: var(--text-faint); }
-.t-text-xfaint { color: var(--off); }
+.font-display { font-family: var(--font-sans); }
+
+/* Datos: horas, precios, duraciones y códigos van en mono */
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Rótulo: mono en versalitas, tracking abierto. Nombra secciones. */
+.rotulo {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--text-meta);
+  line-height: 1;
+}
+/* Rótulo con filete debajo — el patrón de sección del sistema */
+.rotulo-rule {
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+
+/* Display: el titular de cada paso. Dos palabras, dos renglones. */
+.h-step {
+  font-size: clamp(30px, 9vw, 38px);
+  font-weight: 800;
+  letter-spacing: -.04em;
+  line-height: 1;
+  color: var(--text);
+  text-wrap: balance;
+  margin: 0 0 10px;
+}
+.h-step + .sub-step { margin-top: 0; }
+
+/* Titulares de dos renglones. Se cortan con bloques y no con <br>:
+   así el lector de pantalla separa las palabras. */
+.lineas > span { display: block; }
+
+.sub-step {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-mut);
+  line-height: 1.6;
+  max-width: 46ch;
+  margin: 0 0 22px;
+}
+
+/* Monograma «Hö» — el recorte del logotipo, no un ícono aparte */
+.monograma {
+  font-weight: 800;
+  letter-spacing: -.05em;
+  line-height: 1;
+}
+
+/* Logotipo — una sola versión visible por tema, sin salto de layout.
+   Las dos imágenes van con alt vacío: el nombre accesible lo pone un
+   .sr-only al lado, porque la que está oculta no lo aportaría. */
+/* Por defecto se ve el logotipo en blanco, que es el que va sobre la
+   cueva. El negro sólo aparece en el papel del panel. */
+.logo-ink { display: none; }
+html.papel .logo-paper { display: none; }
+html.papel .logo-ink { display: block; }
 
 /* =============================================
-   ANIMACIÓN DE ENTRADA DE PASO
+   TRAMA — la única textura del sistema
+   ============================================= */
+.trama {
+  background-image: repeating-linear-gradient(
+    115deg,
+    var(--trama) 0 1px,
+    transparent 1px var(--trama-step)
+  );
+  /* La bajada la pone el tema, no cada uso: en la cueva la trama es
+     el reflejo de la luz en la roca y tiene que quedar apenas. */
+  opacity: var(--trama-op);
+}
+
+/* =============================================
+   LA ROCA — la foto de marca
+
+   Regla del turno 7a: la roca vive en las pantallas de MARCA
+   —portada, cabecera del login, pantalla de espera—. Adentro de la
+   herramienta de trabajo no entra: ahí compite con la lectura de la
+   agenda y el fondo se queda en negro plano.
+
+   Va con un degradado que la apaga hacia abajo, para que lo que se
+   apoye encima respire. Y sólo existe en la cueva: sobre papel una
+   foto de roca negra no es el mismo sistema, es una mancha.
+   ============================================= */
+/* El fondo se lo quedan los pseudos. Sobre papel la roca no existe y
+   la banda vuelve a la superficie de siempre. */
+.roca { position: relative; isolation: isolate; background: transparent; }
+
+.roca::before,
+.roca::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.roca::before {
+  background-image: url('/roca-ancha.webp');
+  background-size: cover;
+  background-position: center 38%;
+}
+.roca::after {
+  background: linear-gradient(
+    180deg,
+    rgba(10,9,8,.35) 0%,
+    rgba(10,9,8,.55) 45%,
+    rgba(10,9,8,.94) 100%
+  );
+}
+
+html.papel .roca { background: var(--surface); }
+html.papel .roca::before,
+html.papel .roca::after { content: none; }
+
+/* =============================================
+   ENTRADA DE PASO
    ============================================= */
 @keyframes rise {
-  from { opacity: 0; transform: translateY(7px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.step-enter { animation: rise .3s ease both; }
-@media (prefers-reduced-motion: reduce) { .step-enter { animation: none; } }
+.step-enter { animation: rise .26s ease both; }
 
 /* =============================================
-   COMPONENTES COMPARTIDOS
+   BARRA DE PASOS — cinco segmentos de 2px
    ============================================= */
-
-/* Card de opción (lugar / servicio) */
-.opt-card {
-  border: 2.5px solid var(--border);
-  border-radius: 16px;
-  background: var(--surface);
-  cursor: pointer;
-  transition: border-color .18s, background .18s, box-shadow .18s;
-  position: relative;
+.stepbar { display: flex; gap: 3px; }
+.stepbar > i {
+  flex: 1;
+  height: 2px;
+  background: var(--border-soft);
+  transition: background .25s;
 }
-.opt-card:hover { border-color: var(--celeste); }
-.opt-card.selected {
-  border-color: var(--celeste);
-  background: linear-gradient(180deg, var(--surface), var(--chip-bg));
-  box-shadow: 0 8px 20px rgba(63,134,196,.18);
+/* Los pasos ya recorridos van en el acento: en la cueva es la única
+   línea de oro de la cabecera, y dice cuánto falta sin un número. */
+.stepbar > i.on { background: var(--acento); }
+
+/* =============================================
+   FLUJO DE RESERVA — mide siempre una pantalla
+   Cabecera de pasos y CTA quedan fijos en la columna; sólo el
+   cuerpo hace scroll. Así el bloque no cambia de alto entre
+   pasos y nunca hay que deslizar para llegar al botón.
+   ============================================= */
+.flow {
+  --flow-pad: 16px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+/* El margen lateral lo declara CADA franja, explícito y completo.
+   Antes estaba en un `.flow > *`, y bastaba con que un hijo usara el
+   atajo `padding` para borrarlo sin que se notara: le pasó a la barra
+   de CTA, que quedó con los botones pegados al filete de la tarjeta.
+
+   Va a sangre sólo lo que tiene que ir: las filas de opción salen
+   hasta el borde con un margen negativo que llega justo al borde del
+   padding, ni un píxel más — si se pasara, `overflow-y:auto` volvería
+   el eje X `auto` y aparecería una barra horizontal. */
+.flow-head { padding-inline: var(--flow-pad); }
+.flow-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Espacio para que la última fila no quede pegada al filete del CTA */
+  padding: 0 var(--flow-pad) 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.flow-body::-webkit-scrollbar { width: 3px; }
+.flow-body::-webkit-scrollbar-thumb { background: var(--border); }
+
+@media (min-width: 640px) {
+  .flow { --flow-pad: 24px; }
 }
 
-/* Check badge en cards */
-.opt-card.selected::after {
-  content: "";
-  position: absolute; top: 10px; right: 10px; width: 18px; height: 18px;
-  border-radius: 50%;
-  background: var(--celeste) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/12px no-repeat;
+/* =============================================
+   FILA DE OPCIÓN — lugar, servicio
+   Lista a sangre. La elegida se invierte: tinta plena.
+   El marcador cuadrado de la izquierda es lo que dice que la
+   fila es un control y no un renglón de texto.
+   ============================================= */
+/* A sangre: sale hasta el borde del bloque, justo hasta donde llega
+   el padding del cuerpo. Ni un píxel más, o vuelve la barra. */
+.opt-list {
+  display: flex;
+  flex-direction: column;
+  margin-block: 4px 0;
+  margin-inline: calc(var(--flow-pad) * -1);
+  border-top: 1px solid var(--border);
 }
-
-/* Botón CTA pill */
-.btn-cta {
-  border-radius: 30px;
-  background: var(--btn-bg);
-  color: #fff;
-  font-family: var(--font-anton, "Anton"), sans-serif;
-  font-size: 13px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
+.opt-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 64px;
+  text-align: left;
+  font-family: inherit;
+  padding-block: 16px;
+  padding-inline: var(--flow-pad);
+  background: transparent;
   border: none;
-  padding: 13px 26px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
   cursor: pointer;
-  transition: transform .18s, box-shadow .18s, opacity .15s;
-  display: flex; align-items: center; gap: 8px;
+  transition: background .18s, color .18s;
 }
-.btn-cta:hover:not(:disabled) { transform: translateY(-1px); }
-.btn-cta:disabled { opacity: .3; cursor: not-allowed; }
-.btn-cta.final {
-  background: linear-gradient(160deg, var(--celeste), var(--celeste-deep));
-  box-shadow: 0 8px 20px rgba(63,134,196,.45);
+.opt-row:hover:not(.selected):not(:disabled) { background: var(--hover); }
+/* En papel se invierte a tinta plena; en la cueva se enciende con el
+   filete vivo. Lo decide el tema — ver los tokens --sel-*. */
+/* El filete vivo va como sombra interior y no como `border`: la fila
+   ya lleva un borde inferior, y sumarle los otros tres le cambiaba el
+   alto 1px justo al tocarla — la lista entera daba un salto. */
+.opt-row.selected {
+  background: var(--sel-bg);
+  color: var(--sel-fg);
+  border-bottom-color: var(--sel-borde);
+  box-shadow: inset 0 0 0 1px var(--sel-borde);
+}
+.opt-row:disabled { opacity: .45; cursor: not-allowed; }
+
+/* Marcador de selección — la casilla vacía dice "esto se elige";
+   el check dice "elegido". Es el único ícono que el sistema permite. */
+.opt-mark {
+  width: 18px; height: 18px; flex: none;
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  display: grid; place-items: center;
+  transition: background .18s, border-color .18s;
+}
+.opt-mark svg {
+  opacity: 0;
+  transition: opacity .18s;
+}
+.opt-row:hover:not(.selected) .opt-mark { border-color: var(--text); }
+.opt-row.selected .opt-mark {
+  background: var(--sel-fg);
+  border-color: var(--sel-fg);
+  color: var(--sel-bg);
+}
+.opt-row.selected .opt-mark svg { opacity: 1; }
+.opt-row-title {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -.02em;
+  line-height: 1.2;
+}
+.opt-row-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-meta);
+  margin-top: 7px;
+  line-height: 1.4;
+}
+.opt-row.selected .opt-row-sub { color: var(--sel-fg-mut); }
+.opt-row-price {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  font-weight: 500;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
-/* Input / textarea */
+/* =============================================
+   CONTROLES
+   Radio 2px. El primario es tinta plena; el secundario,
+   un filete; el terciario, texto con subrayado.
+   ============================================= */
+.btn-cta {
+  border-radius: 2px;
+  background: var(--btn-bg);
+  color: var(--on-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  border: 1px solid var(--btn-bg);
+  padding: 17px 26px;
+  transition: opacity .15s, background .15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  line-height: 1;
+}
+.btn-cta:hover:not(:disabled) { background: var(--btn-bg-hover); border-color: var(--btn-bg-hover); }
+.btn-cta:active:not(:disabled) { opacity: .86; }
+.btn-cta:disabled { opacity: .45; }
+
+.btn-outline {
+  border-radius: 2px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  padding: 15px 24px;
+  transition: background .15s, color .15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  text-decoration: none;
+  line-height: 1;
+}
+.btn-outline:hover:not(:disabled) { background: var(--text); color: var(--on-primary); }
+.btn-outline:disabled { opacity: .45; }
+
+/* Compacto — acciones dentro de una fila de lista. Sigue midiendo
+   44px de alto: se achica el texto, no el área de toque. */
+.btn-sm {
+  font-size: 11px;
+  padding: 0 12px;
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+/* Terciario — sin caja, apenas un subrayado. En un sistema sin color
+   el subrayado es lo único que dice "esto se toca". */
+.btn-ghost {
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border-strong);
+  border-radius: 0;
+  color: var(--text-mut);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 2px;
+  text-decoration: none;
+  transition: color .15s, border-color .15s;
+}
+.btn-ghost:hover { color: var(--text); border-color: var(--text); }
+.btn-ghost:disabled { opacity: .45; }
+
+/* =============================================
+   BARRA DE CTA — último renglón de la columna del flujo.
+   No va fija a la ventana: va al fondo del bloque, que ya mide
+   una pantalla. Es el mismo control en el mismo lugar en los
+   cinco pasos.
+   ============================================= */
+.cta-bar {
+  flex: none;
+  padding: 14px var(--flow-pad) 0;
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.cta-bar-inner {
+  display: flex; align-items: stretch; gap: 10px;
+}
+/* El primario se queda con el ancho que sobra; «Atrás» sólo el suyo. */
+.cta-bar .btn-cta { flex: 1; }
+.btn-back {
+  flex: 0 0 auto;
+  padding-inline: 18px;
+}
+
+/* Resumen de una línea encima del CTA */
+/* Una sola línea, siempre: si creciera a dos, el bloque cambiaría de
+   alto entre pasos y el flujo dejaría de medir lo mismo. */
+.cta-recap {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 12px;
+  font-size: 12px; color: var(--text-mut);
+}
+.cta-recap > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cta-recap b {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 14px; font-weight: 500; color: var(--text);
+}
+
+@media (min-width: 640px) {
+  .cta-bar { padding-top: 20px; margin-top: 20px; }
+  /* Con lugar de sobra el primario deja de estirarse y se va al borde
+     derecho: «Atrás» a la izquierda, «Continuar» donde termina la
+     lectura. En mobile no, porque ahí el pulgar quiere ancho. */
+  .cta-bar .btn-cta { flex: 0 0 auto; min-width: 220px; margin-inline-start: auto; }
+}
+
+/* =============================================
+   CAMPOS — sin caja. Rótulo mono arriba, filete abajo.
+   ============================================= */
+.field-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--text-meta);
+  margin-bottom: 2px;
+}
 .w-input {
   width: 100%;
-  border: 2px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 13px;
-  font-size: 13.5px;
-  font-weight: 600;
+  border: none;
+  border-bottom: 1px solid var(--border-strong);
+  border-radius: 0;
+  padding: 12px 0 11px;
+  font-family: var(--font-sans);
+  font-size: 16px;   /* 16px evita el zoom automático de iOS */
+  font-weight: 500;
+  letter-spacing: -.01em;
   color: var(--text);
-  background: var(--input-bg);
-  font-family: inherit;
+  background: transparent;
   outline: none;
-  transition: border-color .15s, box-shadow .15s;
+  transition: border-color .15s;
 }
-.w-input:focus {
-  border-color: var(--celeste);
-  box-shadow: 0 0 0 3px rgba(117,170,219,.2);
+.w-input::placeholder { color: var(--text-faint); font-weight: 400; }
+.w-input:focus { border-bottom-color: var(--text); }
+textarea.w-input { line-height: 1.5; }
+.w-input[type="tel"], .w-input.mono { font-family: var(--font-mono); }
+
+/* =============================================
+   GRILLA DE HORARIOS
+   Libre: filete. Ocupado: tachado. Elegido: tinta plena.
+   ============================================= */
+.slot-legend {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 14px;
+  font-family: var(--font-mono);
+  font-size: 9.5px; font-weight: 500; letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-meta);
+}
+.slot-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.slot-legend i {
+  width: 10px; height: 10px;
+  display: inline-block; flex-shrink: 0;
+}
+.slot-legend i.is-free { background: transparent; border: 1px solid var(--border-strong); }
+.slot-legend i.is-busy { background: var(--border-soft); border: 1px solid var(--border); }
+.slot-legend i.is-pick { background: var(--acento); }
+
+.slot-grid { display: grid; gap: 8px; }
+.slot {
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--text);
+  padding: 14px 2px;   /* 44px de alto: es el control que más se toca */
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  transition: background .16s, border-color .16s, color .16s;
+}
+.slot:hover:not([aria-disabled="true"]) { border-color: var(--text); }
+/* Ocupado sigue siendo enfocable a propósito: si se deshabilitara,
+   quien navega con teclado o lector nunca sabría que ese horario existe. */
+.slot[aria-disabled="true"] {
+  border-color: var(--border);
+  color: var(--off);
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+/* El horario elegido es el ÚNICO relleno pleno de la grilla, y en la
+   cueva es el oro. Es lo que el turno 8a llama «lo único encendido»:
+   los tomados se tachan en gris, los libres son sólo filete. */
+.slot.is-pick {
+  background: var(--acento);
+  border-color: var(--acento);
+  color: var(--on-acento);
+}
+.slot-skeleton {
+  height: 45px; border-radius: 2px;
+  border: 1px solid var(--border-soft);
+  opacity: .6;
+}
+
+/* =============================================
+   TIRA DE DÍAS
+   ============================================= */
+.daystrip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding: 2px 2px 10px;
+  margin: 0 -2px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.daystrip::-webkit-scrollbar { height: 3px; }
+.daystrip::-webkit-scrollbar-thumb { background: var(--border); }
+.daystrip::-webkit-scrollbar-track { background: transparent; }
+
+.day-chip {
+  scroll-snap-align: start;
+  flex: 0 0 auto;
+  width: 52px;
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  padding: 12px 0;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  transition: border-color .18s, background .18s, color .18s;
+}
+.day-chip .dc-dow {
+  font-family: var(--font-mono);
+  font-size: 9.5px; font-weight: 500; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--text-meta);
+  line-height: 1;
+  transition: color .18s;
+}
+.day-chip .dc-num {
+  font-size: 17px; font-weight: 600; letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums; line-height: 1;
+}
+.day-chip:hover:not([aria-disabled="true"]) { border-color: var(--text); }
+.day-chip[aria-disabled="true"] {
+  border-color: var(--border);
+  color: var(--off);
+  cursor: not-allowed;
+}
+.day-chip[aria-disabled="true"] .dc-dow { color: var(--off); }
+.day-chip[aria-disabled="true"] .dc-num { text-decoration: line-through; }
+/* El día no se rellena: se enciende con el filete vivo. El relleno
+   pleno queda para el horario, que es la decisión final del paso. */
+.day-chip.is-pick {
+  background: var(--sel-bg);
+  border-color: var(--sel-borde);
+  color: var(--sel-fg);
+}
+.day-chip.is-pick .dc-dow { color: var(--sel-fg-mut); }
+/* Hoy: un filete corto bajo el número, nunca otro color */
+.day-chip.is-today:not(.is-pick) .dc-num {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+/* Botón de texto discreto */
+.link-btn {
+  background: none; border: none;
+  min-height: 40px;
+  padding: 3px 0;
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 500; letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text-meta);
+  display: inline-flex; align-items: center; gap: 6px;
+  border-bottom: 1px solid var(--border-strong);
+  transition: color .18s, border-color .18s;
+}
+.link-btn:hover { color: var(--text); border-color: var(--text); }
+
+/* =============================================
+   CONTROL SEGMENTADO — filtros del panel
+   Sin riel ni pastilla: rótulos mono en fila, el activo
+   se invierte en tinta plena.
+   ============================================= */
+.seg {
+  display: flex;
+  border: 1px solid var(--border-strong);
+  overflow: hidden;
+}
+.seg > button {
+  flex: 1;
+  min-height: 44px;
+  padding: 12px 6px;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border-strong);
+  color: var(--text-meta);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  transition: background .16s, color .16s;
+}
+.seg > button:last-child { border-right: none; }
+.seg > button:hover:not([aria-pressed="true"]) { background: var(--hover); color: var(--text); }
+.seg > button[aria-pressed="true"] { background: var(--acento); color: var(--on-acento); }
+
+/* =============================================
+   HOJA INFERIOR — modales del panel
+   Sube desde abajo, ocupa el ancho y no redondea nada:
+   es una hoja de papel, no una tarjeta flotante.
+   ============================================= */
+.sheet-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: var(--overlay);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.sheet {
+  width: 100%; max-width: 480px;
+  max-height: 92vh; overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--surface);
+  border-top: 1px solid var(--text);
+  padding: 24px 20px calc(28px + env(safe-area-inset-bottom));
+}
+@media (min-width: 640px) {
+  .sheet-overlay { align-items: center; }
+  .sheet { max-height: 86vh; border: 1px solid var(--text); }
+}
+
+/* =============================================
+   FILA DE DATO — clave a la izquierda, valor a la derecha
+   ============================================= */
+.kv {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+.kv-k { font-size: 12.5px; color: var(--text-meta); flex-shrink: 0; }
+.kv-v { font-size: 12.5px; font-weight: 500; color: var(--text); text-align: right; min-width: 0; }
+.kv-v.mono { font-size: 13px; }
+
+/* =============================================
+   TIRA DE CIFRAS — el encabezado del panel
+
+   Cuatro columnas en cuanto entran; dos en teléfono. A 375px cada
+   columna se quedaba con 65px útiles y «PREVISTO HOY» partía en dos
+   renglones al lado de un número de seis dígitos.
+   ============================================= */
+.cifras {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  margin: 0;
+  border-top: 1px solid var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.cifras > div {
+  display: flex; flex-direction: column;
+  min-width: 0;
+  padding: 14px 12px 15px;
+  border-inline-start: 1px solid var(--border-soft);
+}
+.cifras > div:nth-child(odd) { border-inline-start: none; }
+.cifras > div:nth-child(-n+2) { border-bottom: 1px solid var(--border-soft); }
+
+@media (min-width: 560px) {
+  .cifras { grid-template-columns: repeat(4, 1fr); }
+  .cifras > div:nth-child(odd) { border-inline-start: 1px solid var(--border-soft); }
+  .cifras > div:first-child { border-inline-start: none; }
+  .cifras > div:nth-child(-n+2) { border-bottom: none; }
+}
+
+/* =============================================
+   TARJETA DE TURNO — la unidad del panel
+
+   La lista plana obligaba a leer para saber dónde terminaba un
+   turno y empezaba el siguiente: los tres links de contacto de uno
+   quedaban pegados al nombre del otro. La tarjeta cierra el turno
+   en una caja y le da un orden fijo a la mirada — hora, quién,
+   qué, cuánto, y recién ahí los botones.
+
+   Sigue siendo el mismo sistema: filete de 1px, dos tintas, sin
+   sombra ni relleno de color. Una tarjeta acá es una caja reglada,
+   no una ficha flotante.
+   ============================================= */
+.turno {
+  border: 1px solid var(--border);
+  background: var(--surface-alta);
+  transition: border-color .15s;
+}
+.turno + .turno { margin-top: 8px; }
+.turno:hover { border-color: var(--border-strong); }
+
+/* Franja superior: la hora ancla la lectura, la modalidad ubica. */
+.turno-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.turno-hora {
+  font-family: var(--font-mono);
+  font-size: 15px; font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+}
+/* El horario de fin importa —dice cuándo vuelve a estar libre— pero
+   no compite. Va en el gris secundario, no en el terciario: ese está
+   reservado a placeholders y daba 2.21:1 sobre papel, ilegible para
+   un dato que hay que poder leer. La jerarquía la sostienen igual el
+   peso y el color de la hora de inicio. */
+.turno-hora i { font-style: normal; color: var(--text-mut); }
+
+.turno-body { padding: 13px 14px; }
+
+.turno-nombre {
+  font-size: 17px; font-weight: 600;
+  letter-spacing: -.02em; line-height: 1.2;
+  color: var(--text);
+}
+
+/* Servicio y precio en el mismo renglón: es la fila que se mira
+   para saber cuánto se cobra. */
+.turno-srv {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 14px;
+  margin-top: 7px;
+}
+.turno-srv > span:first-child {
+  font-size: 13px; color: var(--text-mut); line-height: 1.4;
+  min-width: 0;
+}
+.turno-precio {
+  font-family: var(--font-mono);
+  font-size: 13px; font-weight: 500;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+/* La dirección de un turno a domicilio es accionable, no decorativa:
+   es a dónde hay que ir. Va marcada con el filete lleno. */
+.turno-dir {
+  display: block;
+  margin-top: 11px;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  /* El filete lleno de la izquierda va en el acento: la dirección de
+     un domicilio es lo que pide acción —hay que ir hasta ahí—, y esa
+     es exactamente la regla 03 del oro. */
+  border-left-width: 3px;
+  border-left-color: var(--acento-borde);
+  font-size: 12.5px; line-height: 1.45;
+  color: var(--text);
+  text-decoration: none;
+}
+.turno-dir:hover { background: var(--hover); }
+.turno-dir b {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 9.5px; font-weight: 500;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--text-meta);
+  margin-bottom: 4px;
+}
+
+.turno-nota {
+  margin: 11px 0 0;
+  padding-left: 10px;
+  border-left: 1px solid var(--border);
+  font-size: 12.5px; line-height: 1.5;
+  color: var(--text-mut);
+}
+
+/* Pie: contacto a la izquierda, turno a la derecha. Dos grupos
+   separados porque son dos decisiones distintas —hablarle o
+   moverle el turno— y antes estaban mezcladas en una fila. */
+.turno-pie {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px 16px; flex-wrap: wrap;
+  padding: 0 14px 10px;
+}
+.turno-contacto,
+.turno-acciones {
+  display: flex; align-items: center;
+  gap: 14px; flex-wrap: wrap;
+  min-width: 0;
+}
+.turno-acciones { margin-left: auto; }
+
+/* El área de toque sigue siendo de 44px aunque el texto sea chico.
+   Se declara acá y no en cada botón: eran seis `style` inline
+   repitiendo lo mismo. */
+.turno-pie .btn-ghost {
+  min-height: 44px;
+  display: inline-flex; align-items: center;
+  white-space: nowrap;
+}
+
+/* El teléfono va en mono: es un dato que se lee dígito a dígito. */
+.turno-tel {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+/* El mail cede primero cuando no entra: es el más largo y el menos
+   usado de los tres. */
+.turno-mail {
+  font-size: 12px;
+  max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* =============================================
+   MOVIMIENTO — se apaga entero si el sistema lo pide
+   ============================================= */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
 }

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A0908">
+<title>Sin conexión · Barber Höhle</title>
+<!-- Autocontenida a propósito: sin CSS, fuentes ni imágenes externas.
+     Si dependiera de un chunk del build, se rompería justamente cuando
+     hace falta. Ni siquiera lleva la roca por eso mismo. Los colores
+     son los del sistema —la cueva—, escritos a mano.
+     Sin variante clara: es una pantalla del lado del cliente, y ahí el
+     sistema es la cueva y nada más. -->
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: #0A0908;
+    color: #F1EAE0;
+    font-family: Montserrat, system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px calc(32px + env(safe-area-inset-bottom));
+  }
+  main { width: 100%; max-width: 420px; }
+  .rotulo {
+    font-family: ui-monospace, "JetBrains Mono", monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: #8A7F71;
+    line-height: 1;
+    margin: 0;
+  }
+  h1 {
+    font-size: clamp(34px, 11vw, 46px);
+    font-weight: 800;
+    line-height: .96;
+    letter-spacing: -.04em;
+    margin: 16px 0 0;
+  }
+  h1 span { display: block; }
+  p {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #B3A695;
+    margin: 16px 0 0;
+    max-width: 34ch;
+  }
+  /* La única textura del sistema: el poste de barbero a 115°.
+     En la cueva se dibuja en oro y muy baja: es el reflejo de la
+     luz en la roca, no un fondo. */
+  .trama {
+    --ink: #C9974A;
+    height: 54px;
+    margin-top: 28px;
+    opacity: .3;
+    background-image: repeating-linear-gradient(115deg, var(--ink) 0 1px, transparent 1px 9px);
+  }
+  /* El único relleno pleno de la pantalla, y va en oro. */
+  .btn {
+    display: block;
+    width: 100%;
+    margin-top: 28px;
+    padding: 17px 26px;
+    border: 1px solid #C9974A;
+    border-radius: 2px;
+    background: #C9974A;
+    color: #0A0908;
+    font: 600 14px/1 Montserrat, system-ui, sans-serif;
+    letter-spacing: -.01em;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+  <main>
+    <p class="rotulo">Sin conexión</p>
+    <h1><span>No hay</span><span>internet.</span></h1>
+    <p>Los turnos se reservan en vivo, así que necesitamos conexión para mostrarte los horarios libres. Volvé a intentar cuando tengas señal.</p>
+    <div class="trama" aria-hidden="true"></div>
+    <button class="btn" onclick="location.reload()">Reintentar</button>
+  </main>
+</body>
+</html>

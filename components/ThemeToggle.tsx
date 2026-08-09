@@ -2,57 +2,64 @@
 
 import { useEffect, useState } from 'react'
 
-function applyTheme(isDark: boolean) {
-  document.documentElement.classList.toggle('dark', isDark)
+/* Conmutador papel / cueva. Vive SÓLO en el panel: la app del cliente
+   es la cueva y no se conmuta. Acá existe porque Santiago trabaja con
+   el local iluminado y a pleno sol el negro no se lee.
+
+   Sin clase, el sistema es la cueva; `papel` es la variante. */
+function aplicar(papel: boolean) {
+  document.documentElement.classList.toggle('papel', papel)
 }
 
-export default function ThemeToggle({ variant = 'header' }: { variant?: 'header' | 'admin' }) {
-  const [dark, setDark] = useState(false)
+export default function ThemeToggle() {
+  const [papel, setPapel] = useState(false)
 
   useEffect(() => {
-    const saved = localStorage.getItem('santi-wiz-theme')
-    const isDark = saved ? saved === 'dark' : false
-    setDark(isDark)
-    applyTheme(isDark)
+    const guardado = localStorage.getItem('hohle-theme') === 'papel'
+    setPapel(guardado)
+    aplicar(guardado)
+    /* Al salir del panel el documento vuelve a la cueva: la clase vive
+       en <html>, así que sin esto una navegación blanda a la portada
+       se la llevaría puesta. */
+    return () => aplicar(false)
   }, [])
 
   function toggle() {
-    const next = !dark
-    setDark(next)
-    localStorage.setItem('santi-wiz-theme', next ? 'dark' : 'light')
-    applyTheme(next)
+    const next = !papel
+    setPapel(next)
+    localStorage.setItem('hohle-theme', next ? 'papel' : 'hohle')
+    aplicar(next)
   }
 
-  const isAdmin = variant === 'admin'
-
+  /* El toggle es el propio sistema en miniatura: un círculo partido,
+     sin ícono ni color. */
   return (
     <button
       onClick={toggle}
-      aria-label="Cambiar tema"
+      aria-label={papel ? 'Cambiar al tema Höhle, oscuro' : 'Cambiar al tema claro'}
+      title={papel ? 'Höhle' : 'Papel'}
       style={{
-        width: 34, height: 34, borderRadius: '50%',
-        background: isAdmin ? 'var(--chip-bg)' : 'rgba(255,255,255,.18)',
-        border: isAdmin ? '1.5px solid var(--border)' : '1.5px solid rgba(255,255,255,.55)',
+        width: 32, height: 32, borderRadius: 2, flexShrink: 0,
+        border: '1px solid var(--border-strong)',
+        background: 'transparent',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         cursor: 'pointer',
-        color: isAdmin ? 'var(--text-mut)' : '#fff',
-        transition: 'background .2s',
+        padding: 0,
+        transition: 'border-color .18s',
       }}
-      onMouseEnter={e => (e.currentTarget.style.background = isAdmin ? 'var(--border)' : 'rgba(255,255,255,.3)')}
-      onMouseLeave={e => (e.currentTarget.style.background = isAdmin ? 'var(--chip-bg)' : 'rgba(255,255,255,.18)')}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--text)' }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-strong)' }}
     >
-      {dark ? (
-        /* Sol */
-        <svg width={19} height={19} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="4"/>
-          <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
-        </svg>
-      ) : (
-        /* Luna */
-        <svg width={19} height={19} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
-        </svg>
-      )}
+      <span
+        aria-hidden
+        style={{
+          width: 14, height: 14, borderRadius: '50%',
+          border: '1px solid var(--text)',
+          background: 'linear-gradient(90deg, var(--text) 0 50%, transparent 50% 100%)',
+          transform: papel ? 'rotate(180deg)' : 'none',
+          transition: 'transform .3s ease',
+        }}
+      />
     </button>
   )
 }
