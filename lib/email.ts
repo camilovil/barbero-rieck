@@ -716,9 +716,12 @@ export async function sendCancellationEmails(opts: {
     titulo: `${esc(dateShort)}<br>${esc(time)}`,
     texto: 'El horario ya volvió a la agenda. Cuando quieras, elegís otro en un minuto.',
     rows: [
-      kv('Servicio', [serviceName(opts.servicio), opts.duration || durationOf(opts.servicio)].filter(Boolean).join(' · '), LIGHT),
-      kv('Dónde', lugarSub ? `${lugarMain} · ${lugarSub}` : lugarMain, LIGHT),
-      kv('Cancelado por', porTxt, LIGHT, { last: true }),
+      /* DARK y no LIGHT: este mail va en la cueva. Con la tinta de papel
+         el valor quedaba en #0C0C0D sobre #0A0908 —1.02:1—, o sea que
+         el servicio, el lugar y quién canceló no se veían. */
+      kv('Servicio', [serviceName(opts.servicio), opts.duration || durationOf(opts.servicio)].filter(Boolean).join(' · '), DARK),
+      kv('Dónde', lugarSub ? `${lugarMain} · ${lugarSub}` : lugarMain, DARK),
+      kv('Cancelado por', porTxt, DARK, { last: true }),
     ].join(''),
     code,
     motivo: opts.motivo,
@@ -1060,9 +1063,9 @@ export function previewEmails(): { id: string; nombre: string; asunto: string; h
         titulo: `${dateShort}<br>18:30`,
         texto: 'El horario ya volvió a la agenda. Cuando quieras, elegís otro en un minuto.',
         rows: [
-          kv('Servicio', 'Corte y barba · 60 min', LIGHT),
-          kv('Dónde', `${LOCATION_LABELS.local} · ${BARBER_ADDRESS}`, LIGHT),
-          kv('Cancelado por', 'Vos, desde la web', LIGHT, { last: true }),
+          kv('Servicio', 'Corte y barba · 60 min', DARK),
+          kv('Dónde', `${LOCATION_LABELS.local} · ${BARBER_ADDRESS}`, DARK),
+          kv('Cancelado por', 'Vos, desde la web', DARK, { last: true }),
         ].join(''),
         code,
         logoSrc,

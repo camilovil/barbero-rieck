@@ -39,27 +39,42 @@ export default function ThemeToggle() {
       aria-label={papel ? 'Cambiar al tema Höhle, oscuro' : 'Cambiar al tema claro'}
       title={papel ? 'Höhle' : 'Papel'}
       style={{
-        width: 32, height: 32, borderRadius: 2, flexShrink: 0,
-        border: '1px solid var(--border-strong)',
+        /* 44px de área de toque, como todo control del sistema. La caja
+           visible sigue midiendo 32 —el recuadro se dibuja abajo, en el
+           <span>—: se agranda lo que se toca, no lo que se ve. */
+        width: 44, height: 44, flexShrink: 0,
+        border: 'none',
         background: 'transparent',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         cursor: 'pointer',
         padding: 0,
-        transition: 'border-color .18s',
+        /* Compensa el crecimiento para que la caja visible siga alineada
+           con el borde de la cabecera. */
+        margin: '-6px',
       }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--text)' }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-strong)' }}
+      onMouseEnter={e => { (e.currentTarget.firstElementChild as HTMLElement).style.borderColor = 'var(--text)' }}
+      onMouseLeave={e => { (e.currentTarget.firstElementChild as HTMLElement).style.borderColor = 'var(--border-strong)' }}
     >
+      {/* La caja visible: 32px, la que dibuja el control. */}
       <span
         aria-hidden
         style={{
-          width: 14, height: 14, borderRadius: '50%',
-          border: '1px solid var(--text)',
-          background: 'linear-gradient(90deg, var(--text) 0 50%, transparent 50% 100%)',
-          transform: papel ? 'rotate(180deg)' : 'none',
-          transition: 'transform .3s ease',
+          width: 32, height: 32, borderRadius: 2,
+          border: '1px solid var(--border-strong)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'border-color .18s',
         }}
-      />
+      >
+        <span
+          style={{
+            width: 14, height: 14, borderRadius: '50%',
+            border: '1px solid var(--text)',
+            background: 'linear-gradient(90deg, var(--text) 0 50%, transparent 50% 100%)',
+            transform: papel ? 'rotate(180deg)' : 'none',
+            transition: 'transform .3s ease',
+          }}
+        />
+      </span>
     </button>
   )
 }
