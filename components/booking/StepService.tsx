@@ -3,12 +3,6 @@
 import { SERVICES } from '@/lib/constants'
 import type { Location, Service } from '@/types/booking'
 
-/* Número de camiseta asignado a cada servicio */
-const JERSEY_NO: Record<string, string> = {
-  'Corte':       '7',
-  'Corte y barba': '10',
-}
-
 interface Props {
   location: Location
   selected: Service | null
@@ -20,49 +14,52 @@ export default function StepService({ location, selected, onSelect }: Props) {
 
   return (
     <div className="step-enter">
-      <div style={{ fontFamily: 'var(--font-anton, "Anton"), sans-serif', fontSize: 25, letterSpacing: '.3px', margin: '0 0 3px', color: 'var(--text)' }}>
-        ¿Qué te hacés?
-      </div>
-      <p style={{ fontSize: 12.5, color: 'var(--text-mut)', fontWeight: 600, margin: '0 0 18px' }}>
-        {location === 'domicilio' ? 'A domicilio — incluye traslado de Santiago' : 'Elegí tu jugada'}
-      </p>
+      <div className="h-step lineas"><span>Elegí el</span><span>servicio</span></div>
+      <p className="sub-step">Elegí uno.</p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 18 }}>
+      <div className="opt-list">
         {services.map((svc) => {
           const isSelected = selected?.name === svc.name && selected?.price === svc.price
-          const jerseyNo = JERSEY_NO[svc.name] ?? '★'
           const priceLabel = svc.priceLabel ?? `$${svc.price.toLocaleString('es-AR')}`
 
           return (
-            <div
+            <button
+              type="button"
               key={svc.name}
-              className={`opt-card${isSelected ? ' selected' : ''}`}
+              aria-pressed={isSelected}
+              aria-label={`${svc.name} — ${svc.duration} minutos — ${priceLabel}`}
+              className={`opt-row${isSelected ? ' selected' : ''}`}
               onClick={() => onSelect(svc)}
-              style={{ padding: '16px 8px 14px', textAlign: 'center' }}
             >
-              {/* Número de camiseta */}
-              <div style={{
-                fontFamily: 'var(--font-anton, "Anton"), sans-serif',
-                fontSize: 30, lineHeight: .9,
-                color: isSelected ? 'var(--gold)' : 'var(--celeste)',
-                WebkitTextStroke: `1.5px var(--stroke)`,
-                marginBottom: 7,
-                transition: 'color .18s',
-              }}>
-                {jerseyNo}
-              </div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)' }}>{svc.name}</div>
-              <div style={{
-                fontFamily: 'var(--font-anton, "Anton"), sans-serif',
-                fontSize: 19, color: 'var(--text)', margin: '4px 0 2px',
-              }}>{priceLabel}</div>
-              <div style={{ fontSize: 10, color: 'var(--text-mut)', fontWeight: 800, letterSpacing: '.5px' }}>
-                {svc.duration} MIN
-              </div>
-            </div>
+              <span className="opt-mark" aria-hidden>
+                <svg viewBox="0 0 24 24" width={11} height={11} fill="none" stroke="currentColor"
+                  strokeWidth={3.4} strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span className="opt-row-title" style={{ display: 'block' }}>{svc.name}</span>
+                <span className="opt-row-sub" style={{ display: 'block', letterSpacing: '.06em' }}>
+                  {svc.duration} MIN
+                </span>
+              </span>
+              <span className="opt-row-price">{priceLabel}</span>
+            </button>
           )
         })}
       </div>
+
+      {location === 'domicilio' && (
+        <p
+          className="mono"
+          style={{
+            fontSize: 11.5, lineHeight: 1.6, color: 'var(--text-mut)',
+            margin: '18px 0 0',
+          }}
+        >
+          Incluye el traslado de Santiago hasta tu dirección.
+        </p>
+      )}
     </div>
   )
 }

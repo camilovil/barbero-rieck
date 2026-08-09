@@ -3,6 +3,7 @@ import { getCalendarEvent, deleteCalendarEvent, createCalendarEvent } from '@/li
 import { sendRescheduleEmails } from '@/lib/email'
 import { sendRescheduleNotification } from '@/lib/whatsapp'
 import type { BookingState } from '@/types/booking'
+import { hhmm, nombreServicio, precioServicio } from '@/lib/format'
 
 function parseDescription(desc: string): Record<string, string> {
   const result: Record<string, string> = {}
@@ -29,16 +30,14 @@ export async function POST(req: NextRequest) {
 
     // Rebuild booking state from calendar event description
     const isLocal = !desc['modalidad']?.toLowerCase().includes('domicilio')
-    const serviceNameRaw = (desc['servicio'] ?? '').split(' — ')[0].trim()
+    const servicioRaw = desc['servicio'] ?? ''
     const duration = event.end?.dateTime
       ? Math.round((new Date(event.end.dateTime).getTime() - new Date(event.start!.dateTime!).getTime()) / 60000)
       : (isLocal ? 40 : 120)
 
     const oldStart = new Date(event.start?.dateTime ?? '')
-    const oldDateStr = oldStart.toLocaleDateString('es-AR', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires',
-    })
-    const oldTime = oldStart.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
+    const oldTime = hhmm(oldStart)
+    const direccion = desc['dirección cliente'] ?? ''
 
     const booking: BookingState = {
       step: 5,
@@ -46,14 +45,18 @@ export async function POST(req: NextRequest) {
       nombre: desc['cliente'] ?? '',
       email: desc['email'] ?? '',
       whatsapp: (desc['whatsapp'] ?? '').replace(/https:\/\/wa\.me\//, ''),
-      direccion: desc['dirección cliente'] ?? '',
+      direccion,
       nota: desc['nota'] ?? '',
       date: new Date(newDate),
       time: newTime,
       service: {
-        name: serviceNameRaw,
+        name: nombreServicio(servicioRaw),
         duration,
-        price: 0,
+        /* Se arrastra el precio del turno original. Estaba en 0, y
+           como reprogramar borra el evento y crea uno nuevo, el turno
+           quedaba guardado como "Corte y barba — $0": el panel, el
+           resumen del día y los mails posteriores lo daban por gratis. */
+        price: precioServicio(servicioRaw),
       },
     }
 
@@ -62,28 +65,27 @@ export async function POST(req: NextRequest) {
     const newEventId = await createCalendarEvent(booking)
 
     // Notify client and Santiago
-    const newDateStr = new Date(newDate).toLocaleDateString('es-AR', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires',
-    })
 
     await Promise.all([
       desc['email']
-        ? sendRescheduleEmails(
-            desc['cliente'] ?? 'Cliente',
-            desc['email'],
-            oldDateStr,
+        ? sendRescheduleEmails({
+            nombre: desc['cliente'] ?? 'Cliente',
+            email: desc['email'],
+            oldDate: oldStart,
             oldTime,
-            newDateStr,
+            newDate: new Date(newDate),
             newTime,
-            desc['servicio'] ?? '—',
+            servicio: servicioRaw || '—',
             newEventId,
-          )
+            location: isLocal ? 'local' : 'domicilio',
+            direccion,
+          })
         : Promise.resolve(),
       sendRescheduleNotification(
         desc['cliente'] ?? 'Cliente',
-        oldDateStr,
+        oldStart,
         oldTime,
-        newDateStr,
+        new Date(newDate),
         newTime,
         desc['servicio'] ?? '—',
       ),

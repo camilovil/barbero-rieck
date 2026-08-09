@@ -24,8 +24,17 @@ export const BLOCKED_SLOTS: string[] = []
 export const BARBER_NAME = 'Santiago Rieck'
 export const BARBER_ADDRESS = 'Congreso 1865, Belgrano, CABA'
 
+export const INSTAGRAM_HANDLE = '@santii_barber07'
+export const INSTAGRAM_URL = 'https://www.instagram.com/santii_barber07'
+
+/* Cómo se nombra cada modalidad en TODA la app: interfaz, mails,
+   WhatsApp y la descripción del evento de calendario. Antes cada
+   archivo inventaba la suya — "Estudio", "En el local", "En local",
+   "Barbería Rieck" — y no coincidían entre sí. */
+export const LOCATION_LABELS: Record<Location, string> = {
+  local: 'Studio Höhle',
+  domicilio: 'A domicilio',
+}
+
 // Horas mínimas de anticipación para poder cancelar
 export const CANCELLATION_MIN_HOURS = 24
-
-// Máximo de turnos por día (evita sobrecarga)
-export const MAX_DAILY_BOOKINGS = 8

@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import StepCalendar from '@/components/booking/StepCalendar'
 import AppHeader from '@/components/AppHeader'
+import { CANCELLATION_MIN_HOURS } from '@/lib/constants'
 import type { Location } from '@/types/booking'
+import { toDateParam } from '@/lib/format'
 
 type Estado = 'cargando' | 'listo' | 'guardando' | 'modificado' | 'error' | 'nopuede' | 'notfound'
 
@@ -19,11 +21,29 @@ interface TurnoInfo {
   santiWa: string
 }
 
-function toDateParam(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
+const HEADER_H = 72
 
-const HEADER_H = 135
+function Estado_({ rotulo, titulo, children }: { rotulo: string; titulo: string; children?: React.ReactNode }) {
+  return (
+    <div>
+      <div className="rotulo">{rotulo}</div>
+      <h2
+        className="font-display"
+        style={{
+          fontSize: 'clamp(30px, 9vw, 38px)', fontWeight: 800, lineHeight: 1,
+          letterSpacing: '-.04em', color: 'var(--text)', margin: '14px 0 0',
+        }}
+      >
+        {titulo}
+      </h2>
+      {children && (
+        <div style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text-mut)', marginTop: 14 }}>
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function ModificarClient() {
   const params = useSearchParams()
@@ -71,86 +91,75 @@ export default function ModificarClient() {
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--app-bg)' }}>
       <AppHeader />
 
-      <main className="flex-1 px-3 sm:px-6 pb-12" style={{ paddingTop: HEADER_H + 16 }}>
+      <main className="flex-1 px-4 sm:px-6 pb-14" style={{ paddingTop: `calc(env(safe-area-inset-top) + ${HEADER_H + 32}px)` }}>
         <div className="max-w-2xl mx-auto">
 
-          {/* Card wrapper */}
-          <div className="rounded-2xl p-4 sm:p-8" style={{
+          <div style={{
             background: 'var(--surface)',
-            border: '2.5px solid var(--border)',
-            boxShadow: '0 20px 50px rgba(11,31,71,.1)',
+            border: '1px solid var(--border)',
+            padding: '26px 16px 24px',
           }}>
 
             {estado === 'cargando' && (
-              <div className="text-center py-12 text-sm font-semibold" style={{ color: 'var(--text-mut)' }}>
-                Verificando turno...
+              <div className="rotulo" style={{ padding: '40px 0', textAlign: 'center', lineHeight: 1.8 }}>
+                Verificando turno…
               </div>
             )}
 
             {estado === 'notfound' && (
-              <div className="text-center py-12">
-                <div className="text-4xl mb-4">🔍</div>
-                <h2 style={{ fontFamily: 'var(--font-anton,"Anton"),sans-serif', fontSize: 24, color: 'var(--text)', margin: '0 0 8px' }}>
-                  Turno no encontrado
-                </h2>
-                <p className="text-sm font-semibold" style={{ color: 'var(--text-mut)' }}>
-                  Este turno ya fue cancelado o no existe.
-                </p>
-              </div>
+              <Estado_ rotulo="Sin resultado" titulo="Turno no encontrado">
+                Este turno ya fue cancelado o no existe.
+              </Estado_>
             )}
 
             {estado === 'error' && (
-              <div className="text-center py-12">
-                <div className="text-4xl mb-4">⚠️</div>
-                <h2 style={{ fontFamily: 'var(--font-anton,"Anton"),sans-serif', fontSize: 24, color: 'var(--text)', margin: '0 0 8px' }}>
-                  Algo salió mal
-                </h2>
-                <p className="text-sm font-semibold" style={{ color: 'var(--text-mut)' }}>{error}</p>
-              </div>
+              <Estado_ rotulo="Error" titulo="Algo salió mal">
+                {error}
+              </Estado_>
             )}
 
             {estado === 'nopuede' && turno && (
-              <div className="text-center py-8">
-                <div className="text-4xl mb-4">⏰</div>
-                <h2 style={{ fontFamily: 'var(--font-anton,"Anton"),sans-serif', fontSize: 24, color: 'var(--text)', margin: '0 0 10px' }}>
-                  Ya no es posible modificar
-                </h2>
-                <p className="text-sm font-semibold mb-6" style={{ color: 'var(--text-mut)', lineHeight: 1.6 }}>
-                  Solo se puede modificar con al menos 24 horas de anticipación.<br />
-                  Tu turno es el <strong style={{ color: 'var(--text)' }}>{turno.fecha} a las {turno.hora}</strong>.
-                </p>
+              <>
+                <Estado_ rotulo="Fuera de plazo" titulo="Ya no se puede modificar">
+                  Se puede reprogramar con al menos {CANCELLATION_MIN_HOURS} horas de anticipación.
+                  Tu turno es el{' '}
+                  <strong style={{ color: 'var(--text)', fontWeight: 600 }}>
+                    {turno.fecha} a las {turno.hora}
+                  </strong>.
+                </Estado_>
                 {turno.santiWa && (
                   <a
                     href={`https://wa.me/${turno.santiWa.replace(/\D/g, '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="btn-cta final"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 28px', textDecoration: 'none', background: '#25D366', borderColor: '#25D366' }}
+                    className="btn-cta"
+                    style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}
                   >
-                    💬 ESCRIBIR A SANTIAGO
+                    Escribirle a Santiago
                   </a>
                 )}
-              </div>
+              </>
             )}
 
             {(estado === 'listo' || estado === 'guardando') && turno && (
               <div>
-                <div style={{ fontFamily: 'var(--font-anton,"Anton"),sans-serif', fontSize: 25, letterSpacing: '.3px', margin: '0 0 3px', color: 'var(--text)' }}>
-                  Modificar turno
+                <Estado_ rotulo="Reprogramar" titulo="Modificar turno" />
+
+                <div className="kv" style={{ margin: '20px 0 0' }}>
+                  <span className="kv-k">Turno actual</span>
+                  <span className="kv-v mono">{turno.fecha} · {turno.hora}</span>
                 </div>
-                <p className="text-sm font-semibold mb-6" style={{ color: 'var(--text-mut)' }}>
-                  Turno actual: <strong style={{ color: 'var(--text)' }}>{turno.fecha} a las {turno.hora}</strong>
-                </p>
 
                 {error && (
-                  <div className="mb-5 px-4 py-3 rounded-xl text-sm font-semibold" style={{
-                    border: '2px solid var(--border)', color: 'var(--text-mut)', background: 'var(--chip-bg)',
+                  <p className="mono" style={{
+                    fontSize: 11, lineHeight: 1.6, color: 'var(--text)',
+                    border: '1px solid var(--text)', padding: '12px 14px', margin: '18px 0 0',
                   }}>
-                    ⚠️ {error}
-                  </div>
+                    {error}
+                  </p>
                 )}
 
-                <div className="mb-6">
+                <div style={{ marginTop: 30 }}>
                   <StepCalendar
                     location={location}
                     selectedDate={newDate}
@@ -160,48 +169,36 @@ export default function ModificarClient() {
                 </div>
 
                 {newDate && newTime && (
-                  <div className="mb-6 px-4 py-3 rounded-xl" style={{
-                    background: 'var(--chip-bg)', border: '2px solid var(--border)',
-                  }}>
-                    <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: 'var(--text-mut)' }}>
-                      Nuevo horario seleccionado
-                    </p>
-                    <p className="font-bold capitalize" style={{ color: 'var(--text)', fontSize: 14 }}>
-                      {newDate.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })} — {newTime}
-                    </p>
+                  <div className="kv" style={{ borderTop: '1px solid var(--text)', borderBottom: 'none', marginTop: 22, paddingTop: 14 }}>
+                    <span className="kv-k">Nuevo horario</span>
+                    <span className="kv-v mono">
+                      {(() => {
+                        const s = newDate.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })
+                        return s.charAt(0).toUpperCase() + s.slice(1)
+                      })()} · {newTime}
+                    </span>
                   </div>
                 )}
 
                 <button
                   onClick={handleModificar}
                   disabled={!newDate || !newTime || estado === 'guardando'}
-                  className="btn-cta final"
-                  style={{ width: '100%', justifyContent: 'center', padding: '14px 26px' }}
+                  className="btn-cta"
+                  style={{ width: '100%', marginTop: 22 }}
                 >
-                  {estado === 'guardando' ? 'GUARDANDO...' : 'CONFIRMAR CAMBIO'}
+                  {estado === 'guardando' ? 'Guardando…' : 'Confirmar cambio'}
                 </button>
               </div>
             )}
 
             {estado === 'modificado' && (
-              <div className="text-center py-8">
-                <div style={{
-                  width: 88, height: 88, margin: '0 auto 16px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(160deg, var(--celeste), var(--celeste-deep))',
-                  boxShadow: '0 14px 30px rgba(63,134,196,.4)',
-                }}>
-                  <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                </div>
-                <h2 style={{ fontFamily: 'var(--font-anton,"Anton"),sans-serif', fontSize: 26, color: 'var(--text)', margin: '0 0 8px' }}>
-                  ¡Turno modificado!
-                </h2>
-                <p className="text-sm font-semibold" style={{ color: 'var(--text-mut)', lineHeight: 1.6 }}>
-                  Te mandamos un nuevo email de confirmación<br />con el horario actualizado.
-                </p>
+              <div>
+                <Estado_ rotulo="Listo" titulo="Turno modificado">
+                  Te mandamos un nuevo mail de confirmación con el horario actualizado.
+                </Estado_>
+                <a href="/" className="btn-outline" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
+                  Volver al inicio
+                </a>
               </div>
             )}
 

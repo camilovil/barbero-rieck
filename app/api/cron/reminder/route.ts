@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getEventsForDate } from '@/lib/googleCalendar'
 import { sendReminderEmail } from '@/lib/email'
+import { hhmm } from '@/lib/format'
 
 // Vercel cron — runs daily at 10:00 AM Argentina time (13:00 UTC)
 // Sends reminder emails for tomorrow's appointments
@@ -27,22 +28,15 @@ export async function GET(req: NextRequest) {
     let sent = 0
     for (const ev of events) {
       if (!ev.email) continue
-      const dateStr = new Date(ev.start).toLocaleDateString('es-AR', {
-        weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Argentina/Buenos_Aires',
+      await sendReminderEmail({
+        nombre: ev.nombre,
+        email: ev.email,
+        eventId: ev.id,
+        time: hhmm(ev.start),
+        servicio: ev.servicio,
+        location: ev.modalidad?.toLowerCase().includes('domicilio') ? 'domicilio' : 'local',
+        direccion: ev.direccion,
       })
-      const time = new Date(ev.start).toLocaleTimeString('es-AR', {
-        hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires',
-      })
-      const location = ev.modalidad?.toLowerCase().includes('domicilio') ? 'domicilio' : 'local'
-      await sendReminderEmail(
-        ev.nombre,
-        ev.email,
-        dateStr,
-        time,
-        ev.servicio,
-        location,
-        ev.whatsapp,
-      )
       sent++
     }
 

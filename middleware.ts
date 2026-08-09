@@ -11,11 +11,6 @@ export function middleware(req: NextRequest) {
   const token = req.cookies.get('admin_token')?.value
   const secret = process.env.ADMIN_SECRET
 
-  // Permitir migración con secret como query param (uso remoto de una sola vez)
-  if (pathname === '/api/admin/migrate-times' && secret && req.nextUrl.searchParams.get('secret') === secret) {
-    return NextResponse.next()
-  }
-
   if (!token || !secret || token !== secret) {
     // Las rutas API devuelven 401 JSON, las páginas redirigen al login
     if (pathname.startsWith('/api/')) {

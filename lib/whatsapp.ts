@@ -1,13 +1,7 @@
 import type { BookingState } from '@/types/booking'
+import { LOCATION_LABELS } from './constants'
+import { fechaCorta, fechaLarga as formatDate } from './format'
 
-function formatDate(date: Date): string {
-  return date.toLocaleDateString('es-AR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    timeZone: 'America/Argentina/Buenos_Aires',
-  })
-}
 
 export async function sendBookingNotification(booking: BookingState): Promise<void> {
   if (!process.env.TWILIO_ACCOUNT_SID) {
@@ -30,12 +24,14 @@ export async function sendBookingNotification(booking: BookingState): Promise<vo
 
 export async function sendRescheduleNotification(
   nombre: string,
-  oldDateStr: string,
+  oldDate: Date,
   oldTime: string,
-  newDateStr: string,
+  newDate: Date,
   newTime: string,
   servicio: string,
 ): Promise<void> {
+  const oldDateStr = fechaCorta(oldDate)
+  const newDateStr = fechaCorta(newDate)
   const message = [
     `🔄 *Turno reprogramado*`,
     `Cliente: ${nombre}`,
@@ -65,7 +61,7 @@ function buildMessage(booking: BookingState): string {
     `WhatsApp: ${booking.whatsapp}`,
     `Servicio: ${booking.service?.name} ($${booking.service?.price})`,
     `Fecha: ${dateStr} a las ${booking.time}`,
-    `Modalidad: ${booking.location === 'domicilio' ? `A domicilio — ${booking.direccion}` : 'En local'}`,
+    `Modalidad: ${booking.location === 'domicilio' ? `${LOCATION_LABELS.domicilio} — ${booking.direccion}` : LOCATION_LABELS.local}`,
     booking.nota ? `Nota: ${booking.nota}` : null,
   ]
   return lines.filter(Boolean).join('\n')

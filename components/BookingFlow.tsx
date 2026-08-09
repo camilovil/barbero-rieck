@@ -9,7 +9,8 @@ import StepDatos from './booking/StepDatos'
 import StepResumen from './booking/StepResumen'
 import StepSuccess from './booking/StepSuccess'
 import type { BookingState, Location, Service } from '@/types/booking'
-import { SERVICES } from '@/lib/constants'
+import { SERVICES, LOCATION_LABELS } from '@/lib/constants'
+import { diaCorto } from '@/lib/format'
 
 interface Props {
   initialLocation?: Location | null
@@ -101,11 +102,37 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
 
   const ready = canAdvance(state)
 
+  /* Recap de una línea sobre el CTA: lo que se lleva elegido hasta
+     acá. Antes esto vivía en el «volver» de arriba; como ese control
+     se fue, el contexto viaja donde el ojo ya está mirando. */
+  const elegido = [
+    state.location ? LOCATION_LABELS[state.location] : null,
+    state.service ? `${state.service.name} · ${state.service.duration}'` : null,
+    state.date && state.time ? `${diaCorto(state.date)} · ${state.time}` : null,
+  ].filter(Boolean).join('  ·  ')
+
+  const recap = elegido
+    ? {
+        left: elegido,
+        right: state.service
+          ? state.service.priceLabel ?? `$${state.service.price.toLocaleString('es-AR')}`
+          : '',
+      }
+    : null
+
+  /* El CTA es siempre el mismo control en el mismo lugar: cambia la
+     etiqueta y a quién llama, no la posición. En el paso 5 confirma. */
+  const cta = state.step === 5
+    ? { label: loading ? 'Confirmando…' : 'Confirmar turno', onClick: handleConfirm, enabled: !loading }
+    : { label: state.step === 4 ? 'Ver resumen' : 'Continuar', onClick: goNext, enabled: ready }
+
   return (
-    <div>
+    <div className="flow">
       <StepIndicator current={state.step} />
 
-      <div style={{ minHeight: 340 }}>
+      {/* Sólo esta zona hace scroll. La cabecera de pasos y el CTA
+          quedan fijos, así el flujo mide siempre lo mismo. */}
+      <div className="flow-body">
         {state.step === 1 && (
           <StepLocation
             selected={state.location}
@@ -138,53 +165,30 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
             onChange={(field, value) => update({ [field]: value })}
           />
         )}
-        {state.step === 5 && (
-          <StepResumen
-            booking={state}
-            onConfirm={handleConfirm}
-            onBack={goBack}
-            loading={loading}
-          />
-        )}
+        {state.step === 5 && <StepResumen booking={state} />}
       </div>
 
-      {/* Footer de navegación — oculto en paso 5 (tiene su propio CTA) */}
-      {state.step < 5 && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 12,
-          marginTop: 24, paddingTop: 14,
-          borderTop: '2px solid var(--border-soft)',
-        }}>
-          {/* Atrás */}
-          <button
-            onClick={goBack}
-            style={{
-              visibility: state.step === 1 ? 'hidden' : 'visible',
-              background: 'none', border: 'none',
-              color: 'var(--text-mut)', fontWeight: 800, fontSize: 12.5,
-              fontFamily: 'inherit', letterSpacing: '.3px',
-              cursor: 'pointer', padding: '6px 4px', transition: 'color .15s',
-            }}
-          >
-            ← Atrás
-          </button>
+      <div className="cta-bar">
+        {recap && state.step >= 2 && (
+          <div className="cta-recap">
+            <span>{recap.left}</span>
+            {recap.right && <b>{recap.right}</b>}
+          </div>
+        )}
+        <div className="cta-bar-inner">
+          {/* Un solo «atrás», con caja: en el paso 1 no existe, así el
+              primario ocupa todo el ancho y no queda un hueco raro. */}
+          {state.step > 1 && (
+            <button onClick={goBack} className="btn-outline btn-back" aria-label="Volver al paso anterior">
+              <span aria-hidden="true">←</span> Atrás
+            </button>
+          )}
 
-          {/* Continuar (pill CTA) */}
-          <button
-            onClick={goNext}
-            disabled={!ready}
-            className={`btn-cta${state.step === 4 ? ' final' : ''}`}
-            style={{ marginLeft: 'auto' }}
-          >
-            {state.step === 4 ? 'VER RESUMEN' : 'CONTINUAR'}
-            {ready && (
-              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 5l7 7-7 7"/>
-              </svg>
-            )}
+          <button onClick={cta.onClick} disabled={!cta.enabled} className="btn-cta">
+            {cta.label}
           </button>
         </div>
-      )}
+      </div>
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { google } from 'googleapis'
 import type { BookingState } from '@/types/booking'
-import { TIME_SLOTS } from './constants'
+import { TIME_SLOTS, LOCATION_LABELS } from './constants'
 import type { Location } from '@/types/booking'
 
 // Argentina never observes DST — UTC-3 all year
@@ -51,8 +51,13 @@ export async function createCalendarEvent(booking: BookingState): Promise<string
     `Cliente: ${booking.nombre}`,
     `WhatsApp: https://wa.me/${waNumber}`,
     `Email: ${booking.email}`,
-    `Servicio: ${booking.service.name} — $${booking.service.price?.toLocaleString('es-AR')}`,
-    `Modalidad: ${booking.location === 'domicilio' ? 'A domicilio' : 'Estudio'}`,
+    /* Esta línea es la que después leen los mails y el panel para
+       saber cuánto se cobra. Sin precio se omite el tramo en vez de
+       escribir "$0", que se lee como un turno gratis. */
+    booking.service.price
+      ? `Servicio: ${booking.service.name} — $${booking.service.price.toLocaleString('es-AR')}`
+      : `Servicio: ${booking.service.name}`,
+    `Modalidad: ${LOCATION_LABELS[booking.location ?? 'local']}`,
     booking.location === 'domicilio' && booking.direccion ? `Dirección cliente: ${booking.direccion}` : null,
     booking.location === 'domicilio' && booking.direccion ? `Cómo llegar: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.direccion)}` : null,
     booking.nota ? `Nota: ${booking.nota}` : null,
@@ -104,9 +109,33 @@ export interface BookingEvent {
   whatsapp: string
   servicio: string
   modalidad: string
+  /** Sólo en los turnos a domicilio. Es a dónde tiene que ir Santiago. */
+  direccion: string
   nota: string
   start: string // ISO string
   end: string
+}
+
+/** Los campos que salen igual de la descripción en las tres consultas. */
+function toBookingEvent(
+  id: string,
+  desc: Record<string, string>,
+  fallbackServicio: string,
+  start: string,
+  end: string,
+): BookingEvent {
+  return {
+    id,
+    nombre: desc['cliente'] ?? '—',
+    email: desc['email'] ?? '',
+    whatsapp: desc['whatsapp'] ?? '',
+    servicio: desc['servicio'] ?? fallbackServicio,
+    modalidad: desc['modalidad'] ?? '—',
+    direccion: desc['dirección cliente'] ?? '',
+    nota: desc['nota'] ?? '',
+    start,
+    end,
+  }
 }
 
 function parseDesc(desc: string): Record<string, string> {
@@ -135,20 +164,7 @@ export async function getPastEvents(days = 30): Promise<BookingEvent[]> {
 
   return (res.data.items ?? [])
     .filter(e => e.id && e.start?.dateTime && e.summary?.includes('✂️'))
-    .map(e => {
-      const d = parseDesc(e.description ?? '')
-      return {
-        id: e.id!,
-        nombre: d['cliente'] ?? '—',
-        email: d['email'] ?? '',
-        whatsapp: d['whatsapp'] ?? '',
-        servicio: d['servicio'] ?? e.summary ?? '—',
-        modalidad: d['modalidad'] ?? '—',
-        nota: d['nota'] ?? '',
-        start: e.start!.dateTime!,
-        end: e.end?.dateTime ?? '',
-      }
-    })
+    .map(e => toBookingEvent(e.id!, parseDesc(e.description ?? ''), e.summary ?? '—', e.start!.dateTime!, e.end?.dateTime ?? ''))
     .reverse() // más reciente primero
 }
 
@@ -169,20 +185,7 @@ export async function getUpcomingEvents(days = 30): Promise<BookingEvent[]> {
 
   return (res.data.items ?? [])
     .filter(e => e.id && e.start?.dateTime)
-    .map(e => {
-      const d = parseDesc(e.description ?? '')
-      return {
-        id: e.id!,
-        nombre: d['cliente'] ?? '—',
-        email: d['email'] ?? '',
-        whatsapp: d['whatsapp'] ?? '',
-        servicio: d['servicio'] ?? e.summary ?? '—',
-        modalidad: d['modalidad'] ?? '—',
-        nota: d['nota'] ?? '',
-        start: e.start!.dateTime!,
-        end: e.end?.dateTime ?? '',
-      }
-    })
+    .map(e => toBookingEvent(e.id!, parseDesc(e.description ?? ''), e.summary ?? '—', e.start!.dateTime!, e.end?.dateTime ?? ''))
 }
 
 // ─── App settings (stored as a special GCal event) ───────────────────────────
@@ -325,20 +328,7 @@ export async function getEventsForDate(date: Date): Promise<BookingEvent[]> {
   })
   return (res.data.items ?? [])
     .filter(e => e.id && e.start?.dateTime && e.summary?.includes('✂️'))
-    .map(e => {
-      const d = parseDesc(e.description ?? '')
-      return {
-        id: e.id!,
-        nombre: d['cliente'] ?? '—',
-        email: d['email'] ?? '',
-        whatsapp: d['whatsapp'] ?? '',
-        servicio: d['servicio'] ?? e.summary ?? '—',
-        modalidad: d['modalidad'] ?? '—',
-        nota: d['nota'] ?? '',
-        start: e.start!.dateTime!,
-        end: e.end?.dateTime ?? '',
-      }
-    })
+    .map(e => toBookingEvent(e.id!, parseDesc(e.description ?? ''), e.summary ?? '—', e.start!.dateTime!, e.end?.dateTime ?? ''))
 }
 
 // ─── Returns the list of TIME_SLOTS that are already booked for a given date ──

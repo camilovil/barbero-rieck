@@ -31,12 +31,20 @@ export async function POST(req: NextRequest) {
 
     // Notificar al cliente si tiene email (no bloquea si falla)
     if (desc['email']) {
-      const dateStr = startTime.toLocaleDateString('es-AR', {
-        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires',
-      })
-      const time = startTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
       try {
-        await sendCancellationEmails(desc['cliente'] ?? 'Cliente', desc['email'], dateStr, time, desc['servicio'] ?? '—', eventId, location, direccion, String(durationMins), reason)
+        await sendCancellationEmails({
+          nombre: desc['cliente'] ?? 'Cliente',
+          email: desc['email'],
+          start: startTime,
+          servicio: desc['servicio'] ?? '—',
+          // Cancela Santiago desde el panel, haya escrito motivo o no.
+          canceladoPor: 'santiago',
+          eventId,
+          location,
+          direccion,
+          duration: `${durationMins} min`,
+          motivo: reason,
+        })
       } catch (emailErr) {
         console.error('[api/admin/cancelar] email error (non-fatal):', emailErr)
       }

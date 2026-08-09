@@ -3,6 +3,7 @@ import { getCalendarEvent, deleteCalendarEvent, createCalendarEvent } from '@/li
 import { sendRescheduleEmails } from '@/lib/email'
 import { CANCELLATION_MIN_HOURS } from '@/lib/constants'
 import type { BookingState } from '@/types/booking'
+import { fechaLarga, hhmm, nombreServicio, precioServicio } from '@/lib/format'
 
 function parseDescription(desc: string): Record<string, string> {
   const result: Record<string, string> = {}
@@ -36,8 +37,8 @@ export async function GET(req: NextRequest) {
     nombre: desc['cliente'] ?? 'Cliente',
     servicio: desc['servicio'] ?? '—',
     modalidad: desc['modalidad'] ?? '—',
-    fecha: startTime.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' }),
-    hora: startTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' }),
+    fecha: fechaLarga(startTime),
+    hora: hhmm(startTime),
     horasRestantes: Math.round(hoursUntil),
     puedeMod: hoursUntil >= CANCELLATION_MIN_HOURS,
     santiWa: process.env.SANTIAGO_WHATSAPP ?? '',
@@ -70,10 +71,11 @@ export async function POST(req: NextRequest) {
 
     // Rebuild booking state from calendar event description
     const isLocal = !desc['modalidad']?.toLowerCase().includes('domicilio')
-    const serviceNameRaw = (desc['servicio'] ?? '').split(' — ')[0].trim()
+    const servicioRaw = desc['servicio'] ?? ''
     const durationMatch = event.end?.dateTime
       ? Math.round((new Date(event.end.dateTime).getTime() - new Date(event.start!.dateTime!).getTime()) / 60000)
       : (isLocal ? 40 : 120)
+    const direccion = desc['dirección cliente'] ?? ''
 
     const booking: BookingState = {
       step: 5,
@@ -81,41 +83,39 @@ export async function POST(req: NextRequest) {
       nombre: desc['cliente'] ?? '',
       email: desc['email'] ?? email,
       whatsapp: (desc['whatsapp'] ?? '').replace(/https:\/\/wa\.me\//,''),
-      direccion: desc['dirección cliente'] ?? '',
+      direccion,
       nota: desc['nota'] ?? '',
       date: new Date(newDate),
       time: newTime,
       service: {
-        name: serviceNameRaw,
+        name: nombreServicio(servicioRaw),
         duration: durationMatch,
-        price: 0,
+        // Ver la nota en /api/admin/modificar: el precio se arrastra.
+        price: precioServicio(servicioRaw),
       },
     }
 
     // Capture old date/time for the reschedule email
-    const oldDateStr = startTime.toLocaleDateString('es-AR', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires',
-    })
-    const oldTime = startTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
+    const oldTime = hhmm(startTime)
 
     // Delete old event and create updated one
     await deleteCalendarEvent(eventId)
     const newEventId = await createCalendarEvent(booking)
 
     // Send reschedule email (shows old date crossed out + new date)
-    const newDateStr = new Date(newDate).toLocaleDateString('es-AR', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires',
-    })
-    await sendRescheduleEmails(
-      booking.nombre,
-      booking.email,
-      oldDateStr,
+    await sendRescheduleEmails({
+      nombre: booking.nombre,
+      email: booking.email,
+      oldDate: startTime,
       oldTime,
-      newDateStr,
+      newDate: new Date(newDate),
       newTime,
-      booking.service?.name ?? serviceNameRaw,
+      // La línea completa, con precio: el mail muestra cuánto se paga.
+      servicio: servicioRaw || '—',
       newEventId,
-    )
+      location: isLocal ? 'local' : 'domicilio',
+      direccion,
+    })
 
     return NextResponse.json({ success: true, eventId: newEventId })
   } catch (err) {

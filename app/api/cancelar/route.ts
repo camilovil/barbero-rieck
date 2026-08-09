@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCalendarEvent, deleteCalendarEvent } from '@/lib/googleCalendar'
 import { sendCancellationEmails } from '@/lib/email'
 import { CANCELLATION_MIN_HOURS } from '@/lib/constants'
+import { fechaLarga, hhmm } from '@/lib/format'
 
 function parseDescription(desc: string): Record<string, string> {
   const result: Record<string, string> = {}
@@ -45,10 +46,6 @@ export async function POST(req: NextRequest) {
       }, { status: 400 })
     }
 
-    const dateStr = startTime.toLocaleDateString('es-AR', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires',
-    })
-    const time = startTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
     const nombre = desc['cliente'] ?? 'Cliente'
     const servicio = desc['servicio'] ?? '—'
     const location = desc['modalidad']?.toLowerCase().includes('domicilio') ? 'domicilio' : 'local'
@@ -62,7 +59,18 @@ export async function POST(req: NextRequest) {
 
     // Enviar emails de aviso (no bloquea la cancelación si falla)
     try {
-      await sendCancellationEmails(nombre, email, dateStr, time, servicio, eventId, location, direccion, String(durationMins))
+      await sendCancellationEmails({
+        nombre,
+        email,
+        start: startTime,
+        servicio,
+        // Acá cancela el cliente: llegó por el link de su propio mail.
+        canceladoPor: 'cliente',
+        eventId,
+        location,
+        direccion,
+        duration: `${durationMins} min`,
+      })
     } catch (emailErr) {
       console.error('[api/cancelar] email error (non-fatal):', emailErr)
     }
@@ -100,8 +108,8 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     nombre: desc['cliente'] ?? 'Cliente',
     servicio: desc['servicio'] ?? '—',
-    fecha: startTime.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' }),
-    hora: startTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' }),
+    fecha: fechaLarga(startTime),
+    hora: hhmm(startTime),
     horasRestantes: Math.round(hoursUntil),
     puedeCancel: hoursUntil >= CANCELLATION_MIN_HOURS,
   })
