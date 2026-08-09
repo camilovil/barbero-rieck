@@ -357,6 +357,37 @@ html.papel .roca::after { content: none; }
    cuerpo hace scroll. Así el bloque no cambia de alto entre
    pasos y nunca hay que deslizar para llegar al botón.
    ============================================= */
+/* La tarjeta que contiene el flujo.
+   En celular mide la pantalla entera y el CTA queda abajo de todo, al
+   alcance del pulgar: así está dibujado el turno 8a, con un espaciador
+   que lo empuja al pie. El hueco entre las opciones y el botón cuando
+   la lista es corta es parte de eso. */
+.flow-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: var(--surface);
+  border-inline: 1px solid var(--border);
+  /* Sin padding lateral: lo pone cada franja del flujo, para que las
+     filas puedan ir a sangre sin desbordar. */
+  padding: 20px 0 calc(18px + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 640px) {
+  /* En escritorio no hay pantalla dibujada, y estirarla a toda la
+     ventana dejaba 200px de hueco muerto entre las opciones y el
+     botón. Acá la tarjeta mide lo que mide su contenido y se centra.
+     El tope la mantiene dentro de la pantalla en los pasos largos
+     —la grilla de horarios—, que siguen scrolleando por dentro. */
+  .flow-card {
+    flex: 0 1 auto;
+    max-height: 100%;
+    margin-block: auto;
+    border: 1px solid var(--border);
+  }
+}
+
 .flow {
   --flow-pad: 16px;
   display: flex;

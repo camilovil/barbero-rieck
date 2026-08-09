@@ -34,21 +34,9 @@ export default async function Home({ searchParams }: Props) {
           flexDirection: 'column',
         }}
       >
-        <div
-          className="max-w-2xl mx-auto w-full"
-          style={{
-            flex: 1,
-            minHeight: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            background: 'var(--surface)',
-            borderLeft: '1px solid var(--border)',
-            borderRight: '1px solid var(--border)',
-            /* Sin padding lateral: lo pone cada franja del flujo, para
-               que las filas puedan ir a sangre sin desbordar. */
-            padding: '20px 0 calc(18px + env(safe-area-inset-bottom))',
-          }}
-        >
+        {/* El alto lo decide `.flow-card`: pantalla completa en celular,
+            al tamaño del contenido en escritorio. */}
+        <div className="flow-card max-w-2xl mx-auto w-full">
           <BookingFlow initialLocation={initialLocation} initialServicio={initialServicio} />
         </div>
       </main>

@@ -13,8 +13,16 @@ import Image from 'next/image'
 export default function AppHeader({ roca = false }: { roca?: boolean }) {
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50${roca ? ' roca' : ''}`}
+      className={roca ? 'roca' : undefined}
       style={{
+        /* La posición va en línea y no con las utilidades de Tailwind:
+           `.roca` necesita `position: relative` para sus pseudos y, al
+           ser una regla sin capa, le ganaba a `.fixed` —que vive en
+           @layer utilities—. La cabecera se quedaba en el flujo, el
+           bloque del flujo terminaba una cabecera más abajo y el CTA
+           caía fuera de la pantalla. En línea gana siempre. */
+        position: 'fixed',
+        top: 0, left: 0, right: 0, zIndex: 50,
         /* Con la roca prendida el fondo lo pone `.roca`: acá tiene que
            quedar transparente o el color tapa la foto. */
         background: roca ? undefined : 'var(--surface)',
