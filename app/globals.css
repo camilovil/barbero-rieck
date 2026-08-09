@@ -43,6 +43,9 @@
      --surface no se despegaría del fondo y quedaría colgada de un
      filete invisible. Este paso es el que da la separación. */
   --surface-alta: #121110;  /* panel   */
+  /* Un paso MÁS hondo que el fondo. Es la barra lateral del turno 7b:
+     lo que sostiene la navegación se hunde, no se levanta. */
+  --surface-baja: #050403;
   --hover:       #1A1613;   /* fila    */
   --overlay:     rgba(5,4,3,.78);
 
@@ -111,6 +114,7 @@ html.papel {
   --surface:     #F6F5F3;
   /* En claro alcanza con --surface: el fondo ya es un paso más oscuro. */
   --surface-alta: #F6F5F3;
+  --surface-baja: #E4E3DE;
   --hover:       #EAE9E5;
   --overlay:     rgba(12,12,13,.62);
 
@@ -1033,6 +1037,118 @@ textarea.w-input { line-height: 1.5; }
   font-size: 12px;
   max-width: 100%;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* =============================================
+   PANEL — el armazón
+
+   Turno 7b en PC: tres columnas —barra lateral, agenda y detalle—.
+   Turno 8b en celular: una sola columna con las pestañas abajo, al
+   alcance del pulgar. Es el mismo plano que dibuja el diseño; sólo
+   se arma con lo que el modelo de datos ya tiene.
+
+   El corte va en 1024px y no en 640: abajo de eso las tres columnas
+   dejan la agenda en 300px y la tabla no entra.
+   ============================================= */
+.panel {
+  min-height: 100dvh;
+  background: var(--app-bg);
+}
+
+@media (min-width: 1024px) {
+  .panel {
+    display: grid;
+    grid-template-columns: 196px minmax(0, 1fr) 366px;
+    height: 100dvh;
+    min-height: 0;
+  }
+  /* Cada columna scrollea sola: la agenda puede ser larga sin
+     arrastrar la barra lateral ni el detalle. */
+  .panel > * { min-height: 0; overflow-y: auto; }
+}
+
+/* ─── Barra lateral ─── */
+.panel-lateral { display: none; }
+
+@media (min-width: 1024px) {
+  .panel-lateral {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface-baja);
+    border-right: 1px solid var(--border);
+    padding: 24px 0;
+  }
+}
+
+.panel-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px;
+  gap: 2px;
+}
+.panel-nav button {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 11px 14px;
+  background: none;
+  border: none;
+  border-left: 2px solid transparent;
+  border-radius: 0 3px 3px 0;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--text-meta);
+  text-align: left;
+  transition: background .16s, color .16s;
+}
+.panel-nav button:hover { color: var(--text); }
+/* La sección abierta se enciende con el filete vivo a la izquierda,
+   igual que cualquier elección del sistema (regla 02). */
+.panel-nav button[aria-current="page"] {
+  background: var(--sel-bg);
+  border-left-color: var(--sel-borde);
+  color: var(--sel-fg);
+  font-weight: 600;
+}
+
+/* ─── Columna del detalle ─── */
+.panel-detalle {
+  background: var(--surface-alta);
+  border-left: 1px solid var(--border);
+}
+/* En celular el detalle no es una columna: sube como hoja. */
+@media (max-width: 1023px) {
+  .panel-detalle { display: none; }
+}
+
+/* ─── Pestañas de celular ─── */
+.panel-tabs {
+  position: sticky;
+  bottom: 0;
+  z-index: 40;
+  display: grid;
+  background: var(--surface-alta);
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.panel-tabs button {
+  min-height: 52px;
+  padding: 8px 4px;
+  background: none;
+  border: none;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text-meta);
+  transition: color .16s;
+}
+.panel-tabs button[aria-current="page"] { color: var(--acento-txt); }
+
+@media (min-width: 1024px) {
+  .panel-tabs { display: none; }
 }
 
 /* =============================================
