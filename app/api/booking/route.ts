@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createCalendarEvent, getDayBookingCount, isDateBlocked, getSettings } from '@/lib/googleCalendar'
+import { createCalendarEvent, getDayBookingCount, isDateBlocked, getSettings, expirePendingEvents } from '@/lib/googleCalendar'
 import { sendBookingNotification } from '@/lib/whatsapp'
 import { sendBookingEmails } from '@/lib/email'
+import { isDepositEnabled } from '@/lib/mercadopago'
 import type { BookingState } from '@/types/booking'
 
 export async function POST(req: NextRequest) {
@@ -18,6 +19,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
     }
 
+    /* Antes de contar si queda lugar, soltamos las reservas que nunca pagaron
+       la seña: si no, un abandono en la pantalla de pago le tapa el horario a
+       alguien que sí lo quiere. */
+    if (isDepositEnabled()) {
+      try {
+        await expirePendingEvents()
+      } catch (err) {
+        console.error('[api/booking] no se pudieron liberar los vencidos:', err)
+      }
+    }
+
     // Verificar que el día no esté bloqueado
     const dayBlocked = await isDateBlocked(booking.date)
     if (dayBlocked) {
@@ -32,7 +44,15 @@ export async function POST(req: NextRequest) {
     }
 
     // Primero creamos el evento para tener el eventId y generar el link de cancelación
-    const eventId = await createCalendarEvent(booking)
+    const pending = isDepositEnabled()
+    const eventId = await createCalendarEvent(booking, { pending })
+
+    /* Con seña, el turno todavía no es un turno: el horario le queda guardado
+       mientras paga y recién ahí salen los mails. Confirmar por mail algo que
+       no está pago es prometer un turno que en quince minutos se cae. */
+    if (pending) {
+      return NextResponse.json({ success: true, eventId, pendingPayment: true })
+    }
 
     // Luego enviamos emails con el link de cancelación incluido
     try {

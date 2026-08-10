@@ -1,6 +1,6 @@
 import { google } from 'googleapis'
 import type { BookingState } from '@/types/booking'
-import { TIME_SLOTS, LOCATION_LABELS } from './constants'
+import { TIME_SLOTS, LOCATION_LABELS, DEPOSIT_HOLD_MINUTES, depositAmount } from './constants'
 import type { Location } from '@/types/booking'
 
 // Argentina never observes DST — UTC-3 all year
@@ -21,7 +21,18 @@ function getAuth() {
   })
 }
 
-export async function createCalendarEvent(booking: BookingState): Promise<string> {
+/* Un turno sin la seña pagada existe igual en el calendario: tiene que ocupar
+   el horario para que nadie más lo tome mientras el cliente está pagando. Lo
+   que cambia es que entra como «tentativo» y con reloj en el título, para que
+   Santiago no lo lea como un turno cerrado. El estado del pago va en
+   extendedProperties —metadatos que sólo lee el código— y no en la
+   descripción, que es texto que además leen los mails y el panel. */
+const PENDING_PREFIX = '⏳'
+
+export async function createCalendarEvent(
+  booking: BookingState,
+  opts: { pending?: boolean } = {},
+): Promise<string> {
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) {
     console.log('[googleCalendar] stub — GOOGLE_SERVICE_ACCOUNT_EMAIL o GOOGLE_CALENDAR_ID no configurado')
     return 'stub-event-id'
@@ -46,6 +57,7 @@ export async function createCalendarEvent(booking: BookingState): Promise<string
       : 'Congreso 1865, Belgrano, CABA'
 
   const waNumber = booking.whatsapp.replace(/\D/g, '')
+  const sena = booking.service.price ? depositAmount(booking.service.price) : 0
 
   const description = [
     `Cliente: ${booking.nombre}`,
@@ -58,6 +70,7 @@ export async function createCalendarEvent(booking: BookingState): Promise<string
       ? `Servicio: ${booking.service.name} — $${booking.service.price.toLocaleString('es-AR')}`
       : `Servicio: ${booking.service.name}`,
     `Modalidad: ${LOCATION_LABELS[booking.location ?? 'local']}`,
+    opts.pending && sena ? `Seña: pendiente de pago — $${sena.toLocaleString('es-AR')}` : null,
     booking.location === 'domicilio' && booking.direccion ? `Dirección cliente: ${booking.direccion}` : null,
     booking.location === 'domicilio' && booking.direccion ? `Cómo llegar: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.direccion)}` : null,
     booking.nota ? `Nota: ${booking.nota}` : null,
@@ -65,14 +78,29 @@ export async function createCalendarEvent(booking: BookingState): Promise<string
     .filter(Boolean)
     .join('\n')
 
+  /* El ✂️ queda en el título aunque el turno esté sin pagar: es la marca por
+     la que el resto del archivo distingue un turno de un bloqueo, y hasta que
+     venza el plazo este horario está tan tomado como cualquier otro. */
   const event = await calendar.events.insert({
     calendarId: process.env.GOOGLE_CALENDAR_ID,
     requestBody: {
-      summary: `✂️ ${booking.service.name} — ${booking.nombre}`,
+      summary: opts.pending
+        ? `${PENDING_PREFIX} ✂️ ${booking.service.name} — ${booking.nombre}`
+        : `✂️ ${booking.service.name} — ${booking.nombre}`,
       description,
       location: locationLabel,
       start: { dateTime: startStr, timeZone: 'America/Argentina/Buenos_Aires' },
       end: { dateTime: endStr, timeZone: 'America/Argentina/Buenos_Aires' },
+      ...(opts.pending && {
+        status: 'tentative',
+        extendedProperties: {
+          private: {
+            pago: 'pendiente',
+            sena: String(sena),
+            reservadoEn: new Date().toISOString(),
+          },
+        },
+      }),
     },
   })
 
@@ -100,6 +128,76 @@ export async function deleteCalendarEvent(eventId: string): Promise<void> {
     calendarId: process.env.GOOGLE_CALENDAR_ID,
     eventId,
   })
+}
+
+/* La llama el webhook de Mercado Pago cuando la seña entró: saca al turno del
+   limbo y lo deja como cualquier otro. Devuelve false si no había nada que
+   confirmar —el turno ya estaba pago, o se venció y no existe más—, porque
+   Mercado Pago manda la misma notificación varias veces y confirmar dos veces
+   no puede escribir dos veces. */
+export async function confirmCalendarEvent(eventId: string, paymentId: string): Promise<boolean> {
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return false
+  const calendar = google.calendar({ version: 'v3', auth: getAuth() })
+
+  const existing = await getCalendarEvent(eventId)
+  const props = existing?.extendedProperties?.private
+  if (!existing || props?.pago !== 'pendiente') return false
+
+  const sena = Number(props.sena)
+  const cobrado = sena ? ` — $${sena.toLocaleString('es-AR')}` : ''
+  const description = (existing.description ?? '')
+    .split('\n')
+    .map(line =>
+      line.startsWith('Seña:') ? `Seña: pagada${cobrado} (Mercado Pago ${paymentId})` : line,
+    )
+    .join('\n')
+
+  await calendar.events.patch({
+    calendarId: process.env.GOOGLE_CALENDAR_ID,
+    eventId,
+    requestBody: {
+      summary: (existing.summary ?? '').replace(`${PENDING_PREFIX} `, ''),
+      description,
+      status: 'confirmed',
+      extendedProperties: { private: { ...props, pago: 'pagado', pagoId: paymentId } },
+    },
+  })
+  return true
+}
+
+/* Borra los turnos que reservaron y nunca pagaron, y devuelve cuántos
+   horarios liberó. La corre el cron, pero también la reserva y la consulta de
+   disponibilidad: así el horario vuelve a aparecer libre en cuanto alguien lo
+   mira, sin esperar a que pase el cron. */
+export async function expirePendingEvents(): Promise<number> {
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return 0
+  const calendar = google.calendar({ version: 'v3', auth: getAuth() })
+
+  const res = await calendar.events.list({
+    calendarId: process.env.GOOGLE_CALENDAR_ID,
+    privateExtendedProperty: ['pago=pendiente'],
+    singleEvents: true,
+    showDeleted: false,
+  })
+
+  const limit = Date.now() - DEPOSIT_HOLD_MINUTES * 60 * 1000
+  const vencidos = (res.data.items ?? []).filter(e => {
+    if (!e.id) return false
+    // Sin marca de tiempo no hay forma de saber si está en plazo: es un
+    // huérfano de alguna reserva a medio escribir y no tiene por qué ocupar.
+    const desde = Date.parse(e.extendedProperties?.private?.reservadoEn ?? '')
+    return isNaN(desde) || desde < limit
+  })
+
+  await Promise.all(
+    vencidos.map(e =>
+      calendar.events
+        .delete({ calendarId: process.env.GOOGLE_CALENDAR_ID!, eventId: e.id! })
+        .catch(err => console.error('[googleCalendar] no se pudo liberar', e.id, err)),
+    ),
+  )
+
+  return vencidos.length
 }
 
 export interface BookingEvent {

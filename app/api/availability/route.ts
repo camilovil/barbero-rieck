@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getBookedSlots, isDateBlocked } from '@/lib/googleCalendar'
+import { getBookedSlots, isDateBlocked, expirePendingEvents } from '@/lib/googleCalendar'
+import { isDepositEnabled } from '@/lib/mercadopago'
 import { BLOCKED_SLOTS, TIME_SLOTS } from '@/lib/constants'
 import type { Location } from '@/types/booking'
 
@@ -18,8 +19,17 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Si el día está bloqueado por Santiago, devolver todos los slots como ocupados
-    const dayBlocked = await isDateBlocked(date)
+    /* De paso soltamos los turnos sin seña que se vencieron, para que el
+       horario aparezca libre acá mismo y no cuando pase el cron. Va en
+       paralelo con la consulta que ya hacíamos: no cuesta tiempo. */
+    const [dayBlocked] = await Promise.all([
+      isDateBlocked(date),
+      isDepositEnabled()
+        ? expirePendingEvents().catch(err =>
+            console.error('[api/availability] no se pudieron liberar los vencidos:', err),
+          )
+        : null,
+    ])
     if (dayBlocked) {
       return NextResponse.json({ blocked: TIME_SLOTS[location], dayBlocked: true })
     }

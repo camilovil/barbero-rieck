@@ -38,3 +38,14 @@ export const LOCATION_LABELS: Record<Location, string> = {
 
 // Horas mínimas de anticipación para poder cancelar
 export const CANCELLATION_MIN_HOURS = 24
+
+/* Seña: la mitad del servicio, y el rato que le guardamos el horario a quien
+   todavía no la pagó. Pasado ese rato el turno se cae y el horario vuelve a
+   estar libre — si no, cualquiera que abandone la pantalla de pago se queda
+   con el turno para siempre. */
+export const DEPOSIT_PERCENT = 50
+export const DEPOSIT_HOLD_MINUTES = 20
+
+export function depositAmount(price: number): number {
+  return Math.round((price * DEPOSIT_PERCENT) / 100)
+}
