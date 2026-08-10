@@ -1,11 +1,12 @@
 'use client'
 
 import type { BookingState } from '@/types/booking'
-import { CANCELLATION_MIN_HOURS, LOCATION_LABELS } from '@/lib/constants'
+import { CANCELLATION_MIN_HOURS, LOCATION_LABELS, DEPOSIT_PERCENT, depositAmount } from '@/lib/constants'
 import { capitalize as upperFirst, diaCorto as shortDate } from '@/lib/format'
 
 interface Props {
   booking: BookingState
+  senaActiva?: boolean
 }
 
 function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
@@ -17,13 +18,22 @@ function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
   )
 }
 
-export default function StepResumen({ booking }: Props) {
+export default function StepResumen({ booking, senaActiva = false }: Props) {
   const dateStr = booking.date
     ? upperFirst(booking.date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }))
     : '—'
 
   const priceLabel = booking.service?.priceLabel ?? `$${booking.service?.price?.toLocaleString('es-AR') ?? '—'}`
   const lugar = LOCATION_LABELS[booking.location ?? 'local']
+
+  /* Con seña, el número grande deja de ser el total y pasa a ser lo que se
+     paga ahora: es la plata que el cliente está por poner en el próximo
+     toque, y tiene que verla antes de que lo mande Mercado Pago. */
+  const precio = booking.service?.price ?? 0
+  const sena = depositAmount(precio)
+  const saldo = precio - sena
+  const conSena = senaActiva && precio > 0 && !booking.service?.priceLabel
+  const plata = (n: number) => `$${n.toLocaleString('es-AR')}`
 
   return (
     <div className="step-enter">
@@ -61,23 +71,44 @@ export default function StepResumen({ booking }: Props) {
         <Row k="Email" v={booking.email || '—'} />
         {booking.nota && <Row k="Nota" v={booking.nota} />}
 
-        {/* Total — el único renglón con filete de tinta */}
+        {conSena && <Row k="Total del servicio" v={plata(precio)} mono />}
+
+        {/* El renglón con filete de tinta es lo que se paga ahora */}
         <div
           className="kv"
           style={{ borderBottom: 'none', borderTop: '1px solid var(--text)', marginTop: 4, paddingTop: 14 }}
         >
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Total</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+            {conSena ? `Seña ahora · ${DEPOSIT_PERCENT}%` : 'Total'}
+          </span>
           <span className="mono" style={{ fontSize: 20, fontWeight: 500, color: 'var(--text)' }}>
-            {priceLabel}
+            {conSena ? plata(sena) : priceLabel}
           </span>
         </div>
+
+        {conSena && (
+          <div className="kv" style={{ borderBottom: 'none', paddingTop: 8 }}>
+            <span className="kv-k">Saldo en el lugar</span>
+            <span className="kv-v mono">{plata(saldo)}</span>
+          </div>
+        )}
       </div>
 
-      <p className="mono" style={{ fontSize: 10.5, lineHeight: 1.7, color: 'var(--text-meta)', margin: 0 }}>
-        SE PAGA EN EL LUGAR · CONFIRMACIÓN POR MAIL Y WHATSAPP
-        <br />
-        CANCELÁS HASTA {CANCELLATION_MIN_HOURS} H ANTES
-      </p>
+      {conSena ? (
+        <p className="mono" style={{ fontSize: 10.5, lineHeight: 1.7, color: 'var(--text-meta)', margin: 0 }}>
+          LA SEÑA SE PAGA POR MERCADO PAGO · EL SALDO EN EL LUGAR
+          <br />
+          EL HORARIO TE QUEDA GUARDADO MIENTRAS PAGÁS
+          <br />
+          LA SEÑA NO SE DEVUELVE · SI NO PODÉS VENIR, REPROGRAMÁ
+        </p>
+      ) : (
+        <p className="mono" style={{ fontSize: 10.5, lineHeight: 1.7, color: 'var(--text-meta)', margin: 0 }}>
+          SE PAGA EN EL LUGAR · CONFIRMACIÓN POR MAIL Y WHATSAPP
+          <br />
+          CANCELÁS HASTA {CANCELLATION_MIN_HOURS} H ANTES
+        </p>
+      )}
     </div>
   )
 }

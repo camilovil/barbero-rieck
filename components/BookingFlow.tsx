@@ -15,6 +15,8 @@ import { diaCorto } from '@/lib/format'
 interface Props {
   initialLocation?: Location | null
   initialServicio?: string | null
+  /** Con la seña activa, confirmar no cierra el turno: lleva a pagar. */
+  senaActiva?: boolean
 }
 
 function buildInitialState(initialLocation: Location | null, initialServicio: string | null): BookingState {
@@ -52,9 +54,10 @@ function canAdvance(state: BookingState): boolean {
   }
 }
 
-export default function BookingFlow({ initialLocation = null, initialServicio = null }: Props) {
+export default function BookingFlow({ initialLocation = null, initialServicio = null, senaActiva = false }: Props) {
   const [state, setState] = useState<BookingState>(() => buildInitialState(initialLocation, initialServicio))
   const [loading, setLoading] = useState(false)
+  const [redirigiendo, setRedirigiendo] = useState(false)
   const [confirmed, setConfirmed] = useState(false)
   const [eventId, setEventId] = useState<string | null>(null)
 
@@ -80,6 +83,16 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Error al confirmar')
+
+      /* Con seña, acá el turno todavía no está cerrado: el horario le queda
+         guardado y manda Mercado Pago. Se confirma cuando avisa que la plata
+         entró, y el cliente vuelve a /pago. Por eso no hay pantalla de éxito. */
+      if (data.paymentUrl) {
+        setRedirigiendo(true)
+        window.location.href = data.paymentUrl
+        return
+      }
+
       setEventId(data.eventId ?? null)
       setConfirmed(true)
     } catch (err) {
@@ -122,8 +135,14 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
 
   /* El CTA es siempre el mismo control en el mismo lugar: cambia la
      etiqueta y a quién llama, no la posición. En el paso 5 confirma. */
+  const ctaConfirmar = redirigiendo
+    ? 'Te llevamos a pagar…'
+    : loading
+      ? 'Confirmando…'
+      : senaActiva ? 'Pagar la seña' : 'Confirmar turno'
+
   const cta = state.step === 5
-    ? { label: loading ? 'Confirmando…' : 'Confirmar turno', onClick: handleConfirm, enabled: !loading }
+    ? { label: ctaConfirmar, onClick: handleConfirm, enabled: !loading && !redirigiendo }
     : { label: state.step === 4 ? 'Ver resumen' : 'Continuar', onClick: goNext, enabled: ready }
 
   return (
@@ -165,7 +184,7 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
             onChange={(field, value) => update({ [field]: value })}
           />
         )}
-        {state.step === 5 && <StepResumen booking={state} />}
+        {state.step === 5 && <StepResumen booking={state} senaActiva={senaActiva} />}
       </div>
 
       <div className="cta-bar">

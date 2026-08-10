@@ -1,6 +1,7 @@
 import BookingFlow from '@/components/BookingFlow'
 import AppHeader from '@/components/AppHeader'
 import { BARBER_ADDRESS, BARBER_NAME, INSTAGRAM_HANDLE, INSTAGRAM_URL, TIME_SLOTS } from '@/lib/constants'
+import { isDepositEnabled } from '@/lib/mercadopago'
 
 interface Props {
   searchParams: Promise<{ modalidad?: string; servicio?: string }>
@@ -37,7 +38,14 @@ export default async function Home({ searchParams }: Props) {
         {/* El alto lo decide `.flow-card`: pantalla completa en celular,
             al tamaño del contenido en escritorio. */}
         <div className="flow-card max-w-2xl mx-auto w-full">
-          <BookingFlow initialLocation={initialLocation} initialServicio={initialServicio} />
+          {/* Si la seña está activa lo decide el servidor: el flujo no puede
+              leer la variable de entorno, y no queremos una segunda variable
+              pública que se desincronice de la de verdad. */}
+          <BookingFlow
+            initialLocation={initialLocation}
+            initialServicio={initialServicio}
+            senaActiva={isDepositEnabled()}
+          />
         </div>
       </main>
 

@@ -1,6 +1,7 @@
 import { google } from 'googleapis'
 import type { BookingState } from '@/types/booking'
 import { TIME_SLOTS, LOCATION_LABELS, DEPOSIT_HOLD_MINUTES, depositAmount } from './constants'
+import { hhmm, nombreServicio, precioServicio } from './format'
 import type { Location } from '@/types/booking'
 
 // Argentina never observes DST — UTC-3 all year
@@ -130,18 +131,48 @@ export async function deleteCalendarEvent(eventId: string): Promise<void> {
   })
 }
 
+/* Reconstruye el turno a partir del evento, que es donde vive: sin base de
+   datos, para mandar los mails después del pago hay que volver a armar lo que
+   el cliente cargó en el formulario. El precio sale de la descripción y no del
+   catálogo porque el catálogo cambia y el turno ya cotizado, no. */
+function bookingFromEvent(desc: Record<string, string>, start: string, end: string): BookingState {
+  const location: Location = desc['modalidad'] === LOCATION_LABELS.domicilio ? 'domicilio' : 'local'
+  const servicio = desc['servicio'] ?? ''
+  const inicio = new Date(start)
+
+  return {
+    step: 0,
+    location,
+    service: {
+      name: nombreServicio(servicio),
+      price: precioServicio(servicio),
+      duration: Math.round((new Date(end).getTime() - inicio.getTime()) / 60000),
+    },
+    date: inicio,
+    time: hhmm(inicio),
+    nombre: desc['cliente'] ?? '',
+    email: desc['email'] ?? '',
+    whatsapp: desc['whatsapp'] ?? '',
+    direccion: desc['dirección cliente'] ?? '',
+    nota: desc['nota'] ?? '',
+  }
+}
+
 /* La llama el webhook de Mercado Pago cuando la seña entró: saca al turno del
-   limbo y lo deja como cualquier otro. Devuelve false si no había nada que
-   confirmar —el turno ya estaba pago, o se venció y no existe más—, porque
-   Mercado Pago manda la misma notificación varias veces y confirmar dos veces
-   no puede escribir dos veces. */
-export async function confirmCalendarEvent(eventId: string, paymentId: string): Promise<boolean> {
-  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return false
+   limbo y lo deja como cualquier otro. Devuelve el turno confirmado, o null si
+   no había nada que confirmar —ya estaba pago, o se venció y no existe más—,
+   porque Mercado Pago manda la misma notificación varias veces y los mails
+   tienen que salir una sola. */
+export async function confirmCalendarEvent(
+  eventId: string,
+  paymentId: string,
+): Promise<BookingState | null> {
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return null
   const calendar = google.calendar({ version: 'v3', auth: getAuth() })
 
   const existing = await getCalendarEvent(eventId)
   const props = existing?.extendedProperties?.private
-  if (!existing || props?.pago !== 'pendiente') return false
+  if (!existing || props?.pago !== 'pendiente') return null
 
   const sena = Number(props.sena)
   const cobrado = sena ? ` — $${sena.toLocaleString('es-AR')}` : ''
@@ -162,7 +193,20 @@ export async function confirmCalendarEvent(eventId: string, paymentId: string): 
       extendedProperties: { private: { ...props, pago: 'pagado', pagoId: paymentId } },
     },
   })
-  return true
+
+  return bookingFromEvent(
+    parseDesc(description),
+    existing.start?.dateTime ?? '',
+    existing.end?.dateTime ?? '',
+  )
+}
+
+/** El estado de la seña de un turno, para la pantalla de vuelta del pago. */
+export async function getPaymentState(eventId: string): Promise<'pendiente' | 'pagado' | 'vencido'> {
+  const event = await getCalendarEvent(eventId)
+  // Si el evento ya no está, el plazo se venció y el horario volvió a la calle.
+  if (!event) return 'vencido'
+  return event.extendedProperties?.private?.pago === 'pagado' ? 'pagado' : 'pendiente'
 }
 
 /* Borra los turnos que reservaron y nunca pagaron, y devuelve cuántos

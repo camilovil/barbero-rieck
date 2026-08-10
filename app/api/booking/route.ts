@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createCalendarEvent, getDayBookingCount, isDateBlocked, getSettings, expirePendingEvents } from '@/lib/googleCalendar'
+import { createCalendarEvent, getDayBookingCount, isDateBlocked, getSettings, expirePendingEvents, deleteCalendarEvent } from '@/lib/googleCalendar'
 import { sendBookingNotification } from '@/lib/whatsapp'
 import { sendBookingEmails } from '@/lib/email'
-import { isDepositEnabled } from '@/lib/mercadopago'
+import { isDepositEnabled, createDepositPreference } from '@/lib/mercadopago'
+import { depositAmount } from '@/lib/constants'
 import type { BookingState } from '@/types/booking'
 
 export async function POST(req: NextRequest) {
@@ -44,14 +45,34 @@ export async function POST(req: NextRequest) {
     }
 
     // Primero creamos el evento para tener el eventId y generar el link de cancelación
-    const pending = isDepositEnabled()
+    const sena = booking.service.price ? depositAmount(booking.service.price) : 0
+    const pending = isDepositEnabled() && sena > 0
     const eventId = await createCalendarEvent(booking, { pending })
 
     /* Con seña, el turno todavía no es un turno: el horario le queda guardado
        mientras paga y recién ahí salen los mails. Confirmar por mail algo que
-       no está pago es prometer un turno que en quince minutos se cae. */
+       no está pago es prometer un turno que en veinte minutos se cae. */
     if (pending) {
-      return NextResponse.json({ success: true, eventId, pendingPayment: true })
+      try {
+        const paymentUrl = await createDepositPreference({
+          booking,
+          eventId,
+          amount: sena,
+          baseUrl: req.nextUrl.origin,
+        })
+        return NextResponse.json({ success: true, eventId, pendingPayment: true, paymentUrl })
+      } catch (mpErr) {
+        /* Sin link de pago la reserva es un horario tomado que nadie puede
+           completar: la sacamos en vez de dejarla bloqueando veinte minutos. */
+        console.error('[api/booking] Mercado Pago no dio link de pago:', mpErr)
+        await deleteCalendarEvent(eventId).catch(err =>
+          console.error('[api/booking] tampoco se pudo soltar el horario:', err),
+        )
+        return NextResponse.json(
+          { error: 'No pudimos abrir el pago de la seña. Probá de nuevo en un momento.' },
+          { status: 502 },
+        )
+      }
     }
 
     // Luego enviamos emails con el link de cancelación incluido
