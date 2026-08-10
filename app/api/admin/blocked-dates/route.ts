@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getBlockedDates, blockDate, unblockDate } from '@/lib/googleCalendar'
+import { getBlockedDates, getBlockedRanges, blockDate, blockRange, unblockDate } from '@/lib/googleCalendar'
 
 // Auth handled by middleware
 
 export async function GET() {
   try {
-    const blocked = await getBlockedDates(90)
-    return NextResponse.json({ blocked })
+    const [blocked, ranges] = await Promise.all([getBlockedDates(90), getBlockedRanges(90)])
+    return NextResponse.json({ blocked, ranges })
   } catch (err) {
     console.error('[admin/blocked-dates GET] error:', err)
     return NextResponse.json({ error: 'Error al obtener fechas' }, { status: 500 })
@@ -25,10 +25,25 @@ export async function POST(req: NextRequest) {
     const toDate   = parseDate(to)
     if (fromDate > toDate) return NextResponse.json({ error: 'dateFrom debe ser <= dateTo' }, { status: 400 })
 
+    /* Con horas se bloquea la franja y el resto del día se sigue vendiendo;
+       sin horas, el día entero como siempre. Si vienen las dos, la franja se
+       repite en cada día del rango. */
+    const timeFrom: string | undefined = body.timeFrom || undefined
+    const timeTo: string | undefined = body.timeTo || undefined
+    const esFranja = Boolean(timeFrom && timeTo)
+    if (Boolean(timeFrom) !== Boolean(timeTo)) {
+      return NextResponse.json({ error: 'Faltó una de las dos horas' }, { status: 400 })
+    }
+    if (esFranja && timeFrom! >= timeTo!) {
+      return NextResponse.json({ error: 'La hora de inicio tiene que ser menor que la de fin' }, { status: 400 })
+    }
+
     const blocked: { id: string; date: string }[] = []
     const cur = new Date(fromDate)
     while (cur <= toDate) {
-      const id = await blockDate(new Date(cur))
+      const id = esFranja
+        ? await blockRange(new Date(cur), timeFrom!, timeTo!)
+        : await blockDate(new Date(cur))
       const dateStr = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`
       blocked.push({ id, date: dateStr })
       cur.setDate(cur.getDate() + 1)

@@ -408,6 +408,64 @@ export async function blockDate(date: Date): Promise<string> {
   return res.data.id!
 }
 
+/* Bloquear un rato suelto, no el día entero: Santiago tiene que hacer un
+   trámite de tres a cinco y el resto del día sigue vendiéndose. Es el mismo
+   'BLOQUEADO' de siempre, pero con hora; lo que separa a los dos es que el
+   día completo va como evento de jornada (`start.date`) y la franja va con
+   horario (`start.dateTime`), así cada lector se queda con el suyo. */
+export async function blockRange(date: Date, from: string, to: string): Promise<string> {
+  const calendar = google.calendar({ version: 'v3', auth: getAuth() })
+  const ds = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`
+  const res = await calendar.events.insert({
+    calendarId: process.env.GOOGLE_CALENDAR_ID!,
+    requestBody: {
+      summary: 'BLOQUEADO',
+      start: { dateTime: `${ds}T${from}:00${BA_OFFSET}`, timeZone: 'America/Argentina/Buenos_Aires' },
+      end: { dateTime: `${ds}T${to}:00${BA_OFFSET}`, timeZone: 'America/Argentina/Buenos_Aires' },
+    },
+  })
+  return res.data.id!
+}
+
+export interface BlockedRange {
+  id: string
+  /** ISO con hora, para poder ordenarlas y mostrarlas en la zona de acá. */
+  start: string
+  end: string
+}
+
+export async function getBlockedRanges(days = 60): Promise<BlockedRange[]> {
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return []
+  const calendar = google.calendar({ version: 'v3', auth: getAuth() })
+  const now = new Date()
+  const future = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
+  const res = await calendar.events.list({
+    calendarId: process.env.GOOGLE_CALENDAR_ID!,
+    timeMin: now.toISOString(),
+    timeMax: future.toISOString(),
+    singleEvents: true,
+    orderBy: 'startTime',
+  })
+  return (res.data.items ?? [])
+    .filter(e => e.id && e.summary === 'BLOQUEADO' && e.start?.dateTime)
+    .map(e => ({ id: e.id!, start: e.start!.dateTime!, end: e.end?.dateTime ?? e.start!.dateTime! }))
+}
+
+async function getBlockedRangesForDate(date: Date): Promise<BlockedRange[]> {
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return []
+  const calendar = google.calendar({ version: 'v3', auth: getAuth() })
+  const ds = toUTCDateStr(date)
+  const res = await calendar.events.list({
+    calendarId: process.env.GOOGLE_CALENDAR_ID!,
+    timeMin: new Date(`${ds}T00:00:00${BA_OFFSET}`).toISOString(),
+    timeMax: new Date(`${ds}T23:59:59${BA_OFFSET}`).toISOString(),
+    singleEvents: true,
+  })
+  return (res.data.items ?? [])
+    .filter(e => e.id && e.summary === 'BLOQUEADO' && e.start?.dateTime)
+    .map(e => ({ id: e.id!, start: e.start!.dateTime!, end: e.end?.dateTime ?? e.start!.dateTime! }))
+}
+
 export async function unblockDate(eventId: string): Promise<void> {
   const calendar = google.calendar({ version: 'v3', auth: getAuth() })
   await calendar.events.delete({
@@ -482,8 +540,18 @@ export async function getBookedSlots(date: Date, location: Location): Promise<st
   }
 
   // Obtenemos los eventos reales del día (con modalidad) en lugar de solo freebusy
-  const events = await getEventsForDate(date)
-  if (events.length === 0) return []
+  const [events, rangos] = await Promise.all([
+    getEventsForDate(date),
+    getBlockedRangesForDate(date),
+  ])
+
+  /* Un turno y una franja bloqueada tapan un horario por el mismo motivo:
+     Santiago no está libre. Para la grilla son lo mismo. */
+  const ocupado = [
+    ...events.map(ev => ({ start: ev.start, end: ev.end || ev.start })),
+    ...rangos,
+  ]
+  if (ocupado.length === 0) return []
 
   const slots = TIME_SLOTS[location]
   const slotDurationMs = (location === 'local' ? 60 : 120) * 60 * 1000
@@ -495,9 +563,9 @@ export async function getBookedSlots(date: Date, location: Location): Promise<st
     const slotStart = new Date(`${ds}T${pad(h)}:${pad(m)}:00${BA_OFFSET}`)
     const slotEnd = new Date(slotStart.getTime() + slotDurationMs)
 
-    return events.some((ev) => {
+    return ocupado.some((ev) => {
       const evStart = new Date(ev.start)
-      const evEnd = new Date(ev.end || ev.start)
+      const evEnd = new Date(ev.end)
       return slotStart < evEnd && slotEnd > evStart
     })
   })

@@ -146,8 +146,13 @@ export default function AdminDashboard() {
 
   // Días bloqueados
   const [blockedDates, setBlockedDates] = useState<{ id: string; date: string }[]>([])
+  const [blockedRanges, setBlockedRanges] = useState<{ id: string; start: string; end: string }[]>([])
   const [blockFrom, setBlockFrom] = useState('')
   const [blockTo, setBlockTo] = useState('')
+  /* Vacías, se bloquea el día entero: es el caso de siempre y no puede
+     costar un paso más. Con horas, se bloquea sólo esa franja. */
+  const [blockHoraDesde, setBlockHoraDesde] = useState('')
+  const [blockHoraHasta, setBlockHoraHasta] = useState('')
   const [blockingDate, setBlockingDate] = useState(false)
   const [showBlocked, setShowBlocked] = useState(false)
 
@@ -172,6 +177,7 @@ export default function AdminDashboard() {
     const res = await fetch('/api/admin/blocked-dates')
     const data = await res.json()
     setBlockedDates(data.blocked ?? [])
+    setBlockedRanges(data.ranges ?? [])
   }, [])
 
   useEffect(() => {
@@ -238,17 +244,34 @@ export default function AdminDashboard() {
 
   async function handleBlockDate() {
     if (!blockFrom) return
+    const franja = Boolean(blockHoraDesde && blockHoraHasta)
+    if (franja && blockHoraDesde >= blockHoraHasta) {
+      setStatus('La hora de inicio tiene que ser anterior a la de fin.')
+      return
+    }
     setBlockingDate(true)
     const res = await fetch('/api/admin/blocked-dates', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ dateFrom: blockFrom, dateTo: blockTo || blockFrom }),
+      body: JSON.stringify({
+        dateFrom: blockFrom,
+        dateTo: blockTo || blockFrom,
+        timeFrom: blockHoraDesde || undefined,
+        timeTo: blockHoraHasta || undefined,
+      }),
     })
     if (res.ok) {
       await fetchBlockedDates()
-      setStatus('Días bloqueados. Ya no se pueden reservar turnos.')
+      setStatus(franja
+        ? `Franja bloqueada de ${blockHoraDesde} a ${blockHoraHasta}. El resto del día sigue disponible.`
+        : 'Días bloqueados. Ya no se pueden reservar turnos.')
       setBlockFrom('')
       setBlockTo('')
+      setBlockHoraDesde('')
+      setBlockHoraHasta('')
+    } else {
+      const data = await res.json().catch(() => null)
+      setStatus(data?.error ?? 'No se pudo bloquear.')
     }
     setBlockingDate(false)
   }
@@ -843,9 +866,9 @@ export default function AdminDashboard() {
                   padding: '0 0 10px', borderBottom: '1px solid var(--border)', cursor: 'pointer',
                 }}
               >
-                <span className="rotulo" style={{ color: 'var(--text)' }}>Días bloqueados</span>
+                <span className="rotulo" style={{ color: 'var(--text)' }}>Días y horarios bloqueados</span>
                 <span className="rotulo">
-                  {showBlocked ? 'Ocultar' : `Mostrar (${blockedDates.length})`}
+                  {showBlocked ? 'Ocultar' : `Mostrar (${blockedDates.length + blockedRanges.length})`}
                 </span>
               </button>
 
@@ -876,14 +899,51 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
+                  {/* Las horas son opcionales: sin ellas cae el día entero,
+                      con ellas sólo esa franja y el resto se sigue vendiendo. */}
+                  <div style={{ display: 'flex', gap: 14, marginTop: 14 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <label className="field-label" htmlFor="block-hora-desde">
+                        Desde las <span style={{ color: 'var(--text-meta)' }}>· opcional</span>
+                      </label>
+                      <input
+                        id="block-hora-desde"
+                        type="time"
+                        value={blockHoraDesde}
+                        onChange={e => setBlockHoraDesde(e.target.value)}
+                        className="w-input mono"
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <label className="field-label" htmlFor="block-hora-hasta">
+                        Hasta las <span style={{ color: 'var(--text-meta)' }}>· opcional</span>
+                      </label>
+                      <input
+                        id="block-hora-hasta"
+                        type="time"
+                        value={blockHoraHasta}
+                        onChange={e => setBlockHoraHasta(e.target.value)}
+                        className="w-input mono"
+                      />
+                    </div>
+                  </div>
+
+                  <p className="rotulo" style={{ lineHeight: 1.8, marginTop: 12 }}>
+                    {blockHoraDesde && blockHoraHasta
+                      ? 'Se bloquea sólo esa franja'
+                      : 'Sin horas se bloquea el día completo'}
+                  </p>
+
                   <button
                     onClick={handleBlockDate}
                     disabled={!blockFrom || blockingDate}
                     className="btn-cta"
-                    style={{ width: '100%', marginTop: 20 }}
+                    style={{ width: '100%', marginTop: 14 }}
                   >
                     {blockingDate
                       ? 'Bloqueando…'
+                      : blockHoraDesde && blockHoraHasta && blockFrom
+                      ? `Bloquear ${blockHoraDesde}–${blockHoraHasta}${blockTo && blockTo !== blockFrom ? ` del ${shortDay(blockFrom)} al ${shortDay(blockTo)}` : ` el ${shortDay(blockFrom)}`}`
                       : blockTo && blockTo !== blockFrom
                       ? `Bloquear del ${shortDay(blockFrom)} al ${shortDay(blockTo)}`
                       : blockFrom
@@ -892,10 +952,32 @@ export default function AdminDashboard() {
                   </button>
 
                   <div style={{ marginTop: 26 }}>
-                    {blockedDates.length === 0 ? (
-                      <p className="rotulo" style={{ lineHeight: 1.8 }}>Ningún día bloqueado</p>
+                    {blockedDates.length === 0 && blockedRanges.length === 0 ? (
+                      <p className="rotulo" style={{ lineHeight: 1.8 }}>Nada bloqueado</p>
                     ) : (
                       <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                      {blockedRanges.map(r => {
+                        const label = `${upperFirst(fechaLarga(r.start))} · ${formatTime(r.start)}–${formatTime(r.end)}`
+                        return (
+                          <li
+                            key={r.id}
+                            style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                              padding: '10px 0', borderBottom: '1px solid var(--border-soft)',
+                            }}
+                          >
+                            <span style={{ fontSize: 13, color: 'var(--text)' }}>{label}</span>
+                            <button
+                              onClick={() => handleUnblock(r.id)}
+                              className="btn-ghost"
+                              aria-label={`Desbloquear ${label}`}
+                              style={{ minHeight: 44, flexShrink: 0 }}
+                            >
+                              Desbloquear
+                            </button>
+                          </li>
+                        )
+                      })}
                       {blockedDates.map(b => {
                         const [year, month, day] = b.date.split('-').map(Number)
                         const d = new Date(year, month - 1, day)
