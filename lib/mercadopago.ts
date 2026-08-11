@@ -45,6 +45,14 @@ export async function createDepositPreference(args: {
      igual, sólo que el cliente vuelve tocando «Volver al sitio». */
   const local = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|$)/.test(baseUrl)
 
+  /* Mercado Pago pide nombre y apellido por separado: son datos que su motor
+     antifraude usa para rechazar menos pagos buenos. Nosotros pedimos un solo
+     campo, así que lo partimos por el primer espacio. */
+  const partes = booking.nombre.trim().split(/\s+/)
+  const nombre = partes[0] ?? ''
+  const apellido = partes.slice(1).join(' ')
+  const telefono = booking.whatsapp.replace(/\D/g, '')
+
   const preference = new Preference(getClient())
   const res = await preference.create({
     body: {
@@ -53,12 +61,18 @@ export async function createDepositPreference(args: {
           id: eventId,
           title: `Seña — ${booking.service?.name ?? 'Turno'}`,
           description: `${LOCATION_LABELS[booking.location ?? 'local']} · ${booking.time ?? ''}`,
+          category_id: 'services',
           quantity: 1,
           currency_id: 'ARS',
           unit_price: amount,
         },
       ],
-      payer: { name: booking.nombre, email: booking.email },
+      payer: {
+        name: nombre,
+        surname: apellido,
+        email: booking.email,
+        ...(telefono && { phone: { number: telefono } }),
+      },
       /* El id del evento del calendario es lo único que ata este pago a un
          turno: vuelve en la notificación y es lo que confirmamos. Sin base de
          datos, es toda la trazabilidad que tenemos. */
@@ -71,6 +85,11 @@ export async function createDepositPreference(args: {
       ...(local ? {} : { auto_return: 'approved' }),
       notification_url: `${baseUrl}/api/pagos/webhook`,
       statement_descriptor: 'BARBER HOHLE',
+      /* O aprobado o rechazado, nunca «en revisión». Un pago pendiente se
+         resuelve a los días, y para entonces el turno hace rato que se venció
+         y el horario se lo llevó otro: cobraríamos una seña sin turno que la
+         respalde. Preferimos que ese pago se rechace y el cliente reintente. */
+      binary_mode: true,
       /* Efectivo y débito automático acreditan a los días, y para entonces el
          turno hace rato que se venció y el horario se lo llevó otro. Sólo
          medios que entran en el momento. */
