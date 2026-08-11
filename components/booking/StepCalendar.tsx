@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { TIME_SLOTS, BLOCKED_SLOTS } from '@/lib/constants'
+import { TIME_SLOTS, BLOCKED_SLOTS, DEPOSIT_HOLD_MINUTES } from '@/lib/constants'
 import type { Location } from '@/types/booking'
 import { capitalize as upperFirst, toDateParam } from '@/lib/format'
 
@@ -9,6 +9,8 @@ interface Props {
   location: Location
   selectedDate: Date | null
   selectedTime: string | null
+  /** Con la seña activa el horario no queda tomado hasta que se paga. */
+  senaActiva?: boolean
   onSelect: (date: Date, time: string) => void
 }
 
@@ -38,7 +40,7 @@ function splitByHalf(slots: string[]) {
   ].filter(g => g.items.length > 0)
 }
 
-export default function StepCalendar({ location, selectedDate, selectedTime, onSelect }: Props) {
+export default function StepCalendar({ location, selectedDate, selectedTime, senaActiva = false, onSelect }: Props) {
   const today = new Date()
   const [viewMonth, setViewMonth] = useState(today.getMonth())
   const [viewYear, setViewYear] = useState(today.getFullYear())
@@ -134,7 +136,12 @@ export default function StepCalendar({ location, selectedDate, selectedTime, onS
   return (
     <div className="step-enter">
       <div className="h-step lineas"><span>Elegí día</span><span>y hora</span></div>
-      <p className="sub-step">Los domingos no hay turnos.</p>
+      <p className="sub-step">
+        Los domingos no hay turnos.
+        {/* El plazo se dice al elegir la hora, que es cuando empieza a
+            correr: enterarse después de haber elegido es enterarse tarde. */}
+        {senaActiva && ` Cuando elijas el horario te lo guardamos ${DEPOSIT_HOLD_MINUTES} minutos para que pagues la seña.`}
+      </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 

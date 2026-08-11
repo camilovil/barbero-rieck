@@ -64,6 +64,7 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
   const [state, setState] = useState<BookingState>(() => buildInitialState(initialLocation, initialServicio))
   const [loading, setLoading] = useState(false)
   const [redirigiendo, setRedirigiendo] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [confirmed, setConfirmed] = useState(false)
   const [eventId, setEventId] = useState<string | null>(null)
 
@@ -76,11 +77,13 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
   }
 
   function goBack() {
+    setError(null)
     if (state.step > 1) update({ step: state.step - 1 })
   }
 
   async function handleConfirm() {
     setLoading(true)
+    setError(null)
     try {
       const res = await fetch('/api/booking', {
         method: 'POST',
@@ -102,8 +105,12 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
       setEventId(data.eventId ?? null)
       setConfirmed(true)
     } catch (err) {
+      /* El error va en la barra del CTA, donde el ojo ya está y donde está el
+         botón para reintentar. El alert() del navegador no se puede estilar,
+         bloquea la página y en el teléfono se lee como un error del sistema y
+         no del sitio. */
       console.error(err)
-      alert(err instanceof Error ? err.message : 'Hubo un error al confirmar el turno. Intentá de nuevo.')
+      setError(err instanceof Error ? err.message : 'Hubo un error al confirmar el turno. Intentá de nuevo.')
     } finally {
       setLoading(false)
     }
@@ -181,6 +188,7 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
             location={state.location}
             selectedDate={state.date}
             selectedTime={state.time}
+            senaActiva={senaActiva}
             onSelect={(date, time) => update({ date, time })}
           />
         )}
@@ -201,6 +209,9 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
       </div>
 
       <div className="cta-bar">
+        {error && (
+          <p className="cta-error" role="alert">{error}</p>
+        )}
         {recap && state.step >= 2 && (
           <div className="cta-recap">
             <span>{recap.left}</span>

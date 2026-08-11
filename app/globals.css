@@ -618,6 +618,16 @@ html.papel .roca::after { content: none; }
 /* Resumen de una línea encima del CTA */
 /* Una sola línea, siempre: si creciera a dos, el bloque cambiaría de
    alto entre pasos y el flujo dejaría de medir lo mismo. */
+/* El error de confirmar, sobre el botón que lo va a reintentar. Lleva filete
+   al costado además del color: el acento no puede ser el único que avisa. */
+.cta-error {
+  margin: 0 0 12px;
+  padding-left: 10px;
+  border-left: 2px solid var(--acento-borde);
+  font-size: 12.5px; line-height: 1.5;
+  color: var(--acento-txt);
+}
+
 .cta-recap {
   display: flex; align-items: baseline; justify-content: space-between;
   gap: 12px;
