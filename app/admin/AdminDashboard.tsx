@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import type { BookingEvent } from '@/lib/googleCalendar'
 import ThemeToggle from '@/components/ThemeToggle'
-import { TIME_SLOTS, LOCATION_LABELS } from '@/lib/constants'
+import { TIME_SLOTS, LOCATION_LABELS, DEPOSIT_HOLD_MINUTES } from '@/lib/constants'
 import {
   capitalize as upperFirst,
   fechaLarga,
@@ -688,7 +688,10 @@ export default function AdminDashboard() {
                             onClick={() => setSelectedId(ev.id)}
                           >
                             <span className="agenda-hora">{formatTime(ev.start)}</span>
-                            <span className="agenda-nombre">{ev.nombre}</span>
+                            <span className="agenda-nombre">
+                              {ev.nombre}
+                              {ev.pago === 'pendiente' && <i className="marca-sena">Sin seña</i>}
+                            </span>
                             <span className="agenda-srv">{nombreServicio(ev.servicio)}</span>
                             <span className="agenda-donde">
                               {isDomicilio(ev.modalidad) ? LOCATION_LABELS.domicilio : LOCATION_LABELS.local}
@@ -727,6 +730,7 @@ export default function AdminDashboard() {
                               <span className="rotulo">
                                 {dom ? LOCATION_LABELS.domicilio : LOCATION_LABELS.local}
                                 {isHistory && ' · Pasado'}
+                                {ev.pago === 'pendiente' && <i className="marca-sena">Sin seña</i>}
                               </span>
                             </div>
 
@@ -1042,6 +1046,18 @@ export default function AdminDashboard() {
               <div className="kv">
                 <span className="kv-k">Precio</span>
                 <span className="kv-v mono">{money(precioServicio(selected.servicio))}</span>
+              </div>
+            )}
+            {/* Sin seña no hay dato que mostrar; con seña, es lo primero que
+                hay que saber antes de contar con el turno. */}
+            {selected.pago && (
+              <div className="kv">
+                <span className="kv-k">Seña</span>
+                <span className="kv-v">
+                  {selected.pago === 'pagado'
+                    ? 'Pagada'
+                    : `Sin pagar · el horario se libera a los ${DEPOSIT_HOLD_MINUTES} min`}
+                </span>
               </div>
             )}
             <div className="kv">

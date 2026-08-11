@@ -256,6 +256,10 @@ export interface BookingEvent {
   nota: string
   start: string // ISO string
   end: string
+  /* Sólo en los turnos que pasaron por la seña. Sin seña no existe, y por eso
+     el panel tiene que distinguir «no hay dato» de «no pagó»: un turno viejo
+     no es un turno impago. */
+  pago?: 'pendiente' | 'pagado'
 }
 
 /** Los campos que salen igual de la descripción en las tres consultas. */
@@ -265,6 +269,7 @@ function toBookingEvent(
   fallbackServicio: string,
   start: string,
   end: string,
+  pago?: string,
 ): BookingEvent {
   return {
     id,
@@ -277,6 +282,7 @@ function toBookingEvent(
     nota: desc['nota'] ?? '',
     start,
     end,
+    pago: pago === 'pendiente' || pago === 'pagado' ? pago : undefined,
   }
 }
 
@@ -306,7 +312,7 @@ export async function getPastEvents(days = 30): Promise<BookingEvent[]> {
 
   return (res.data.items ?? [])
     .filter(e => e.id && e.start?.dateTime && e.summary?.includes('✂️'))
-    .map(e => toBookingEvent(e.id!, parseDesc(e.description ?? ''), e.summary ?? '—', e.start!.dateTime!, e.end?.dateTime ?? ''))
+    .map(e => toBookingEvent(e.id!, parseDesc(e.description ?? ''), e.summary ?? '—', e.start!.dateTime!, e.end?.dateTime ?? '', e.extendedProperties?.private?.pago))
     .reverse() // más reciente primero
 }
 
@@ -327,7 +333,7 @@ export async function getUpcomingEvents(days = 30): Promise<BookingEvent[]> {
 
   return (res.data.items ?? [])
     .filter(e => e.id && e.start?.dateTime)
-    .map(e => toBookingEvent(e.id!, parseDesc(e.description ?? ''), e.summary ?? '—', e.start!.dateTime!, e.end?.dateTime ?? ''))
+    .map(e => toBookingEvent(e.id!, parseDesc(e.description ?? ''), e.summary ?? '—', e.start!.dateTime!, e.end?.dateTime ?? '', e.extendedProperties?.private?.pago))
 }
 
 // ─── App settings (stored as a special GCal event) ───────────────────────────
@@ -528,7 +534,7 @@ export async function getEventsForDate(date: Date): Promise<BookingEvent[]> {
   })
   return (res.data.items ?? [])
     .filter(e => e.id && e.start?.dateTime && e.summary?.includes('✂️'))
-    .map(e => toBookingEvent(e.id!, parseDesc(e.description ?? ''), e.summary ?? '—', e.start!.dateTime!, e.end?.dateTime ?? ''))
+    .map(e => toBookingEvent(e.id!, parseDesc(e.description ?? ''), e.summary ?? '—', e.start!.dateTime!, e.end?.dateTime ?? '', e.extendedProperties?.private?.pago))
 }
 
 // ─── Returns the list of TIME_SLOTS that are already booked for a given date ──

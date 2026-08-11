@@ -1336,6 +1336,27 @@ textarea.w-input { line-height: 1.5; }
 .agenda-mas { text-align: right; color: var(--text-meta); }
 .agenda-fila[aria-current="true"] .agenda-mas { color: var(--sel-fg); }
 
+/* El turno que reservó y todavía no pagó la seña. Va marcado en el
+   acento y con la palabra escrita: si dependiera del color, un turno
+   sin pagar y uno cerrado se leerían igual. */
+.marca-sena {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  font-style: normal;
+  color: var(--acento-txt);
+  border: 1px solid var(--acento-borde-mut);
+  padding: 1px 5px;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+.agenda-fila[aria-current="true"] .marca-sena {
+  color: var(--sel-fg);
+  border-color: var(--sel-fg);
+}
+
 /* En un portátil de 1024 la agenda se queda con 391px útiles, y ahí
    CLIENTE y SERVICIO se reparten 109px: el nombre entra en cinco
    letras. Abajo de 560 el servicio baja abajo del nombre. Se pierde
