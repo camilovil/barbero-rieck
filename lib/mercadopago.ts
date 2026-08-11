@@ -39,6 +39,12 @@ export async function createDepositPreference(args: {
   const desde = new Date()
   const hasta = new Date(desde.getTime() + DEPOSIT_HOLD_MINUTES * 60 * 1000)
 
+  /* Mercado Pago no acepta que lo devolvamos solo a una dirección que no puede
+     alcanzar, y localhost no lo es: pedir `auto_return` desde la máquina de
+     desarrollo hace fallar la preferencia entera. Sin él el pago funciona
+     igual, sólo que el cliente vuelve tocando «Volver al sitio». */
+  const local = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|$)/.test(baseUrl)
+
   const preference = new Preference(getClient())
   const res = await preference.create({
     body: {
@@ -62,7 +68,7 @@ export async function createDepositPreference(args: {
         pending: `${baseUrl}/pago?turno=${eventId}`,
         failure: `${baseUrl}/pago?turno=${eventId}&estado=rechazado`,
       },
-      auto_return: 'approved',
+      ...(local ? {} : { auto_return: 'approved' }),
       notification_url: `${baseUrl}/api/pagos/webhook`,
       statement_descriptor: 'BARBER HOHLE',
       /* Efectivo y débito automático acreditan a los días, y para entonces el
