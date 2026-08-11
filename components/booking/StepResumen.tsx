@@ -114,7 +114,7 @@ export default function StepResumen({ booking, senaActiva = false }: Props) {
         </p>
       ) : (
         <p className="mono" style={{ fontSize: 10.5, lineHeight: 1.7, color: 'var(--text-meta)', margin: 0 }}>
-          SE PAGA EN EL LUGAR · CONFIRMACIÓN POR MAIL Y WHATSAPP
+          SE PAGA EN EL LUGAR · CONFIRMACIÓN POR MAIL
           <br />
           CANCELÁS HASTA {CANCELLATION_MIN_HOURS} H ANTES
           {aConvenir && <><br />TU BARRIO QUEDA FUERA DE COBERTURA · SANTIAGO TE PASA EL VIÁTICO POR WHATSAPP Y SE PAGA APARTE</>}

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCalendarEvent, deleteCalendarEvent, createCalendarEvent } from '@/lib/googleCalendar'
 import { sendRescheduleEmails } from '@/lib/email'
-import { sendRescheduleNotification } from '@/lib/whatsapp'
 import type { BookingState } from '@/types/booking'
 import { hhmm, nombreServicio, precioServicio } from '@/lib/format'
 
@@ -82,14 +81,6 @@ export async function POST(req: NextRequest) {
             direccion,
           })
         : Promise.resolve(),
-      sendRescheduleNotification(
-        desc['cliente'] ?? 'Cliente',
-        oldStart,
-        oldTime,
-        new Date(newDate),
-        newTime,
-        desc['servicio'] ?? '—',
-      ),
     ])
 
     return NextResponse.json({ success: true, newEventId })

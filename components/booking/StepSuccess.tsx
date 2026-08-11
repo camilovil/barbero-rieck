@@ -126,7 +126,7 @@ export default function StepSuccess({ booking, eventId, onReset }: Props) {
       </div>
 
       <p className="mono" style={{ fontSize: 10.5, lineHeight: 1.7, color: 'var(--text-meta)', margin: '20px 0 0' }}>
-        TE LLEGA EL DETALLE POR MAIL · SANTIAGO TE ESCRIBE POR WHATSAPP
+        TE LLEGA EL DETALLE POR MAIL
         <br />
         CANCELÁS O REPROGRAMÁS SIN COSTO HASTA {CANCELLATION_MIN_HOURS} H ANTES
       </p>

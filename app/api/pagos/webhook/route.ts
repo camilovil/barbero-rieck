@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { confirmCalendarEvent } from '@/lib/googleCalendar'
 import { sendBookingEmails } from '@/lib/email'
-import { sendBookingNotification } from '@/lib/whatsapp'
 import { getPago, assertWebhookValido, InvalidWebhookSignatureError } from '@/lib/mercadopago'
 
 /* Acá entra el aviso de Mercado Pago de que la seña se pagó, y es lo único
@@ -58,10 +57,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      await Promise.all([
-        sendBookingEmails(booking, pago.eventId),
-        sendBookingNotification(booking),
-      ])
+      await sendBookingEmails(booking, pago.eventId)
     } catch (emailErr) {
       // El turno ya está confirmado; que falle un mail no lo desconfirma.
       console.error('[pagos/webhook] email error (non-fatal):', emailErr)

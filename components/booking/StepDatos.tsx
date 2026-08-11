@@ -37,7 +37,7 @@ export default function StepDatos({ location, nombre, email, whatsapp, direccion
   return (
     <div className="step-enter">
       <div className="h-step lineas"><span>Tus</span><span>datos</span></div>
-      <p className="sub-step">Te llega la confirmación por mail y WhatsApp.</p>
+      <p className="sub-step">Te llega la confirmación por mail.</p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 22, maxWidth: 520 }}>
         <Field label="Nombre y apellido" required>

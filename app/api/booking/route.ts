@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createCalendarEvent, getDayBookingCount, isDateBlocked, getSettings, expirePendingEvents, deleteCalendarEvent } from '@/lib/googleCalendar'
-import { sendBookingNotification } from '@/lib/whatsapp'
 import { sendBookingEmails } from '@/lib/email'
 import { isDepositEnabled, createDepositPreference } from '@/lib/mercadopago'
 import { depositAmount } from '@/lib/constants'
@@ -77,10 +76,7 @@ export async function POST(req: NextRequest) {
 
     // Luego enviamos emails con el link de cancelación incluido
     try {
-      await Promise.all([
-        sendBookingEmails(booking, eventId),
-        sendBookingNotification(booking),
-      ])
+      await sendBookingEmails(booking, eventId)
     } catch (emailErr) {
       console.error('[api/booking] email error (non-fatal):', emailErr)
     }
