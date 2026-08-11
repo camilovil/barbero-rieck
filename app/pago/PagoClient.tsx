@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import AppHeader from '@/components/AppHeader'
+import TurnoTracker from '@/components/TurnoTracker'
 import { DEPOSIT_HOLD_MINUTES } from '@/lib/constants'
 
 type Estado = 'consultando' | 'pagado' | 'vencido' | 'demorado' | 'rechazado' | 'error'
@@ -102,6 +103,7 @@ export default function PagoClient() {
                   La seña entró y el turno quedó tomado. Te mandamos el mail con los datos,
                   el link para cancelar y el saldo que se paga en el lugar.
                 </Estado_>
+                <TurnoTracker estado="confirmado" />
                 <a href="/" className="btn-cta" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
                   Volver al inicio
                 </a>
@@ -112,7 +114,8 @@ export default function PagoClient() {
               <Estado_ rotulo="En camino" titulo="Estamos confirmando">
                 Mercado Pago todavía no nos avisó del pago. Si ya lo hiciste, en un rato
                 te llega el mail de confirmación — no hace falta pagar de nuevo.
-                <br /><br />
+                <TurnoTracker estado="pendiente" />
+                <br />
                 <button
                   onClick={() => window.location.reload()}
                   className="btn-outline"

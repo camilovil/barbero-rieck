@@ -144,6 +144,13 @@ function cancelUrl(eventId: string, email: string): string {
   return `${getAppUrl()}/cancelar?id=${eventId}&email=${encodeURIComponent(email)}`
 }
 
+/* La vista del turno: un solo link que el cliente puede guardar y volver a
+   abrir cuando quiera, en vez de tener que encontrar el mail otra vez. Desde
+   ahí sale a reprogramar o cancelar. */
+function turnoUrl(eventId: string, email: string): string {
+  return `${getAppUrl()}/turno?id=${eventId}&email=${encodeURIComponent(email)}`
+}
+
 function modificarUrl(eventId: string, email: string): string {
   return `${getAppUrl()}/modificar?id=${eventId}&email=${encodeURIComponent(email)}`
 }
@@ -357,6 +364,7 @@ function clienteTurno(opts: {
   code: string
   comoLlegar: string | null
   modLink: string | null
+  verLink?: string | null
   logoSrc?: string
 }): string {
   const ink = DARK
@@ -366,7 +374,14 @@ function clienteTurno(opts: {
     kv('A pagar en el lugar', opts.aPagar, ink, { mono: true, last: true }),
   ].join('')
 
-  const acciones = opts.comoLlegar && opts.modLink
+  /* «Ver mi turno» es la acción principal: lleva a la vista donde está todo
+     —el estado de la seña incluido— y desde donde se reprograma o se cancela.
+     «Cómo llegar» sólo tiene sentido cuando el cliente va al estudio. */
+  const acciones = opts.verLink && opts.comoLlegar
+    ? btnPair(btnSolid(opts.verLink, 'Ver mi turno', ink), btnGhost(opts.comoLlegar, 'Cómo llegar', ink))
+    : opts.verLink
+    ? `<div style="margin-top:22px">${btnSolid(opts.verLink, 'Ver mi turno', ink)}</div>`
+    : opts.comoLlegar && opts.modLink
     ? btnPair(btnSolid(opts.comoLlegar, 'Cómo llegar', ink), btnGhost(opts.modLink, 'Reprogramar', ink))
     : opts.modLink
     ? `<div style="margin-top:22px">${btnGhost(opts.modLink, 'Reprogramar', ink)}</div>`
@@ -604,6 +619,7 @@ export async function sendBookingEmails(booking: BookingState, eventId: string):
     aPagar: precio,
     code,
     comoLlegar: esDomicilio ? null : mapsUrl(BARBER_ADDRESS),
+    verLink: turnoUrl(eventId, booking.email),
     modLink: modificarUrl(eventId, booking.email),
   })
 
@@ -677,6 +693,7 @@ export async function sendReminderEmail(opts: {
     aPagar: precio ? money(precio) : '—',
     code: bookingCode(opts.eventId),
     comoLlegar: esDomicilio ? null : mapsUrl(BARBER_ADDRESS),
+    verLink: turnoUrl(opts.eventId, opts.email),
     modLink: modificarUrl(opts.eventId, opts.email),
   })
 
