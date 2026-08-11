@@ -60,6 +60,10 @@ export const ZONAS: Zona[] = [
       'Belgrano', 'Coghlan', 'Núñez', 'Colegiales', 'Saavedra',
       'Villa Ortúzar', 'Villa Urquiza', 'Chacarita', 'Parque Chas',
       'Vicente López',
+      /* Palermo mide 5,7 km y por la regla caería en la banda siguiente, pero
+         va sin viático por decisión de la casa: es de donde más viene la
+         gente y no se le cobra el traslado. */
+      'Palermo',
     ],
     viatico: 0,
   },
@@ -67,7 +71,7 @@ export const ZONAS: Zona[] = [
     id: 'z1',
     nombre: 'De 5 a 10 km',
     barrios: [
-      'Villa Pueyrredón', 'Paternal', 'Agronomía', 'Palermo', 'Villa Crespo',
+      'Villa Pueyrredón', 'Paternal', 'Agronomía', 'Villa Crespo',
       'Villa del Parque', 'Olivos', 'Villa Devoto', 'Caballito', 'Almagro',
       'Recoleta',
     ],
