@@ -115,7 +115,15 @@ export function assertWebhookValido(args: {
   dataId: string | null
 }): void {
   const secret = process.env.MP_WEBHOOK_SECRET
-  if (!secret) throw new Error('MP_WEBHOOK_SECRET no configurado')
+  /* Sin clave configurada no rechazamos la notificación: la firma es una capa
+     de más, no la que decide. Lo que confirma un turno es preguntarle a
+     Mercado Pago por ese pago con nuestro token y ver que esté aprobado y que
+     apunte a un turno nuestro esperando — el cuerpo del aviso no se usa para
+     nada. Igual conviene configurarla: evita que nos hagan gastar consultas. */
+  if (!secret) {
+    console.warn('[mercadopago] sin MP_WEBHOOK_SECRET — no se verifica la firma')
+    return
+  }
   WebhookSignatureValidator.validate({
     xSignature: args.xSignature,
     xRequestId: args.xRequestId,
