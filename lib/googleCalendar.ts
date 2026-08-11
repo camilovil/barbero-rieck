@@ -2,6 +2,7 @@ import { google } from 'googleapis'
 import type { BookingState } from '@/types/booking'
 import { TIME_SLOTS, LOCATION_LABELS, DEPOSIT_HOLD_MINUTES, depositAmount } from './constants'
 import { hhmm, nombreServicio, precioServicio } from './format'
+import { sendExpiredHoldEmail } from './email'
 import type { Location } from '@/types/booking'
 
 // Argentina never observes DST — UTC-3 all year
@@ -234,11 +235,32 @@ export async function expirePendingEvents(): Promise<number> {
   })
 
   await Promise.all(
-    vencidos.map(e =>
-      calendar.events
+    vencidos.map(async e => {
+      /* El aviso sale antes de borrar, que es cuando todavía tenemos los
+         datos del cliente: el evento es el único lugar donde viven. Que falle
+         el mail no puede dejar el horario tomado, así que va aparte. */
+      const desc = parseDesc(e.description ?? '')
+      const inicio = e.start?.dateTime
+      if (desc['email'] && inicio) {
+        try {
+          await sendExpiredHoldEmail({
+            nombre: desc['cliente'] ?? '',
+            email: desc['email'],
+            start: new Date(inicio),
+            servicio: desc['servicio'] ?? '',
+            eventId: e.id!,
+            location: desc['modalidad'] === LOCATION_LABELS.domicilio ? 'domicilio' : 'local',
+            direccion: desc['dirección cliente'] ?? '',
+          })
+        } catch (err) {
+          console.error('[googleCalendar] no se pudo avisar el vencimiento', e.id, err)
+        }
+      }
+
+      await calendar.events
         .delete({ calendarId: process.env.GOOGLE_CALENDAR_ID!, eventId: e.id! })
-        .catch(err => console.error('[googleCalendar] no se pudo liberar', e.id, err)),
-    ),
+        .catch(err => console.error('[googleCalendar] no se pudo liberar', e.id, err))
+    }),
   )
 
   return vencidos.length

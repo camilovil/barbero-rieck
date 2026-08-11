@@ -14,6 +14,7 @@ import {
 import {
   BARBER_ADDRESS,
   CANCELLATION_MIN_HOURS,
+  DEPOSIT_HOLD_MINUTES,
   INSTAGRAM_HANDLE,
   INSTAGRAM_URL,
   LOCATION_LABELS,
@@ -401,6 +402,9 @@ function clienteTurno(opts: {
 }
 
 /** 04 · cancelación. El tachado hace el trabajo del rojo. */
+/* Sirve para el turno cancelado y para la reserva que se venció sin seña:
+   son el mismo mail —un turno tachado y un camino de vuelta— y sólo cambian
+   las palabras. Los valores por omisión son los de la cancelación. */
 function clienteCancelado(opts: {
   titulo: string
   texto: string
@@ -408,6 +412,10 @@ function clienteCancelado(opts: {
   code: string
   motivo?: string
   logoSrc?: string
+  rotuloTxt?: string
+  preheader?: string
+  cta?: string
+  pieTxt?: string
 }): string {
   /* Va en la cueva como el resto de lo que ve el cliente (turno 8b).
      El tachado sigue haciendo el trabajo del rojo: el oro está
@@ -424,16 +432,16 @@ function clienteCancelado(opts: {
   return shell({
     ink,
     logoSrc: opts.logoSrc,
-    preheader: `Tu turno quedó cancelado. El horario volvió a la agenda.`,
+    preheader: opts.preheader ?? `Tu turno quedó cancelado. El horario volvió a la agenda.`,
     body: `
-      ${rotulo('Turno cancelado', ink)}
+      ${rotulo(opts.rotuloTxt ?? 'Turno cancelado', ink)}
       ${display(opts.titulo, ink, { struck: true })}
       ${parrafo(opts.texto, ink)}
       ${kvTable(opts.rows, ink)}
       ${motivoBloque}
-      <div style="margin-top:22px">${btnSolid(getAppUrl(), 'Elegir otro horario', ink)}</div>
+      <div style="margin-top:22px">${btnSolid(getAppUrl(), opts.cta ?? 'Elegir otro horario', ink)}</div>
       ${trama(ink)}
-      ${pie(`Reserva ${opts.code} &middot; cerrada.<br>${esc(BARBER_ADDRESS)} &middot; ${instagram(ink)}`, ink)}
+      ${pie(`Reserva ${opts.code} &middot; ${opts.pieTxt ?? 'cerrada.'}<br>${esc(BARBER_ADDRESS)} &middot; ${instagram(ink)}`, ink)}
     `,
   })
 }
@@ -672,6 +680,52 @@ export async function sendReminderEmail(opts: {
     from: FROM(),
     to: opts.email,
     subject: `Mañana te esperamos · ${opts.time}`,
+    html,
+    attachments: logoAttachment(),
+  })
+}
+
+/* La reserva se venció sin que entrara la seña y el horario volvió a la
+   agenda. Sale un solo mail, al cliente: para Santiago no pasó nada —nunca
+   tuvo un turno— y avisarle de cada reserva abandonada sería ruido. */
+export async function sendExpiredHoldEmail(opts: {
+  nombre: string
+  email: string
+  start: Date
+  servicio: string
+  eventId: string
+  location?: string
+  direccion?: string
+}): Promise<void> {
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.log('[email] stub — reserva vencida de', opts.nombre)
+    return
+  }
+
+  const esDomicilio = opts.location === 'domicilio'
+  const lugarMain = esDomicilio ? LOCATION_LABELS.domicilio : LOCATION_LABELS.local
+  const lugarSub = esDomicilio ? (opts.direccion || '') : BARBER_ADDRESS
+  const dateShort = shortDate(opts.start)
+  const time = hhmm(opts.start)
+
+  const html = clienteCancelado({
+    rotuloTxt: 'Reserva no confirmada',
+    preheader: 'No llegó la seña y el horario volvió a la agenda.',
+    titulo: `${esc(dateShort)}<br>${esc(time)}`,
+    texto: `${opts.nombre.split(' ')[0]}, te guardamos el horario ${DEPOSIT_HOLD_MINUTES} minutos y la seña no llegó, así que volvió a la agenda. Si todavía lo querés, reservalo de nuevo — si llegaste a pagar, escribile a Santiago y lo resolvemos.`,
+    rows: [
+      kv('Servicio', [serviceName(opts.servicio), durationOf(opts.servicio)].filter(Boolean).join(' · '), DARK),
+      kv('Dónde', lugarSub ? `${lugarMain} · ${lugarSub}` : lugarMain, DARK, { last: true }),
+    ].join(''),
+    code: bookingCode(opts.eventId),
+    cta: 'Reservar de nuevo',
+    pieTxt: 'vencida sin seña.',
+  })
+
+  await getTransporter().sendMail({
+    from: FROM(),
+    to: opts.email,
+    subject: `Reserva no confirmada · ${dateShort} · ${time}`,
     html,
     attachments: logoAttachment(),
   })
@@ -1068,6 +1122,26 @@ export function previewEmails(): { id: string; nombre: string; asunto: string; h
           kv('Cancelado por', 'Vos, desde la web', DARK, { last: true }),
         ].join(''),
         code,
+        logoSrc,
+      }),
+    },
+    {
+      id: 'cliente-reserva-vencida',
+      nombre: 'Cliente · reserva no confirmada',
+      asunto: `Reserva no confirmada · ${dateShort} · 18:30`,
+      alto: 650,
+      html: clienteCancelado({
+        rotuloTxt: 'Reserva no confirmada',
+        preheader: 'No llegó la seña y el horario volvió a la agenda.',
+        titulo: `${dateShort}<br>18:30`,
+        texto: `Tomás, te guardamos el horario ${DEPOSIT_HOLD_MINUTES} minutos y la seña no llegó, así que volvió a la agenda. Si todavía lo querés, reservalo de nuevo — si llegaste a pagar, escribile a Santiago y lo resolvemos.`,
+        rows: [
+          kv('Servicio', 'Corte y barba · 60 min', DARK),
+          kv('Dónde', `${LOCATION_LABELS.local} · ${BARBER_ADDRESS}`, DARK, { last: true }),
+        ].join(''),
+        code,
+        cta: 'Reservar de nuevo',
+        pieTxt: 'vencida sin seña.',
         logoSrc,
       }),
     },
