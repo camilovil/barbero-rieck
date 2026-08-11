@@ -247,11 +247,16 @@ export async function expirePendingEvents(): Promise<number> {
 
   await Promise.all(
     vencidos.map(async e => {
-      /* El aviso sale antes de borrar, que es cuando todavía tenemos los
-         datos del cliente: el evento es el único lugar donde viven. Que falle
-         el mail no puede dejar el horario tomado, así que va aparte. */
+      /* Los datos del cliente se leen antes de borrar —el evento es el único
+         lugar donde viven— pero el mail sale después: liberar el horario es
+         lo urgente y el correo puede tardar segundos. */
       const desc = parseDesc(e.description ?? '')
       const inicio = e.start?.dateTime
+
+      await calendar.events
+        .delete({ calendarId: process.env.GOOGLE_CALENDAR_ID!, eventId: e.id! })
+        .catch(err => console.error('[googleCalendar] no se pudo liberar', e.id, err))
+
       if (desc['email'] && inicio) {
         try {
           await sendExpiredHoldEmail({
@@ -267,10 +272,6 @@ export async function expirePendingEvents(): Promise<number> {
           console.error('[googleCalendar] no se pudo avisar el vencimiento', e.id, err)
         }
       }
-
-      await calendar.events
-        .delete({ calendarId: process.env.GOOGLE_CALENDAR_ID!, eventId: e.id! })
-        .catch(err => console.error('[googleCalendar] no se pudo liberar', e.id, err))
     }),
   )
 
@@ -289,6 +290,10 @@ export interface BookingEvent {
   nota: string
   start: string // ISO string
   end: string
+  /* Lo que se cobra por el traslado, ya cotizado al reservar. Cero cuando no
+     corresponde y también cuando quedó a convenir: en ese caso el monto no
+     existe todavía y ponerle un número sería inventarlo. */
+  viatico: number
   /* Sólo en los turnos que pasaron por la seña. Sin seña no existe, y por eso
      el panel tiene que distinguir «no hay dato» de «no pagó»: un turno viejo
      no es un turno impago. */
@@ -315,6 +320,8 @@ function toBookingEvent(
     nota: desc['nota'] ?? '',
     start,
     end,
+    // "Viático: $10.000" — el mismo parser del precio del servicio.
+    viatico: precioServicio(desc['viático'] ?? ''),
     pago: pago === 'pendiente' || pago === 'pagado' ? pago : undefined,
   }
 }

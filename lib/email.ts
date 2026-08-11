@@ -14,6 +14,7 @@ import {
 import {
   BARBER_ADDRESS,
   CANCELLATION_MIN_HOURS,
+  viaticoDeBarrio,
   DEPOSIT_HOLD_MINUTES,
   INSTAGRAM_HANDLE,
   INSTAGRAM_URL,
@@ -587,7 +588,10 @@ export async function sendBookingEmails(booking: BookingState, eventId: string):
   const dateLong = booking.date ? capitalize(formatDate(booking.date)) : '—'
   const dateShort = booking.date ? shortDate(booking.date) : '—'
   const code = bookingCode(eventId)
-  const precio = booking.service ? money(booking.service.price) : '—'
+  /* Lo que va a pagar, traslado incluido. Mostrar sólo el servicio en un
+     turno a domicilio es decirle diez mil pesos de menos. */
+  const viatico = booking.location === 'domicilio' ? viaticoDeBarrio(booking.barrio) : 0
+  const precio = booking.service ? money(booking.service.price + viatico) : '—'
 
   const clienteHtml = clienteTurno({
     rotuloTxt: 'Turno confirmado',
@@ -910,7 +914,7 @@ function buildDailySummaryHtml(events: BookingEvent[], date: Date, logoSrc?: str
   const hora = (iso: string) => hhmm(iso)
 
   const ordenados = [...events].sort((a, b) => a.start.localeCompare(b.start))
-  const previsto = ordenados.reduce((sum, e) => sum + priceOf(e.servicio), 0)
+  const previsto = ordenados.reduce((sum, e) => sum + priceOf(e.servicio) + e.viatico, 0)
 
   /* Ocupación por minutos, no por cantidad: los servicios duran
      entre 40 y 120 min y contar turnos sueltos la subestimaría. */
@@ -1014,7 +1018,7 @@ function buildDailySummaryHtml(events: BookingEvent[], date: Date, logoSrc?: str
 export async function sendDailySummaryEmail(events: BookingEvent[], date: Date): Promise<void> {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD || !process.env.SANTIAGO_EMAIL) return
 
-  const previsto = events.reduce((sum, e) => sum + priceOf(e.servicio), 0)
+  const previsto = events.reduce((sum, e) => sum + priceOf(e.servicio) + e.viatico, 0)
 
   await getTransporter().sendMail({
     from: FROM(),
@@ -1056,14 +1060,14 @@ export function previewEmails(): { id: string; nombre: string; asunto: string; h
   }
   const eventosDemo: BookingEvent[] = [
     { id: 'a1', nombre: 'Julián R.', email: 'j@correo.com', whatsapp: '+5491100000001',
-      servicio: 'Corte — $16.000', modalidad: LOCATION_LABELS.local, direccion: '', nota: '',
+      servicio: 'Corte — $16.000', modalidad: LOCATION_LABELS.local, direccion: '', nota: '', viatico: 0,
       start: at(11, 0), end: at(11, 40) },
     { id: 'a2', nombre: 'Nico F.', email: 'n@correo.com', whatsapp: '+5491100000002',
-      servicio: 'Corte y barba — $19.000', modalidad: LOCATION_LABELS.local, direccion: '', nota: '',
+      servicio: 'Corte y barba — $19.000', modalidad: LOCATION_LABELS.local, direccion: '', nota: '', viatico: 0,
       start: at(12, 0), end: at(13, 0) },
     { id: 'a3', nombre: 'Emiliano V.', email: 'e@correo.com', whatsapp: '+5491100000003',
       servicio: 'Corte (incluye barba) — $40.000', modalidad: LOCATION_LABELS.domicilio,
-      direccion: 'Av. Cabildo 2200, Belgrano', nota: '',
+      direccion: 'Av. Cabildo 2200, Belgrano', nota: '', viatico: 10000,
       start: at(15, 0), end: at(17, 0) },
   ]
 

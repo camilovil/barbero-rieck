@@ -406,7 +406,7 @@ export default function AdminDashboard() {
   /* Lo que entra hoy si no se cae nada. Es el número por el que
      Santiago abre el panel a la mañana, y hasta ahora no estaba: lo
      calculaba sólo el mail del resumen diario. */
-  const previstoHoy = eventosHoy.reduce((sum, e) => sum + precioServicio(e.servicio), 0)
+  const previstoHoy = eventosHoy.reduce((sum, e) => sum + precioServicio(e.servicio) + e.viatico, 0)
   const totalSemana = events.filter(e => {
     const d = new Date(e.start)
     return d >= weekDays[0] && d <= weekDays[6]
@@ -718,7 +718,8 @@ export default function AdminDashboard() {
                         {group.items.map(ev => {
                           const dom = isDomicilio(ev.modalidad)
                           const tel = soloDigitos(ev.whatsapp)
-                          const precio = precioServicio(ev.servicio)
+                          // El traslado es plata que Santiago cobra: va en el mismo número.
+                          const precio = precioServicio(ev.servicio) + ev.viatico
                           const mins = duracionMin(ev)
                           return (
                           <li key={ev.id} className="turno">
@@ -1045,7 +1046,16 @@ export default function AdminDashboard() {
             {precioServicio(selected.servicio) > 0 && (
               <div className="kv">
                 <span className="kv-k">Precio</span>
-                <span className="kv-v mono">{money(precioServicio(selected.servicio))}</span>
+                <span className="kv-v mono">
+                  {money(precioServicio(selected.servicio) + selected.viatico)}
+                </span>
+              </div>
+            )}
+            {/* Desglosado sólo cuando hay traslado: si no, sobra un renglón. */}
+            {selected.viatico > 0 && (
+              <div className="kv">
+                <span className="kv-k">Incluye viático</span>
+                <span className="kv-v mono">{money(selected.viatico)}</span>
               </div>
             )}
             {/* Sin seña no hay dato que mostrar; con seña, es lo primero que
