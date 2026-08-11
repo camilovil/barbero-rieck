@@ -1,15 +1,17 @@
 'use client'
 
-import { SERVICES } from '@/lib/constants'
+import { SERVICES, DEPOSIT_PERCENT } from '@/lib/constants'
 import type { Location, Service } from '@/types/booking'
 
 interface Props {
   location: Location
   selected: Service | null
+  senaActiva?: boolean
+  viaticoActivo?: boolean
   onSelect: (s: Service) => void
 }
 
-export default function StepService({ location, selected, onSelect }: Props) {
+export default function StepService({ location, selected, senaActiva = false, viaticoActivo = false, onSelect }: Props) {
   const services = SERVICES[location]
 
   return (
@@ -49,7 +51,10 @@ export default function StepService({ location, selected, onSelect }: Props) {
         })}
       </div>
 
-      {location === 'domicilio' && (
+      {/* Lo que el precio de arriba NO dice todavía. Va acá, pegado al número,
+          y no dos pasos más adelante: si el cliente se entera de que paga por
+          adelantado recién en el resumen, ya recorrió cuatro pantallas. */}
+      {(location === 'domicilio' || senaActiva) && (
         <p
           className="mono"
           style={{
@@ -57,7 +62,13 @@ export default function StepService({ location, selected, onSelect }: Props) {
             margin: '18px 0 0',
           }}
         >
-          Incluye el traslado de Santiago hasta tu dirección.
+          {location === 'domicilio' && (
+            viaticoActivo
+              ? 'Santiago va hasta tu dirección. Si estás a más de 5 km del estudio se suma un viático, según el barrio que elijas en el próximo paso.'
+              : 'Incluye el traslado de Santiago hasta tu dirección.'
+          )}
+          {location === 'domicilio' && senaActiva && <br />}
+          {senaActiva && `Para reservar se paga una seña del ${DEPOSIT_PERCENT}% por Mercado Pago. El resto, en el turno.`}
         </p>
       )}
     </div>

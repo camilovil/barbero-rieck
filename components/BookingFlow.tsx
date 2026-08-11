@@ -17,6 +17,8 @@ interface Props {
   initialServicio?: string | null
   /** Con la seña activa, confirmar no cierra el turno: lleva a pagar. */
   senaActiva?: boolean
+  /** Con el viático activo se pide el barrio y se cobra el traslado. */
+  viaticoActivo?: boolean
 }
 
 function buildInitialState(initialLocation: Location | null, initialServicio: string | null): BookingState {
@@ -40,22 +42,25 @@ function buildInitialState(initialLocation: Location | null, initialServicio: st
   return { step, location, email: '', service, date: null, time: null, nombre: '', whatsapp: '', direccion: '', barrio: null, nota: '' }
 }
 
-function canAdvance(state: BookingState): boolean {
+function canAdvance(state: BookingState, viaticoActivo: boolean): boolean {
   switch (state.step) {
     case 1: return state.location !== null
     case 2: return state.service !== null
     case 3: return state.date !== null && state.time !== null
     case 4: {
       const base = state.nombre.trim() !== '' && state.whatsapp.trim() !== '' && state.email.trim() !== ''
-      // A domicilio el barrio es obligatorio: sin él no sabemos el viático.
-      if (state.location === 'domicilio') return base && state.direccion.trim() !== '' && !!state.barrio
+      /* El barrio sólo hace falta cuando se cobra el traslado: si el viático
+         está apagado, pedirlo sería un campo obligatorio que no decide nada. */
+      if (state.location === 'domicilio') {
+        return base && state.direccion.trim() !== '' && (!viaticoActivo || !!state.barrio)
+      }
       return base
     }
     default: return true
   }
 }
 
-export default function BookingFlow({ initialLocation = null, initialServicio = null, senaActiva = false }: Props) {
+export default function BookingFlow({ initialLocation = null, initialServicio = null, senaActiva = false, viaticoActivo = false }: Props) {
   const [state, setState] = useState<BookingState>(() => buildInitialState(initialLocation, initialServicio))
   const [loading, setLoading] = useState(false)
   const [redirigiendo, setRedirigiendo] = useState(false)
@@ -67,7 +72,7 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
   }
 
   function goNext() {
-    if (canAdvance(state)) update({ step: state.step + 1 })
+    if (canAdvance(state, viaticoActivo)) update({ step: state.step + 1 })
   }
 
   function goBack() {
@@ -114,7 +119,7 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
     return <StepSuccess booking={state} eventId={eventId} onReset={reset} />
   }
 
-  const ready = canAdvance(state)
+  const ready = canAdvance(state, viaticoActivo)
 
   /* Recap de una línea sobre el CTA: lo que se lleva elegido hasta
      acá. Antes esto vivía en el «volver» de arriba; como ese control
@@ -132,7 +137,7 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
            sólo el servicio, el número cambiaría solo en el resumen. */
         right: state.service
           ? state.service.priceLabel
-            ?? `$${(state.service.price + viaticoDeBarrio(state.barrio)).toLocaleString('es-AR')}`
+            ?? `$${(state.service.price + (viaticoActivo ? viaticoDeBarrio(state.barrio) : 0)).toLocaleString('es-AR')}`
           : '',
       }
     : null
@@ -166,6 +171,8 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
           <StepService
             location={state.location}
             selected={state.service}
+            senaActiva={senaActiva}
+            viaticoActivo={viaticoActivo}
             onSelect={(s: Service) => update({ service: s })}
           />
         )}
@@ -185,11 +192,12 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
             email={state.email}
             direccion={state.direccion}
             barrio={state.barrio}
+            viaticoActivo={viaticoActivo}
             nota={state.nota}
             onChange={(field, value) => update({ [field]: value })}
           />
         )}
-        {state.step === 5 && <StepResumen booking={state} senaActiva={senaActiva} />}
+        {state.step === 5 && <StepResumen booking={state} senaActiva={senaActiva} viaticoActivo={viaticoActivo} />}
       </div>
 
       <div className="cta-bar">

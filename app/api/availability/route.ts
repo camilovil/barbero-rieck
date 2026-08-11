@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDayAvailability, expirePendingEvents } from '@/lib/googleCalendar'
-import { isDepositEnabled } from '@/lib/mercadopago'
+import { isDepositEnabled } from '@/lib/flags'
 import { BLOCKED_SLOTS, TIME_SLOTS } from '@/lib/constants'
 import type { Location } from '@/types/booking'
 

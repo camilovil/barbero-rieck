@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getUpcomingEvents, expirePendingEvents } from '@/lib/googleCalendar'
-import { isDepositEnabled } from '@/lib/mercadopago'
+import { isDepositEnabled } from '@/lib/flags'
 
 export async function GET() {
   try {

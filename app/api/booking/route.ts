@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createCalendarEvent, getDayBookingCount, isDateBlocked, getSettings, expirePendingEvents, deleteCalendarEvent } from '@/lib/googleCalendar'
 import { sendBookingEmails } from '@/lib/email'
-import { isDepositEnabled, createDepositPreference } from '@/lib/mercadopago'
+import { createDepositPreference } from '@/lib/mercadopago'
+import { isDepositEnabled } from '@/lib/flags'
 import { depositAmount } from '@/lib/constants'
 import type { BookingState } from '@/types/booking'
 

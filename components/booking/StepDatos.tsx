@@ -10,6 +10,7 @@ interface Props {
   whatsapp: string
   direccion: string
   barrio: string | null
+  viaticoActivo: boolean
   nota: string
   onChange: (field: string, value: string) => void
 }
@@ -31,7 +32,7 @@ function Field({
   )
 }
 
-export default function StepDatos({ location, nombre, email, whatsapp, direccion, barrio, nota, onChange }: Props) {
+export default function StepDatos({ location, nombre, email, whatsapp, direccion, barrio, viaticoActivo, nota, onChange }: Props) {
   const viatico = viaticoDeBarrio(barrio)
   const aConvenir = zonaDeBarrio(barrio)?.aConvenir ?? false
   return (
@@ -75,7 +76,9 @@ export default function StepDatos({ location, nombre, email, whatsapp, direccion
             </Field>
 
             {/* El barrio no es un dato más: es lo que decide el viático, así
-                que el precio se dice acá mismo y no dos pasos después. */}
+                que el precio se dice acá mismo y no dos pasos después. Sin
+                viático no se pregunta: sería un campo obligatorio de adorno. */}
+            {viaticoActivo && (
             <Field label="Barrio" required>
               <select
                 value={barrio ?? ''}
@@ -101,6 +104,7 @@ export default function StepDatos({ location, nombre, email, whatsapp, direccion
                       : `VIÁTICO $${viatico.toLocaleString('es-AR')} · SE SUMA AL TOTAL`}
               </p>
             </Field>
+            )}
           </>
         )}
 

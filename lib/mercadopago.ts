@@ -10,14 +10,6 @@ import type { BookingState } from '@/types/booking'
 
 export { InvalidWebhookSignatureError }
 
-/* La seña es una decisión aparte de tener las credenciales cargadas. Si el
-   interruptor colgara de MP_ACCESS_TOKEN, el día que Santiago pegue su token
-   en Vercel la web empezaría sola a tomar turnos sin confirmar. Se prende a
-   mano, cuando el circuito de pago está cerrado de punta a punta. */
-export function isDepositEnabled(): boolean {
-  return process.env.DEPOSIT_ENABLED === '1'
-}
-
 function getClient(): MercadoPagoConfig {
   const accessToken = process.env.MP_ACCESS_TOKEN
   if (!accessToken) throw new Error('MP_ACCESS_TOKEN no configurado')

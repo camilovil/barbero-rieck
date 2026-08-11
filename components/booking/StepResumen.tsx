@@ -7,6 +7,7 @@ import { capitalize as upperFirst, diaCorto as shortDate } from '@/lib/format'
 interface Props {
   booking: BookingState
   senaActiva?: boolean
+  viaticoActivo?: boolean
 }
 
 function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
@@ -18,7 +19,7 @@ function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
   )
 }
 
-export default function StepResumen({ booking, senaActiva = false }: Props) {
+export default function StepResumen({ booking, senaActiva = false, viaticoActivo = false }: Props) {
   const dateStr = booking.date
     ? upperFirst(booking.date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }))
     : '—'
@@ -32,8 +33,8 @@ export default function StepResumen({ booking, senaActiva = false }: Props) {
   const precio = booking.service?.price ?? 0
   /* El viático no entra en la seña: se paga entero en el turno, junto con el
      saldo del servicio. La seña sigue siendo la mitad del servicio. */
-  const viatico = booking.location === 'domicilio' ? viaticoDeBarrio(booking.barrio) : 0
-  const aConvenir = booking.location === 'domicilio' && (zonaDeBarrio(booking.barrio)?.aConvenir ?? false)
+  const viatico = viaticoActivo && booking.location === 'domicilio' ? viaticoDeBarrio(booking.barrio) : 0
+  const aConvenir = viaticoActivo && booking.location === 'domicilio' && (zonaDeBarrio(booking.barrio)?.aConvenir ?? false)
   const total = precio + viatico
   const sena = depositAmount(precio)
   const saldo = total - sena
