@@ -9,7 +9,7 @@ import StepDatos from './booking/StepDatos'
 import StepResumen from './booking/StepResumen'
 import StepSuccess from './booking/StepSuccess'
 import type { BookingState, Location, Service } from '@/types/booking'
-import { SERVICES, LOCATION_LABELS } from '@/lib/constants'
+import { SERVICES, LOCATION_LABELS, viaticoDeBarrio } from '@/lib/constants'
 import { diaCorto } from '@/lib/format'
 
 interface Props {
@@ -37,7 +37,7 @@ function buildInitialState(initialLocation: Location | null, initialServicio: st
     }
   }
 
-  return { step, location, email: '', service, date: null, time: null, nombre: '', whatsapp: '', direccion: '', nota: '' }
+  return { step, location, email: '', service, date: null, time: null, nombre: '', whatsapp: '', direccion: '', barrio: null, nota: '' }
 }
 
 function canAdvance(state: BookingState): boolean {
@@ -47,7 +47,8 @@ function canAdvance(state: BookingState): boolean {
     case 3: return state.date !== null && state.time !== null
     case 4: {
       const base = state.nombre.trim() !== '' && state.whatsapp.trim() !== '' && state.email.trim() !== ''
-      if (state.location === 'domicilio') return base && state.direccion.trim() !== ''
+      // A domicilio el barrio es obligatorio: sin él no sabemos el viático.
+      if (state.location === 'domicilio') return base && state.direccion.trim() !== '' && !!state.barrio
       return base
     }
     default: return true
@@ -127,8 +128,11 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
   const recap = elegido
     ? {
         left: elegido,
+        /* El recap muestra lo que va a pagar, viático incluido: si mostrara
+           sólo el servicio, el número cambiaría solo en el resumen. */
         right: state.service
-          ? state.service.priceLabel ?? `$${state.service.price.toLocaleString('es-AR')}`
+          ? state.service.priceLabel
+            ?? `$${(state.service.price + viaticoDeBarrio(state.barrio)).toLocaleString('es-AR')}`
           : '',
       }
     : null
@@ -180,6 +184,7 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
             whatsapp={state.whatsapp}
             email={state.email}
             direccion={state.direccion}
+            barrio={state.barrio}
             nota={state.nota}
             onChange={(field, value) => update({ [field]: value })}
           />

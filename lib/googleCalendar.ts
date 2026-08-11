@@ -1,6 +1,6 @@
 import { google } from 'googleapis'
 import type { BookingState } from '@/types/booking'
-import { TIME_SLOTS, LOCATION_LABELS, DEPOSIT_HOLD_MINUTES, depositAmount } from './constants'
+import { TIME_SLOTS, LOCATION_LABELS, DEPOSIT_HOLD_MINUTES, depositAmount, viaticoDeBarrio, zonaDeBarrio } from './constants'
 import { hhmm, nombreServicio, precioServicio } from './format'
 import { sendExpiredHoldEmail } from './email'
 import type { Location } from '@/types/booking'
@@ -60,6 +60,8 @@ export async function createCalendarEvent(
 
   const waNumber = booking.whatsapp.replace(/\D/g, '')
   const sena = booking.service.price ? depositAmount(booking.service.price) : 0
+  const viatico = booking.location === 'domicilio' ? viaticoDeBarrio(booking.barrio) : 0
+  const viaticoAConvenir = booking.location === 'domicilio' && (zonaDeBarrio(booking.barrio)?.aConvenir ?? false)
 
   const description = [
     `Cliente: ${booking.nombre}`,
@@ -72,6 +74,14 @@ export async function createCalendarEvent(
       ? `Servicio: ${booking.service.name} — $${booking.service.price.toLocaleString('es-AR')}`
       : `Servicio: ${booking.service.name}`,
     `Modalidad: ${LOCATION_LABELS[booking.location ?? 'local']}`,
+    /* El viático queda escrito con su barrio porque es plata que Santiago
+       cobra en el turno, y la tabla de zonas puede cambiar después: lo
+       cotizado al reservar es lo que vale. */
+    booking.location === 'domicilio' && booking.barrio ? `Barrio: ${booking.barrio}` : null,
+    viatico ? `Viático: $${viatico.toLocaleString('es-AR')}` : null,
+    /* Fuera de cobertura Santiago tiene que acordar el traslado por WhatsApp:
+       si no queda escrito acá, se entera cuando llega. */
+    viaticoAConvenir ? 'Viático: A CONVENIR — el barrio quedó fuera de la grilla' : null,
     opts.pending && sena ? `Seña: pendiente de pago — $${sena.toLocaleString('es-AR')}` : null,
     booking.location === 'domicilio' && booking.direccion ? `Dirección cliente: ${booking.direccion}` : null,
     booking.location === 'domicilio' && booking.direccion ? `Cómo llegar: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.direccion)}` : null,
@@ -155,6 +165,7 @@ function bookingFromEvent(desc: Record<string, string>, start: string, end: stri
     email: desc['email'] ?? '',
     whatsapp: desc['whatsapp'] ?? '',
     direccion: desc['dirección cliente'] ?? '',
+    barrio: desc['barrio'] ?? null,
     nota: desc['nota'] ?? '',
   }
 }

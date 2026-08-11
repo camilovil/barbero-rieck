@@ -84,6 +84,7 @@ export async function POST(req: NextRequest) {
       email: desc['email'] ?? email,
       whatsapp: (desc['whatsapp'] ?? '').replace(/https:\/\/wa\.me\//,''),
       direccion,
+      barrio: desc['barrio'] ?? null,
       nota: desc['nota'] ?? '',
       date: new Date(newDate),
       time: newTime,

@@ -17,5 +17,7 @@ export type BookingState = {
   email: string
   whatsapp: string
   direccion: string
+  /** Sólo a domicilio: el barrio elegido, que es lo que define el viático. */
+  barrio: string | null
   nota: string
 }
