@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getBookedSlots, isDateBlocked, expirePendingEvents } from '@/lib/googleCalendar'
+import { getDayAvailability, expirePendingEvents } from '@/lib/googleCalendar'
 import { isDepositEnabled } from '@/lib/mercadopago'
 import { BLOCKED_SLOTS, TIME_SLOTS } from '@/lib/constants'
 import type { Location } from '@/types/booking'
@@ -19,25 +19,26 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    /* De paso soltamos los turnos sin seña que se vencieron, para que el
-       horario aparezca libre acá mismo y no cuando pase el cron. Va en
-       paralelo con la consulta que ya hacíamos: no cuesta tiempo. */
-    const [dayBlocked] = await Promise.all([
-      isDateBlocked(date),
-      isDepositEnabled()
-        ? expirePendingEvents().catch(err =>
-            console.error('[api/availability] no se pudieron liberar los vencidos:', err),
-          )
-        : null,
-    ])
-    if (dayBlocked) {
+    /* Primero soltamos los turnos sin seña que se vencieron, para que el
+       horario aparezca libre acá mismo y no cuando pase el cron. Va antes y no
+       en paralelo: si corrieran juntos, la grilla podría armarse mientras el
+       vencido todavía existe y ese horario seguiría apareciendo ocupado. */
+    if (isDepositEnabled()) {
+      try {
+        await expirePendingEvents()
+      } catch (err) {
+        console.error('[api/availability] no se pudieron liberar los vencidos:', err)
+      }
+    }
+
+    const dia = await getDayAvailability(date, location)
+
+    if (dia.dayBlocked) {
       return NextResponse.json({ blocked: TIME_SLOTS[location], dayBlocked: true })
     }
 
-    // Slots ocupados en Calendar + slots bloqueados estáticos (horarios de almuerzo, etc.)
-    const calendarBooked = await getBookedSlots(date, location)
-    const blocked = Array.from(new Set([...BLOCKED_SLOTS, ...calendarBooked]))
-
+    // Los estáticos son horarios que nunca se venden (almuerzo, etc.)
+    const blocked = Array.from(new Set([...BLOCKED_SLOTS, ...dia.blocked]))
     return NextResponse.json({ blocked })
   } catch (err) {
     console.error('[api/availability] error:', err)

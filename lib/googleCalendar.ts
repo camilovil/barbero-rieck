@@ -497,20 +497,6 @@ export async function getBlockedRanges(days = 60): Promise<BlockedRange[]> {
     .map(e => ({ id: e.id!, start: e.start!.dateTime!, end: e.end?.dateTime ?? e.start!.dateTime! }))
 }
 
-async function getBlockedRangesForDate(date: Date): Promise<BlockedRange[]> {
-  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return []
-  const calendar = google.calendar({ version: 'v3', auth: getAuth() })
-  const ds = toUTCDateStr(date)
-  const res = await calendar.events.list({
-    calendarId: process.env.GOOGLE_CALENDAR_ID!,
-    timeMin: new Date(`${ds}T00:00:00${BA_OFFSET}`).toISOString(),
-    timeMax: new Date(`${ds}T23:59:59${BA_OFFSET}`).toISOString(),
-    singleEvents: true,
-  })
-  return (res.data.items ?? [])
-    .filter(e => e.id && e.summary === 'BLOQUEADO' && e.start?.dateTime)
-    .map(e => ({ id: e.id!, start: e.start!.dateTime!, end: e.end?.dateTime ?? e.start!.dateTime! }))
-}
 
 export async function unblockDate(eventId: string): Promise<void> {
   const calendar = google.calendar({ version: 'v3', auth: getAuth() })
@@ -539,9 +525,53 @@ export async function getBlockedDates(days = 60): Promise<{ id: string; date: st
 
 export async function isDateBlocked(date: Date): Promise<boolean> {
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return false
-  const blocked = await getBlockedDates(90)
-  const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`
-  return blocked.some(b => b.date === dateStr)
+  /* Para saber si un día está cerrado alcanza con mirar ese día. Antes se
+     traían noventa días enteros de agenda y se buscaba uno adentro. */
+  return (await eventosDelDia(date)).some(e => e.summary === 'BLOQUEADO' && e.start?.date)
+}
+
+/* Una sola consulta por día, que es de donde sale todo lo que la grilla
+   necesita: los turnos tomados, las franjas bloqueadas y si el día entero
+   está cerrado. Antes cada una de esas tres preguntas era su propio viaje a
+   Google, y las tres salían en cada toque a una fecha del calendario. */
+async function eventosDelDia(date: Date) {
+  const calendar = google.calendar({ version: 'v3', auth: getAuth() })
+  const ds = toUTCDateStr(date)
+  const res = await calendar.events.list({
+    calendarId: process.env.GOOGLE_CALENDAR_ID!,
+    timeMin: new Date(`${ds}T00:00:00${BA_OFFSET}`).toISOString(),
+    timeMax: new Date(`${ds}T23:59:59${BA_OFFSET}`).toISOString(),
+    singleEvents: true,
+    orderBy: 'startTime',
+  })
+  return res.data.items ?? []
+}
+
+export interface DisponibilidadDia {
+  dayBlocked: boolean
+  /** Los TIME_SLOTS que ya no se pueden tomar. */
+  blocked: string[]
+}
+
+/** Todo lo que la pantalla de horarios necesita, en un solo viaje. */
+export async function getDayAvailability(date: Date, location: Location): Promise<DisponibilidadDia> {
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) {
+    return { dayBlocked: false, blocked: [] }
+  }
+
+  const items = await eventosDelDia(date)
+
+  if (items.some(e => e.summary === 'BLOQUEADO' && e.start?.date)) {
+    return { dayBlocked: true, blocked: TIME_SLOTS[location] }
+  }
+
+  /* Un turno y una franja bloqueada tapan un horario por el mismo motivo:
+     Santiago no está libre. Para la grilla son lo mismo. */
+  const ocupado = items
+    .filter(e => e.start?.dateTime && (e.summary?.includes('✂️') || e.summary === 'BLOQUEADO'))
+    .map(e => ({ start: e.start!.dateTime!, end: e.end?.dateTime ?? e.start!.dateTime! }))
+
+  return { dayBlocked: false, blocked: slotsPisados(date, location, ocupado) }
 }
 
 export async function getDayBookingCount(date: Date): Promise<number> {
@@ -577,33 +607,19 @@ export async function getEventsForDate(date: Date): Promise<BookingEvent[]> {
     .map(e => toBookingEvent(e.id!, parseDesc(e.description ?? ''), e.summary ?? '—', e.start!.dateTime!, e.end?.dateTime ?? '', e.extendedProperties?.private?.pago))
 }
 
-// ─── Returns the list of TIME_SLOTS that are already booked for a given date ──
-// Incluye lógica de buffer de viaje: si hay un turno en estudio y el siguiente
-// slot es a domicilio (o viceversa), se agrega TRAVEL_BUFFER_MINUTES de margen.
-export async function getBookedSlots(date: Date, location: Location): Promise<string[]> {
-  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) {
-    return []
-  }
-
-  // Obtenemos los eventos reales del día (con modalidad) en lugar de solo freebusy
-  const [events, rangos] = await Promise.all([
-    getEventsForDate(date),
-    getBlockedRangesForDate(date),
-  ])
-
-  /* Un turno y una franja bloqueada tapan un horario por el mismo motivo:
-     Santiago no está libre. Para la grilla son lo mismo. */
-  const ocupado = [
-    ...events.map(ev => ({ start: ev.start, end: ev.end || ev.start })),
-    ...rangos,
-  ]
+/* Qué horarios de la grilla pisa lo que ya está ocupado. Puro cálculo: no
+   habla con Google, así que se puede reusar sobre cualquier lista. */
+function slotsPisados(
+  date: Date,
+  location: Location,
+  ocupado: { start: string; end: string }[],
+): string[] {
   if (ocupado.length === 0) return []
 
-  const slots = TIME_SLOTS[location]
   const slotDurationMs = (location === 'local' ? 60 : 120) * 60 * 1000
-
   const ds = toUTCDateStr(date)
-  return slots.filter((time) => {
+
+  return TIME_SLOTS[location].filter((time) => {
     const [h, m] = time.split(':').map(Number)
     const pad = (n: number) => String(n).padStart(2, '0')
     const slotStart = new Date(`${ds}T${pad(h)}:${pad(m)}:00${BA_OFFSET}`)
