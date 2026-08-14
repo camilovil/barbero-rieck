@@ -752,6 +752,50 @@ export async function sendExpiredHoldEmail(opts: {
   })
 }
 
+/* Al revés que el anterior: la seña entró y el turno ya no estaba. Se venció
+   en el rato que el cliente tardó en pagar, o se canceló en el medio. Es plata
+   cobrada sin turno que la respalde, así que sale un solo mail y es a Santiago
+   —el cliente ya recibió el de la reserva vencida—. Va por mail y no sólo al
+   log porque los logs de Vercel no los lee nadie, y esto hay que resolverlo
+   con alguien que pagó esperando del otro lado. */
+export async function sendOrphanDepositEmail(opts: {
+  paymentId: string
+  eventId: string
+  amount: number | null
+}): Promise<void> {
+  const monto = opts.amount ? money(opts.amount) : '—'
+
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD || !process.env.SANTIAGO_EMAIL) {
+    // Sin correo configurado, que por lo menos quede escrito con los tres datos.
+    console.error(`[email] stub — seña sin turno: ${monto}, pago ${opts.paymentId}, turno ${opts.eventId}`)
+    return
+  }
+
+  const html = interno({
+    rotuloTxt: 'Revisar a mano',
+    nombre: 'Seña sin turno',
+    bloque: parrafo(
+      'Entró una seña aprobada y el turno ya no estaba esperando: se venció mientras el cliente pagaba, o se canceló en el medio. Hay que devolverle la plata o reubicarlo. Con quién hablar sale del pago, en Mercado Pago.',
+      LIGHT,
+    ),
+    rows: [
+      kv('Cobrado', monto, LIGHT, { mono: true }),
+      kv('Pago', opts.paymentId, LIGHT, { mono: true }),
+      kv('Turno', opts.eventId, LIGHT, { mono: true, last: true }),
+    ].join(''),
+    acciones: `<div style="margin-top:22px">${btnSolid('https://www.mercadopago.com.ar/activities', 'Buscar el pago en Mercado Pago', LIGHT)}</div>`,
+    pieTxt: 'Este turno no está en la agenda: no lo busques ahí.',
+  })
+
+  await getTransporter().sendMail({
+    from: FROM(),
+    to: process.env.SANTIAGO_EMAIL,
+    subject: `Seña cobrada sin turno · ${monto} · pago ${opts.paymentId}`,
+    html,
+    attachments: logoAttachment(),
+  })
+}
+
 /* `canceladoPor` viene dicho, no adivinado: antes se deducía de si
    había motivo escrito, así que una cancelación de Santiago sin
    motivo le llegaba al cliente como "Cancelado por: vos, desde la
@@ -1207,6 +1251,28 @@ export function previewEmails(): { id: string; nombre: string; asunto: string; h
         ].join(''),
         acciones: `<div style="margin-top:22px">${btnSolid(`${getAppUrl()}/admin`, 'Ver en la agenda', LIGHT)}</div>`,
         pieTxt: `Reserva ${code} &middot; el horario anterior volvió a la agenda.`,
+        logoSrc,
+      }),
+    },
+    {
+      id: 'interno-sena-sin-turno',
+      nombre: 'Santiago · seña sin turno',
+      asunto: `Seña cobrada sin turno · ${money(9500)} · pago 1334455667`,
+      alto: 660,
+      html: interno({
+        rotuloTxt: 'Revisar a mano',
+        nombre: 'Seña sin turno',
+        bloque: parrafo(
+          'Entró una seña aprobada y el turno ya no estaba esperando: se venció mientras el cliente pagaba, o se canceló en el medio. Hay que devolverle la plata o reubicarlo. Con quién hablar sale del pago, en Mercado Pago.',
+          LIGHT,
+        ),
+        rows: [
+          kv('Cobrado', money(9500), LIGHT, { mono: true }),
+          kv('Pago', '1334455667', LIGHT, { mono: true }),
+          kv('Turno', '7f3k9c1m2d8p0qav5s6t4u', LIGHT, { mono: true, last: true }),
+        ].join(''),
+        acciones: `<div style="margin-top:22px">${btnSolid('https://www.mercadopago.com.ar/activities', 'Buscar el pago en Mercado Pago', LIGHT)}</div>`,
+        pieTxt: 'Este turno no está en la agenda: no lo busques ahí.',
         logoSrc,
       }),
     },

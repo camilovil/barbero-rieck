@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { confirmCalendarEvent } from '@/lib/googleCalendar'
-import { sendBookingEmails } from '@/lib/email'
+import { confirmCalendarEvent, getCalendarEvent } from '@/lib/googleCalendar'
+import { sendBookingEmails, sendOrphanDepositEmail } from '@/lib/email'
 import { getPago, assertWebhookValido, InvalidWebhookSignatureError } from '@/lib/mercadopago'
 
 /* Acá entra el aviso de Mercado Pago de que la seña se pagó, y es lo único
@@ -12,6 +12,15 @@ import { getPago, assertWebhookValido, InvalidWebhookSignatureError } from '@/li
    nunca vamos a poder procesar. */
 export async function POST(req: NextRequest) {
   const dataId = req.nextUrl.searchParams.get('data.id')
+  const body = await req.json().catch(() => null)
+  const tipo = body?.type ?? req.nextUrl.searchParams.get('type')
+
+  /* El tipo se mira antes que la firma. Mercado Pago avisa de más cosas que
+     los pagos —merchant_order y compañía— y esos avisos no siempre traen el
+     data.id en la query, que es justo con lo que la firma cierra: validarlos
+     primero los mandaba a un 401 y Mercado Pago reintenta durante días una
+     notificación que igual íbamos a ignorar. */
+  if (tipo !== 'payment') return NextResponse.json({ ignorado: tipo ?? 'sin tipo' })
 
   try {
     assertWebhookValido({
@@ -29,10 +38,6 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const body = await req.json().catch(() => null)
-    const tipo = body?.type ?? req.nextUrl.searchParams.get('type')
-    if (tipo !== 'payment') return NextResponse.json({ ignorado: tipo ?? 'sin tipo' })
-
     const paymentId = String(body?.data?.id ?? dataId ?? '')
     if (!paymentId) return NextResponse.json({ ignorado: 'sin id de pago' })
 
@@ -48,12 +53,31 @@ export async function POST(req: NextRequest) {
     const booking = await confirmCalendarEvent(pago.eventId, paymentId)
     if (!booking) {
       /* O ya lo habíamos confirmado —Mercado Pago repite el aviso— o el turno
-         se venció antes de que entrara la plata. Lo segundo hay que mirarlo a
-         mano: hay una seña cobrada sin turno que la respalde. */
+         se venció antes de que entrara la plata. Los separa una sola cosa: si
+         el evento sigue ahí hay turno y no pasó nada; si no está, hay una seña
+         cobrada sin nada detrás. */
+      const turno = await getCalendarEvent(pago.eventId)
+      if (turno) {
+        console.log(`[pagos/webhook] aviso repetido del pago ${paymentId}, el turno ${pago.eventId} ya estaba confirmado`)
+        return NextResponse.json({ ignorado: 'ya confirmado' })
+      }
+
+      /* Plata cobrada y ningún turno que la respalde. Esto no se arregla solo:
+         hay que devolverla o reubicar al cliente a mano, así que va por mail.
+         Un console.error acá no lo lee nadie. */
       console.error(
-        `[pagos/webhook] pago ${paymentId} aprobado y el turno ${pago.eventId} no estaba esperando: ya confirmado o vencido`,
+        `[pagos/webhook] pago ${paymentId} aprobado y el turno ${pago.eventId} ya no existe: seña sin turno`,
       )
-      return NextResponse.json({ ignorado: 'nada que confirmar' })
+      try {
+        await sendOrphanDepositEmail({ paymentId, eventId: pago.eventId, amount: pago.amount })
+      } catch (emailErr) {
+        // Que falle el aviso no puede borrar el dato: queda escrito acá.
+        console.error(
+          `[pagos/webhook] no se pudo avisar la seña sin turno — pago ${paymentId}, turno ${pago.eventId}, monto ${pago.amount}:`,
+          emailErr,
+        )
+      }
+      return NextResponse.json({ ignorado: 'seña sin turno' })
     }
 
     try {

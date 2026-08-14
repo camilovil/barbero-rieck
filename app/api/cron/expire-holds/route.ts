@@ -4,7 +4,7 @@ import { expirePendingEvents } from '@/lib/googleCalendar'
 /* Libera los turnos que reservaron y nunca pagaron la seña.
    No está en vercel.json: el plan Hobby admite dos crons y ya están usados
    por el recordatorio y el resumen diario, y además no baja de una corrida
-   por día, que para un plazo de quince minutos no sirve. La red que sostiene
+   por día, que para un plazo de veinte minutos no sirve. La red que sostiene
    esto es el barrido que hacen /api/booking y /api/availability cada vez que
    alguien mira o toma un horario; esta ruta queda para engancharla a un cron
    cada quince minutos el día que el proyecto pase a Pro, o a un cron externo. */

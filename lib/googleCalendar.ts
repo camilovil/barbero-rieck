@@ -1,4 +1,5 @@
 import { google } from 'googleapis'
+import type { calendar_v3 } from 'googleapis'
 import type { BookingState } from '@/types/booking'
 import { TIME_SLOTS, LOCATION_LABELS, DEPOSIT_HOLD_MINUTES, depositAmount, viaticoDeBarrio, zonaDeBarrio } from './constants'
 import { hhmm, nombreServicio, precioServicio } from './format'
@@ -119,6 +120,19 @@ export async function createCalendarEvent(
   return event.data.id ?? 'unknown'
 }
 
+/* Que Google diga «este evento no existe» y que Google no conteste no son lo
+   mismo, y tratarlos igual sale caro: el 404 es una respuesta —el turno se
+   venció y lo borramos, o lo cancelaron— y cualquier otro golpe es un no sé.
+   El 410 es el mismo no está con otro número. */
+function eventoInexistente(err: unknown): boolean {
+  const e = err as { status?: number; code?: number | string; response?: { status?: number } }
+  const status = e?.status ?? e?.response?.status ?? Number(e?.code)
+  return status === 404 || status === 410
+}
+
+/* Devuelve null sólo cuando el evento realmente no está. Un hipo de red o un
+   500 de Google suben como error: el que llama tiene que poder contestar «no
+   sé» en vez de dar por muerto un turno que está vivo. */
 export async function getCalendarEvent(eventId: string) {
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return null
   const calendar = google.calendar({ version: 'v3', auth: getAuth() })
@@ -128,8 +142,9 @@ export async function getCalendarEvent(eventId: string) {
       eventId,
     })
     return res.data
-  } catch {
-    return null
+  } catch (err) {
+    if (eventoInexistente(err)) return null
+    throw err
   }
 }
 
@@ -213,7 +228,10 @@ export async function confirmCalendarEvent(
   )
 }
 
-/** El estado de la seña de un turno, para la pantalla de vuelta del pago. */
+/* El estado de la seña de un turno, para la pantalla de vuelta del pago.
+   Si Google no contesta, esto tira y la pantalla sigue preguntando: al que
+   acaba de pagar no se le puede decir «tu reserva venció» por un hipo de red,
+   porque de ese cartel no vuelve. */
 export async function getPaymentState(eventId: string): Promise<'pendiente' | 'pagado' | 'vencido'> {
   const event = await getCalendarEvent(eventId)
   // Si el evento ya no está, el plazo se venció y el horario volvió a la calle.
@@ -229,15 +247,25 @@ export async function expirePendingEvents(): Promise<number> {
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return 0
   const calendar = google.calendar({ version: 'v3', auth: getAuth() })
 
-  const res = await calendar.events.list({
-    calendarId: process.env.GOOGLE_CALENDAR_ID,
-    privateExtendedProperty: ['pago=pendiente'],
-    singleEvents: true,
-    showDeleted: false,
-  })
+  /* Google contesta de a 250 y avisa que hay más con un nextPageToken. Sin
+     pedir esas páginas, los pendientes del fondo de la lista no se liberaban
+     nunca: quedaban ocupando un horario que nadie pagó. */
+  const pendientes: calendar_v3.Schema$Event[] = []
+  let pageToken: string | undefined
+  do {
+    const res = await calendar.events.list({
+      calendarId: process.env.GOOGLE_CALENDAR_ID,
+      privateExtendedProperty: ['pago=pendiente'],
+      singleEvents: true,
+      showDeleted: false,
+      pageToken,
+    })
+    pendientes.push(...(res.data.items ?? []))
+    pageToken = res.data.nextPageToken ?? undefined
+  } while (pageToken)
 
   const limit = Date.now() - DEPOSIT_HOLD_MINUTES * 60 * 1000
-  const vencidos = (res.data.items ?? []).filter(e => {
+  const vencidos = pendientes.filter(e => {
     if (!e.id) return false
     // Sin marca de tiempo no hay forma de saber si está en plazo: es un
     // huérfano de alguna reserva a medio escribir y no tiene por qué ocupar.
