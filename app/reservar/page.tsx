@@ -1,6 +1,7 @@
 import BookingFlow from '@/components/BookingFlow'
 import AppHeader from '@/components/AppHeader'
 import PieDeLaCasa from '@/components/PieDeLaCasa'
+import FondoCueva from '@/components/FondoCueva'
 import { isDepositEnabled, isViaticoEnabled } from '@/lib/flags'
 
 interface Props {
@@ -22,6 +23,7 @@ export default async function Reservar({ searchParams }: Props) {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <FondoCueva />
       <AppHeader />
 
       {/* El flujo es la página. Ocupa exactamente lo que queda de

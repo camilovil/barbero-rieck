@@ -1528,6 +1528,31 @@ html[data-apertura] .splash { display: block; }
   .splash-pie { bottom: 52px; font-size: 10.5px; letter-spacing: .34em; }
 }
 
+/* --- La roca detrás de la app --------------------------------- */
+.fondo-cueva {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--app-bg) url('/splash-cueva.webp') center / cover no-repeat;
+}
+/* El velo. Va como capa aparte y no como color de fondo para que la
+   foto siga siendo una foto y no un gris.
+
+   El .80 sale de una cuenta, no del ojo. El píxel más claro de la roca
+   es rgb(214,187,162); sobre él, --text queda en 11.4:1 y --text-mut en
+   5.7:1, los dos holgados. --text-meta no llega —necesitaría un velo de
+   .92, y con eso la cueva desaparece— así que la regla es la otra: NADA
+   en --text-meta apoya directo sobre este fondo. Todo lo que lleva ese
+   tono va sobre superficie opaca, que es lo que hacen la tarjeta del
+   flujo, las cuatro pantallas del cliente y el pie de «La casa». */
+.fondo-cueva::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 9, 8, .80);
+}
+
 /* --- La portada ----------------------------------------------- */
 .portada {
   position: relative;

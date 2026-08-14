@@ -12,7 +12,20 @@ function range(slots: string[]): string {
    entrada; el `id` es a donde apunta «La casa» de la barra. */
 export default function PieDeLaCasa() {
   return (
-    <footer id="la-casa" className="px-4 sm:px-6" style={{ paddingTop: 40, paddingBottom: 40 }}>
+    /* Superficie propia, no transparente. Con la roca detrás de la app,
+       los rótulos de este pie van en --text-meta y ese tono no se
+       sostiene sobre la foto por más velo que se le ponga. Apoyado en
+       --surface vuelve a sus 5.1:1 de siempre. El filete de arriba es
+       el que lo despega de la cueva. */
+    <footer
+      id="la-casa"
+      className="px-4 sm:px-6"
+      style={{
+        paddingTop: 40, paddingBottom: 40,
+        background: 'var(--surface)',
+        borderTop: '1px solid var(--border)',
+      }}
+    >
       <div className="max-w-2xl mx-auto">
         <h2 className="rotulo rotulo-rule">La casa</h2>
         <div className="kv">
