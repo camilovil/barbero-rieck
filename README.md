@@ -78,7 +78,7 @@ navegación lleva sólo Agenda y Ajustes: las demás secciones que dibujaba el
 diseño no existen como pantallas, y un link que no lleva a ningún lado es peor
 que la ausencia del link.
 
-Detrás de login. `middleware.ts` protege `/admin/*` y `/api/admin/*`: sin la
+Detrás de login. `proxy.ts` protege `/admin/*` y `/api/admin/*`: sin la
 cookie `admin_token` las páginas redirigen a `/admin/login` y las rutas de API
 devuelven 401. La cookie se firma contra `ADMIN_SECRET` y se emite cuando el
 password coincide con `ADMIN_PASSWORD`.
@@ -218,7 +218,7 @@ En `.env.local` para desarrollo, en Vercel para producción.
 | Variable | Para qué |
 | --- | --- |
 | `ADMIN_PASSWORD` | La contraseña que se escribe en `/admin/login`. |
-| `ADMIN_SECRET` | El valor de la cookie `admin_token`; el middleware compara contra esto. |
+| `ADMIN_SECRET` | El valor de la cookie `admin_token`; `proxy.ts` compara contra esto. |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | La cuenta de servicio que escribe en el calendario. Hay que compartirle el calendario con permiso de edición. |
 | `GOOGLE_PRIVATE_KEY` | Su clave privada. Vercel la guarda en una sola línea con `\n` literales; el código restaura los saltos. |
 | `GOOGLE_CALENDAR_ID` | El calendario donde viven los turnos, los bloqueos y el JSON de ajustes. |

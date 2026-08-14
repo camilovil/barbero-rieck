@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getBlockedDates, getBlockedRanges, blockDate, blockRange, unblockDate } from '@/lib/googleCalendar'
 
-// Auth handled by middleware
+// La autenticación la resuelve proxy.ts
 
 export async function GET() {
   try {

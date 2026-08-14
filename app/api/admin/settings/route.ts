@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSettings, saveSettings } from '@/lib/googleCalendar'
 
-// Auth handled by middleware
+// La autenticación la resuelve proxy.ts
 export async function GET() {
   const settings = await getSettings()
   return NextResponse.json(settings)

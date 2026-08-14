@@ -22,6 +22,7 @@ import {
   SERVICES,
   TIME_SLOTS,
 } from './constants'
+import { getAppUrl } from './url'
 
 /* ═══════════════════════════════════════════════════════════════
    MAILS — sistema Barber Höhle, tema «Höhle»
@@ -102,11 +103,6 @@ function bookingCode(eventId: string): string {
   return 'HO-' + eventId.slice(-4).toUpperCase()
 }
 
-function getAppUrl(): string {
-  if (process.env.APP_URL) return process.env.APP_URL
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
-  return 'http://localhost:3000'
-}
 
 /* ─── El logotipo ─────────────────────────────────────────────────
  *

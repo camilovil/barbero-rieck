@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Montserrat, JetBrains_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration'
+import { getAppUrl } from '@/lib/url'
 import './globals.css'
 
 /* Montserrat es la voz única del sistema: el logotipo ya es
@@ -19,8 +20,12 @@ const mono = JetBrains_Mono({
   variable: '--font-jetbrains',
 })
 
+/* El dominio no se escribe acá: sale de APP_URL, que es la misma
+   fuente que usan los links de los mails. Ver lib/url.ts. */
+const SITIO = getAppUrl()
+
 export const metadata: Metadata = {
-  metadataBase: new URL('https://barbero-rieck.vercel.app'),
+  metadataBase: new URL(SITIO),
   title: 'Barber Höhle · Turnos online',
   description: 'Reservá tu turno con Santiago Rieck. Corte, barba y combo. En el local o a domicilio.',
   /* El manifest lo genera app/manifest.ts y Next inyecta el <link> solo.
@@ -34,7 +39,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Barber Höhle · Turnos online',
     description: 'Reservá tu turno con Santiago Rieck. Corte, barba y combo. En el local o a domicilio.',
-    url: 'https://barbero-rieck.vercel.app',
+    url: SITIO,
     siteName: 'Barber Höhle',
     images: [
       {

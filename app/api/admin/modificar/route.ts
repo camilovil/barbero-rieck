@@ -14,7 +14,7 @@ function parseDescription(desc: string): Record<string, string> {
 }
 
 export async function POST(req: NextRequest) {
-  // Auth is handled by middleware — all /api/admin/* routes are protected
+  // La autenticación la resuelve proxy.ts: todo /api/admin/* está protegido
   try {
     const { eventId, newDate, newTime } = await req.json()
 
