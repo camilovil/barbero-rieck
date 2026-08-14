@@ -1676,26 +1676,24 @@ html[data-apertura='entra'] .portada-marca {
   .portada { background-position: center 20%; }
   /* Girado a 100°: sostiene el titular contra la izquierda y deja
      respirar la roca a la derecha, que es donde está la boca. */
-  .portada::before {
-    background: linear-gradient(100deg,
-      rgba(10, 9, 8, .94) 0%, rgba(10, 9, 8, .72) 44%,
-      rgba(10, 9, 8, .28) 72%, rgba(10, 9, 8, .5) 100%);
-  }
+  /* Dos capas en el MISMO pseudo, y no un ::after aparte: `::after` se
+     pinta después de los hijos, así que un scrim ahí oscurece el texto y
+     el botón en vez del fondo. Con `background` de dos gradientes las
+     dos quedan detrás del contenido, que es donde tienen que estar.
 
-  /* El scrim girado deja respirar la roca a la derecha, y ahí es donde
-     cae todo el texto de abajo: medido contra el píxel más claro de la
-     foto, la meta daba 1.35:1 y el horario de la columna 1.58:1 — texto
-     invisible sobre la parte iluminada de la piedra. Esta segunda capa
-     le devuelve a escritorio el refuerzo de abajo que la versión mobile
-     ya tenía en su scrim vertical. Arranca transparente para no tocar la
-     boca de la cueva, que es lo que el giro venía a mostrar. */
-  .portada::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg,
-      rgba(10, 9, 8, 0) 26%, rgba(10, 9, 8, .80) 46%,
-      rgba(10, 9, 8, .97) 68%, rgba(10, 9, 8, 1) 100%);
+     La primera (el refuerzo vertical) va arriba de la segunda. Existe
+     porque el scrim girado a 100° deja respirar la roca justo donde cae
+     el texto de abajo: medido contra el píxel más claro de la foto, la
+     meta daba 1.35:1 y el horario 1.58:1. Arranca transparente al 26%
+     para no tapar la boca de la cueva, que es lo que el giro mostraba. */
+  .portada::before {
+    background:
+      linear-gradient(180deg,
+        rgba(10, 9, 8, 0) 26%, rgba(10, 9, 8, .80) 46%,
+        rgba(10, 9, 8, .97) 68%, rgba(10, 9, 8, 1) 100%),
+      linear-gradient(100deg,
+        rgba(10, 9, 8, .94) 0%, rgba(10, 9, 8, .72) 44%,
+        rgba(10, 9, 8, .28) 72%, rgba(10, 9, 8, .5) 100%);
   }
 
   .portada-barra {
