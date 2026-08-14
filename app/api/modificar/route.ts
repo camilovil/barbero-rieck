@@ -63,6 +63,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
     }
 
+    /* Un turno que todavía no pagó la seña NO se reprograma. Más abajo
+       esto borra el evento y lo vuelve a crear, y la reserva pendiente se
+       crea con `{ pending: true }` — que es lo que le pone el estado, el
+       vencimiento y el ⏳—. Al recrearlo sin eso, salía confirmado: se
+       reservaba, no se pagaba, se pedía reprogramar al mismo horario y el
+       turno quedaba cerrado gratis. Y encima no lo levantaba nadie, porque
+       el barrido de vencidos busca `pago=pendiente`.
+
+       Se rechaza en vez de arrastrar el estado: mientras la seña no entró
+       no hay turno que mover, hay un horario en préstamo. O se paga o se
+       vence. */
+    if (event.extendedProperties?.private?.pago === 'pendiente') {
+      return NextResponse.json(
+        { error: 'Esta reserva todavía no tiene la seña paga. Pagala o esperá a que se libere el horario.' },
+        { status: 409 },
+      )
+    }
+
     const startTime = new Date(event.start?.dateTime ?? '')
     const hoursUntil = (startTime.getTime() - Date.now()) / (1000 * 60 * 60)
     if (hoursUntil < CANCELLATION_MIN_HOURS) {

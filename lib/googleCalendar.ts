@@ -64,29 +64,49 @@ export async function createCalendarEvent(
   const viatico = booking.location === 'domicilio' ? viaticoDeBarrio(booking.barrio) : 0
   const viaticoAConvenir = booking.location === 'domicilio' && (zonaDeBarrio(booking.barrio)?.aConvenir ?? false)
 
+  /* La descripcion es el almacen de datos de este proyecto: se escribe
+     `Clave: valor` por linea y despues se vuelve a parsear. Un salto de
+     linea en cualquiera de estos campos deja escribir claves nuevas, y la
+     ultima aparicion de una clave gana — la Nota va al final, asi que desde
+     ahi se pisa todo lo anterior: el precio del servicio, el mail que
+     autoriza los links, o un «Sena: pagada» que Santiago lee en su agenda.
+
+     Va aca y no en la ruta que recibe el formulario porque aca es donde se
+     arma el formato: cualquier camino que cree un evento queda cubierto,
+     sin depender de que se acuerde. */
+  const unaLinea = (v: string | null | undefined) =>
+    (v ?? '').replace(/[\r\n]+/g, ' ').trim()
+
+  const nombre = unaLinea(booking.nombre)
+  const email = unaLinea(booking.email)
+  const direccion = unaLinea(booking.direccion)
+  const nota = unaLinea(booking.nota)
+  const barrio = unaLinea(booking.barrio)
+  const servicioNombre = unaLinea(booking.service.name)
+
   const description = [
-    `Cliente: ${booking.nombre}`,
+    `Cliente: ${nombre}`,
     `WhatsApp: https://wa.me/${waNumber}`,
-    `Email: ${booking.email}`,
+    `Email: ${email}`,
     /* Esta línea es la que después leen los mails y el panel para
        saber cuánto se cobra. Sin precio se omite el tramo en vez de
        escribir "$0", que se lee como un turno gratis. */
     booking.service.price
-      ? `Servicio: ${booking.service.name} — $${booking.service.price.toLocaleString('es-AR')}`
-      : `Servicio: ${booking.service.name}`,
+      ? `Servicio: ${servicioNombre} — $${booking.service.price.toLocaleString('es-AR')}`
+      : `Servicio: ${servicioNombre}`,
     `Modalidad: ${LOCATION_LABELS[booking.location ?? 'local']}`,
     /* El viático queda escrito con su barrio porque es plata que Santiago
        cobra en el turno, y la tabla de zonas puede cambiar después: lo
        cotizado al reservar es lo que vale. */
-    booking.location === 'domicilio' && booking.barrio ? `Barrio: ${booking.barrio}` : null,
+    booking.location === 'domicilio' && barrio ? `Barrio: ${barrio}` : null,
     viatico ? `Viático: $${viatico.toLocaleString('es-AR')}` : null,
     /* Fuera de cobertura Santiago tiene que acordar el traslado por WhatsApp:
        si no queda escrito acá, se entera cuando llega. */
     viaticoAConvenir ? 'Viático: A CONVENIR — el barrio quedó fuera de la grilla' : null,
     opts.pending && sena ? `Seña: pendiente de pago — $${sena.toLocaleString('es-AR')}` : null,
-    booking.location === 'domicilio' && booking.direccion ? `Dirección cliente: ${booking.direccion}` : null,
-    booking.location === 'domicilio' && booking.direccion ? `Cómo llegar: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.direccion)}` : null,
-    booking.nota ? `Nota: ${booking.nota}` : null,
+    booking.location === 'domicilio' && direccion ? `Dirección cliente: ${direccion}` : null,
+    booking.location === 'domicilio' && direccion ? `Cómo llegar: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}` : null,
+    nota ? `Nota: ${nota}` : null,
   ]
     .filter(Boolean)
     .join('\n')
@@ -98,8 +118,8 @@ export async function createCalendarEvent(
     calendarId: process.env.GOOGLE_CALENDAR_ID,
     requestBody: {
       summary: opts.pending
-        ? `${PENDING_PREFIX} ✂️ ${booking.service.name} — ${booking.nombre}`
-        : `✂️ ${booking.service.name} — ${booking.nombre}`,
+        ? `${PENDING_PREFIX} ✂️ ${servicioNombre} — ${nombre}`
+        : `✂️ ${servicioNombre} — ${nombre}`,
       description,
       location: locationLabel,
       start: { dateTime: startStr, timeZone: 'America/Argentina/Buenos_Aires' },

@@ -41,17 +41,6 @@ export async function POST(req: NextRequest) {
     booking.location = location
     booking.service = delCatalogo
 
-    /* La descripción del evento ES la base de datos: se escribe como
-       `Clave: valor` por línea y después se vuelve a leer. Un salto de
-       línea metido en cualquiera de estos campos deja escribir claves
-       nuevas —«Seña: pagada», por ejemplo— así que se aplastan acá. */
-    const unaLinea = (v: string) => (v ?? '').replace(/[\r\n]+/g, ' ').trim()
-    booking.nombre = unaLinea(booking.nombre)
-    booking.email = unaLinea(booking.email)
-    booking.whatsapp = unaLinea(booking.whatsapp)
-    booking.direccion = unaLinea(booking.direccion)
-    booking.nota = unaLinea(booking.nota)
-    booking.barrio = booking.barrio ? unaLinea(booking.barrio) : null
 
     /* Antes de contar si queda lugar, soltamos las reservas que nunca pagaron
        la seña: si no, un abandono en la pantalla de pago le tapa el horario a
