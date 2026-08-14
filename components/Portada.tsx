@@ -59,9 +59,14 @@ export default function Portada() {
 
           {/* El h1 de la página. En celular se esconde a la vista pero
               se sigue leyendo: ahí el que dice la marca es el lockup,
-              que va con alt vacío por ser decorativo. */}
+              que va con alt vacío por ser decorativo.
+
+              Dice lo que la pantalla viene a hacer. El sistema de diseño
+              proponía «Un solo sillón.», que es una frase de marca y
+              además afirma algo del negocio; acá el titular es la
+              acción, igual que en cada paso del flujo. */}
           <h1 className="portada-titular font-display">
-            Un solo<br />sillón.
+            Reservá<br />tu turno
           </h1>
 
           <p className="portada-bajada">
