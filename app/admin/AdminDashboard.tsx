@@ -226,6 +226,8 @@ export default function AdminDashboard() {
     router.push('/admin/login')
   }
 
+  const [confirmando, setConfirmando] = useState<string | null>(null)
+
   async function confirmCancel() {
     if (!cancelTarget) return
     setCancelling(cancelTarget.id)
@@ -241,6 +243,26 @@ export default function AdminDashboard() {
     setCancelling(null)
     setCancelTarget(null)
     setCancelReason('')
+  }
+
+  /* Santiago cobró en efectivo, o arregló el turno por WhatsApp. Su
+     confirmación vale lo mismo que la del webhook: la seña está para
+     cubrirlo de las ausencias, no para atarle la forma de cobrar. */
+  async function confirmarAMano(ev: BookingEvent) {
+    setConfirmando(ev.id)
+    const res = await fetch('/api/admin/confirmar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventId: ev.id }),
+    })
+    if (res.ok) {
+      setEvents(prev => prev.map(e => (e.id === ev.id ? { ...e, pago: 'pagado' } : e)))
+      setStatus(`Turno de ${ev.nombre} confirmado. Le avisamos por mail.`)
+    } else {
+      const { error } = await res.json().catch(() => ({ error: '' }))
+      setStatus(error || 'No se pudo confirmar el turno.')
+    }
+    setConfirmando(null)
   }
 
   async function handleBlockDate() {
@@ -1048,6 +1070,22 @@ export default function AdminDashboard() {
                   ? 'Seña pagada'
                   : `Sin seña · se libera a los ${DEPOSIT_HOLD_MINUTES} min`}
               />
+            )}
+
+            {/* La salida para el que paga en efectivo. Aparece sólo mientras
+                el turno espera la seña: confirmado ya no hay nada que hacer,
+                y vencido el evento no existe. Va en outline y no en oro —el
+                botón pleno de esta columna es otro— pero es la acción que
+                cierra el turno, así que va arriba de todo el detalle. */}
+            {selected.pago === 'pendiente' && (
+              <button
+                className="btn-outline"
+                style={{ width: '100%', marginTop: 12 }}
+                disabled={confirmando === selected.id}
+                onClick={() => confirmarAMano(selected)}
+              >
+                {confirmando === selected.id ? 'Confirmando…' : 'Cobré en efectivo — confirmar'}
+              </button>
             )}
 
             <div className="kv">

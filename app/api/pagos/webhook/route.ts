@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ignorado: 'sin external_reference' })
     }
 
-    const booking = await confirmCalendarEvent(pago.eventId, paymentId)
+    const booking = await confirmCalendarEvent(pago.eventId, { via: 'mercadopago', paymentId })
     if (!booking) {
       /* O ya lo habíamos confirmado —Mercado Pago repite el aviso— o el turno
          se venció antes de que entrara la plata. Los separa una sola cosa: si

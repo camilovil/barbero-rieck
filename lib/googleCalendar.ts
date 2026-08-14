@@ -210,9 +210,18 @@ function bookingFromEvent(desc: Record<string, string>, start: string, end: stri
    no había nada que confirmar —ya estaba pago, o se venció y no existe más—,
    porque Mercado Pago manda la misma notificación varias veces y los mails
    tienen que salir una sola. */
+export type OrigenDelCobro =
+  /** Lo confirmó el webhook: la plata entró por Mercado Pago. */
+  | { via: 'mercadopago'; paymentId: string }
+  /** Lo confirmó Santiago desde el panel, normalmente porque cobró en
+      efectivo. La seña existe para cubrirse de ausencias, no para
+      impedirle cobrar como quiera: su confirmación vale igual que la de
+      Mercado Pago, y queda escrito cuál fue cuál. */
+  | { via: 'mano' }
+
 export async function confirmCalendarEvent(
   eventId: string,
-  paymentId: string,
+  origen: OrigenDelCobro,
 ): Promise<BookingState | null> {
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return null
   const calendar = google.calendar({ version: 'v3', auth: getAuth() })
@@ -223,10 +232,14 @@ export async function confirmCalendarEvent(
 
   const sena = Number(props.sena)
   const cobrado = sena ? ` — $${sena.toLocaleString('es-AR')}` : ''
+  const comoSePago =
+    origen.via === 'mercadopago'
+      ? `Seña: pagada${cobrado} (Mercado Pago ${origen.paymentId})`
+      : `Seña: cobrada a mano por Santiago${cobrado}`
   const description = (existing.description ?? '')
     .split('\n')
     .map(line =>
-      line.startsWith('Seña:') ? `Seña: pagada${cobrado} (Mercado Pago ${paymentId})` : line,
+      line.startsWith('Seña:') ? comoSePago : line,
     )
     .join('\n')
 
@@ -237,7 +250,18 @@ export async function confirmCalendarEvent(
       summary: (existing.summary ?? '').replace(`${PENDING_PREFIX} `, ''),
       description,
       status: 'confirmed',
-      extendedProperties: { private: { ...props, pago: 'pagado', pagoId: paymentId } },
+      extendedProperties: {
+        private: {
+          ...props,
+          pago: 'pagado',
+          /* Queda registrado CÓMO se cobró: un turno confirmado a mano y uno
+             cobrado por Mercado Pago son cosas distintas a la hora de cuadrar
+             la caja, y sin esto son indistinguibles. */
+          ...(origen.via === 'mercadopago'
+            ? { pagoId: origen.paymentId, pagoVia: 'mercadopago' }
+            : { pagoVia: 'mano' }),
+        },
+      },
     },
   })
 

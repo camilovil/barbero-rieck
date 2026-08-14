@@ -61,6 +61,17 @@ export async function POST(req: NextRequest) {
     }
 
     // Delete old event and create updated one
+    /* A diferencia de /api/modificar —la ruta del cliente, que rechaza
+       reprogramar un turno sin seña—, acá NO se bloquea. Es a propósito y
+       es decisión de la casa: Santiago tiene clientes que pagan en
+       efectivo, y si él mueve un turno impago es porque ya lo arregló.
+       Recrearlo sin `pending` lo deja confirmado, que es justo lo que se
+       busca.
+
+       Si lo que querés es confirmarlo sin moverlo de horario, la acción es
+       POST /api/admin/confirmar, que además deja escrito en el evento que
+       se cobró a mano. Esta ruta no lo escribe: acá el turno se recrea
+       desde cero y la línea de la seña no sobrevive. */
     await deleteCalendarEvent(eventId)
     const newEventId = await createCalendarEvent(booking)
 
