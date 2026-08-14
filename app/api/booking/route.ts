@@ -3,8 +3,8 @@ import { createCalendarEvent, getDayBookingCount, isDateBlocked, getSettings, ex
 import { sendBookingEmails } from '@/lib/email'
 import { createDepositPreference } from '@/lib/mercadopago'
 import { isDepositEnabled } from '@/lib/flags'
-import { depositAmount } from '@/lib/constants'
-import type { BookingState } from '@/types/booking'
+import { depositAmount, SERVICES, TIME_SLOTS } from '@/lib/constants'
+import type { BookingState, Location } from '@/types/booking'
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,6 +19,39 @@ export async function POST(req: NextRequest) {
     if (!booking.nombre || !booking.email || !booking.whatsapp || !booking.date || !booking.time || !booking.service) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
     }
+
+    /* Nada de lo que decide plata o agenda se le cree al cliente.
+       El navegador manda el servicio entero —nombre, precio y duración— y
+       hasta acá se guardaba tal cual: alcanzaba con un POST a mano con
+       `price: 0` para que `sena` diera cero, `pending` diera falso y el
+       turno quedara confirmado sin pagar la seña. Con cualquier otro
+       número, la preferencia de Mercado Pago se armaba por ese monto.
+
+       Así que del cliente se toma UNA sola cosa, el nombre del servicio, y
+       con eso se busca en el catálogo. El precio y la duración que se
+       guardan son los del servidor. */
+    const location: Location = booking.location === 'domicilio' ? 'domicilio' : 'local'
+    const delCatalogo = SERVICES[location].find(s => s.name === booking.service?.name)
+    if (!delCatalogo) {
+      return NextResponse.json({ error: 'Ese servicio no existe' }, { status: 400 })
+    }
+    if (!TIME_SLOTS[location].includes(booking.time)) {
+      return NextResponse.json({ error: 'Ese horario no existe' }, { status: 400 })
+    }
+    booking.location = location
+    booking.service = delCatalogo
+
+    /* La descripción del evento ES la base de datos: se escribe como
+       `Clave: valor` por línea y después se vuelve a leer. Un salto de
+       línea metido en cualquiera de estos campos deja escribir claves
+       nuevas —«Seña: pagada», por ejemplo— así que se aplastan acá. */
+    const unaLinea = (v: string) => (v ?? '').replace(/[\r\n]+/g, ' ').trim()
+    booking.nombre = unaLinea(booking.nombre)
+    booking.email = unaLinea(booking.email)
+    booking.whatsapp = unaLinea(booking.whatsapp)
+    booking.direccion = unaLinea(booking.direccion)
+    booking.nota = unaLinea(booking.nota)
+    booking.barrio = booking.barrio ? unaLinea(booking.barrio) : null
 
     /* Antes de contar si queda lugar, soltamos las reservas que nunca pagaron
        la seña: si no, un abandono en la pantalla de pago le tapa el horario a
