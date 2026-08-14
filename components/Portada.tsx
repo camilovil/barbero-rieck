@@ -27,7 +27,12 @@ export default function Portada() {
       {/* Sólo de 1200 para arriba. En anchos chicos el lockup del hero
           hace este trabajo y una barra más sería repetirlo. */}
       <div className="portada-barra">
-        <a href="/" aria-label="Barber Höhle — inicio" style={{ display: 'block', lineHeight: 0 }}>
+        {/* Mismos 44px de área de toque que el resto de los controles. */}
+        <a
+          href="/"
+          aria-label="Barber Höhle — inicio"
+          style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, lineHeight: 0 }}
+        >
           <Image
             className="portada-barra-logo portada-marca"
             src="/logo-white.png"

@@ -38,7 +38,14 @@ export default function AppHeader({ roca = false }: { roca?: boolean }) {
       >
         {/* Un solo logotipo, el blanco: acá no hay tema que conmutar,
             así que no hace falta el par con uno oculto. */}
-        <a href="/" aria-label="Barber Höhle — inicio" style={{ display: 'block', lineHeight: 0 }}>
+        {/* 44px de área de toque, como todo control del sistema. Lo que
+            crece es lo que se toca, no el logotipo: la caja se estira con
+            inline-flex y el lockup sigue midiendo sus 148px. */}
+        <a
+          href="/"
+          aria-label="Barber Höhle — inicio"
+          style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, lineHeight: 0 }}
+        >
           <Image
             src="/logo-white.png"
             alt=""
