@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import Image from 'next/image'
 
 /* El lockup es indivisible: la tijera está fusionada con la «b»,
@@ -41,7 +42,7 @@ export default function AppHeader({ roca = false }: { roca?: boolean }) {
         {/* 44px de área de toque, como todo control del sistema. Lo que
             crece es lo que se toca, no el logotipo: la caja se estira con
             inline-flex y el lockup sigue midiendo sus 148px. */}
-        <a
+        <Link
           href="/"
           aria-label="Barber Höhle — inicio"
           style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, lineHeight: 0 }}
@@ -55,7 +56,7 @@ export default function AppHeader({ roca = false }: { roca?: boolean }) {
             priority
             style={{ width: 148, height: 'auto', display: 'block' }}
           />
-        </a>
+        </Link>
       </div>
     </header>
   )

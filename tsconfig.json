@@ -11,6 +11,10 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    /* Los tests corren con `node --test` sobre TypeScript nativo, sin
+       empaquetador, y Node exige la extensión en el import: `../lib/format.ts`.
+       Esto es sólo permiso para tsc — nada se emite, `noEmit` sigue en true. */
+    "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "incremental": true,
     "plugins": [

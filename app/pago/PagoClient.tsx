@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import AppHeader from '@/components/AppHeader'
 import TurnoTracker from '@/components/TurnoTracker'
 import { DEPOSIT_HOLD_MINUTES } from '@/lib/constants'
+import Link from 'next/link'
 
 type Estado = 'consultando' | 'pagado' | 'vencido' | 'demorado' | 'rechazado' | 'error'
 
@@ -104,9 +105,9 @@ export default function PagoClient() {
                   el link para cancelar y el saldo que se paga en el lugar.
                 </Estado_>
                 <TurnoTracker estado="confirmado" />
-                <a href="/" className="btn-cta" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
+                <Link href="/" className="btn-cta" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
                   Volver al inicio
-                </a>
+                </Link>
               </div>
             )}
 
@@ -132,9 +133,9 @@ export default function PagoClient() {
                   El pago no se pudo hacer, así que el turno no quedó confirmado.
                   Podés intentarlo de nuevo eligiendo el horario otra vez.
                 </Estado_>
-                <a href="/reservar" className="btn-cta" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
+                <Link href="/reservar" className="btn-cta" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
                   Reservar de nuevo
-                </a>
+                </Link>
               </div>
             )}
 
@@ -144,9 +145,9 @@ export default function PagoClient() {
                   Pasaron los {DEPOSIT_HOLD_MINUTES} minutos que guardamos el horario sin la seña,
                   y volvió a quedar disponible. Si llegaste a pagar, escribile a Santiago.
                 </Estado_>
-                <a href="/reservar" className="btn-cta" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
+                <Link href="/reservar" className="btn-cta" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
                   Reservar de nuevo
-                </a>
+                </Link>
               </div>
             )}
 

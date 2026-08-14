@@ -1,4 +1,5 @@
 import { Fragment } from 'react'
+import Link from 'next/link'
 import Image from 'next/image'
 import { CASA_KICKER, CASA_META, SERVICES, TIME_SLOTS } from '@/lib/constants'
 
@@ -28,7 +29,7 @@ export default function Portada() {
           hace este trabajo y una barra más sería repetirlo. */}
       <div className="portada-barra">
         {/* Mismos 44px de área de toque que el resto de los controles. */}
-        <a
+        <Link
           href="/"
           aria-label="Barber Höhle — inicio"
           style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, lineHeight: 0 }}
@@ -42,10 +43,10 @@ export default function Portada() {
             sizes="186px"
             priority
           />
-        </a>
+        </Link>
         <nav className="portada-nav">
           <a href="#la-casa">La casa</a>
-          <a className="btn-cta" href="/reservar">Pedir turno</a>
+          <Link className="btn-cta" href="/reservar">Pedir turno</Link>
         </nav>
       </div>
 
@@ -78,7 +79,7 @@ export default function Portada() {
             Reservá en menos de un minuto. Elegís servicio, horario y listo.
           </p>
 
-          <a className="btn-cta portada-cta" href="/reservar">Pedir turno</a>
+          <Link className="btn-cta portada-cta" href="/reservar">Pedir turno</Link>
 
           {/* Los separadores son hermanos de los datos, no parte de
               ellos: el aire lo pone el `gap` del flex y meter además un

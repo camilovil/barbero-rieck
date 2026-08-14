@@ -7,6 +7,7 @@ import AppHeader from '@/components/AppHeader'
 import { CANCELLATION_MIN_HOURS } from '@/lib/constants'
 import type { Location } from '@/types/booking'
 import { toDateParam } from '@/lib/format'
+import Link from 'next/link'
 
 type Estado = 'cargando' | 'listo' | 'guardando' | 'modificado' | 'error' | 'nopuede' | 'notfound'
 
@@ -196,9 +197,9 @@ export default function ModificarClient() {
                 <Estado_ rotulo="Listo" titulo="Turno modificado">
                   Te mandamos un nuevo mail de confirmación con el horario actualizado.
                 </Estado_>
-                <a href="/" className="btn-outline" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
+                <Link href="/" className="btn-outline" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
                   Volver al inicio
-                </a>
+                </Link>
               </div>
             )}
 

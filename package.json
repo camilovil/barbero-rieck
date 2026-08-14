@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "lint": "eslint .",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "check": "tsc --noEmit && eslint . && node --test \"test/**/*.test.ts\""
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.0",
@@ -23,7 +26,10 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.1",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "type": "module"
 }

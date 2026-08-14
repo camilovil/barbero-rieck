@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import AppHeader from '@/components/AppHeader'
 import { CANCELLATION_MIN_HOURS } from '@/lib/constants'
+import Link from 'next/link'
 
 type Estado = 'cargando' | 'listo' | 'confirmando' | 'cancelado' | 'error' | 'nopuede' | 'notfound'
 
@@ -162,9 +163,9 @@ export default function CancelarClient() {
                 <Estado_ rotulo="Listo" titulo="Turno cancelado">
                   Te mandamos un mail de confirmación. El horario quedó libre para otros clientes.
                 </Estado_>
-                <a href="/reservar" className="btn-cta" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
+                <Link href="/reservar" className="btn-cta" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
                   Reservar otro turno
-                </a>
+                </Link>
               </div>
             )}
 

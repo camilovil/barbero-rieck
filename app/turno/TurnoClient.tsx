@@ -6,6 +6,7 @@ import AppHeader from '@/components/AppHeader'
 import TurnoTracker, { type EstadoTurno } from '@/components/TurnoTracker'
 import { BARBER_ADDRESS, CANCELLATION_MIN_HOURS, LOCATION_LABELS } from '@/lib/constants'
 import { capitalize as upperFirst, fechaLarga, hhmm, diaCorto } from '@/lib/format'
+import Link from 'next/link'
 
 interface Turno {
   nombre: string
@@ -91,9 +92,9 @@ export default function TurnoClient() {
                   {error} Puede que se haya cancelado, o que la reserva se haya
                   vencido sin la seña.
                 </p>
-                <a href="/reservar" className="btn-cta" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
+                <Link href="/reservar" className="btn-cta" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
                   Reservar un turno
-                </a>
+                </Link>
               </div>
             )}
 

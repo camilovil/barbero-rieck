@@ -98,7 +98,10 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
          entró, y el cliente vuelve a /pago. Por eso no hay pantalla de éxito. */
       if (data.paymentUrl) {
         setRedirigiendo(true)
-        window.location.href = data.paymentUrl
+        /* assign() y no `location.href = ...`: hace exactamente lo mismo,
+           pero es una llamada y no la mutación de un objeto de afuera, que es
+           lo que el linter marca con razón en el caso general. */
+        window.location.assign(data.paymentUrl)
         return
       }
 

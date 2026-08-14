@@ -211,6 +211,31 @@ Mercado Pago no se puede probar del todo desde local: necesita una URL pública
 para volver al sitio y para el webhook, y a `localhost` no llega. La preferencia
 se crea igual, sin `auto_return` — el cliente vuelve tocando «Volver al sitio».
 
+## Comprobar antes de subir
+
+```bash
+npm run check
+```
+
+Corre las tres cosas en orden y se corta en la primera que falle: `tsc --noEmit`,
+ESLint y los tests. Cada una está también suelta como `npm run lint` y
+`npm run test`.
+
+Los tests corren con el runner que trae Node, sobre TypeScript nativo: no hay
+Jest, ni Vitest, ni una sola dependencia agregada para esto. Cubren la lógica
+que decide plata y que no necesita ni navegador ni credenciales — la seña, la
+tabla de viáticos, la integridad del catálogo y el parseo de la línea
+`Servicio: X — $Y` de la descripción del evento, que es la única fuente de
+verdad del precio de un turno ya tomado.
+
+Lo que los tests NO cubren, y conviene tenerlo presente: nada que hable con
+Google Calendar o con Mercado Pago, y nada visual.
+
+ESLint se agregó tarde, con el proyecto ya escrito. Hoy sale limpio de errores y
+deja siete avisos de `react-hooks/set-state-in-effect` — efectos que buscan
+datos al montar, el patrón de toda la app. Están bajados a aviso a propósito y
+la regla vuelve a error cuando haya tests que cubran esas pantallas.
+
 ## Variables de entorno
 
 En `.env.local` para desarrollo, en Vercel para producción.
