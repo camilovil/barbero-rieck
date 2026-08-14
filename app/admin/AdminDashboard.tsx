@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import type { BookingEvent } from '@/lib/googleCalendar'
 import ThemeToggle from '@/components/ThemeToggle'
+import TurnoTracker from '@/components/TurnoTracker'
 import { TIME_SLOTS, LOCATION_LABELS, DEPOSIT_HOLD_MINUTES } from '@/lib/constants'
 import {
   capitalize as upperFirst,
@@ -1033,6 +1034,22 @@ export default function AdminDashboard() {
 
             <h2 className="detalle-nombre">{selected.nombre}</h2>
 
+            {/* El recorrido de la seña, arriba de los datos: con seña, saber
+                si el turno está cerrado es lo primero, antes que el servicio
+                o el precio. Reemplaza a la vieja fila «Seña» —decir dos veces
+                el mismo estado, una en palabras y otra en barra, es ruido— y
+                se queda con su dato operativo en la leyenda. Un turno sin
+                seña no tiene recorrido: ahí no se dibuja nada. */}
+            {selected.pago && (
+              <TurnoTracker
+                compacto
+                estado={selected.pago === 'pagado' ? 'confirmado' : 'pendiente'}
+                nota={selected.pago === 'pagado'
+                  ? 'Seña pagada'
+                  : `Sin seña · se libera a los ${DEPOSIT_HOLD_MINUTES} min`}
+              />
+            )}
+
             <div className="kv">
               <span className="kv-k">Servicio</span>
               <span className="kv-v">{nombreServicio(selected.servicio)}</span>
@@ -1056,18 +1073,6 @@ export default function AdminDashboard() {
               <div className="kv">
                 <span className="kv-k">Incluye viático</span>
                 <span className="kv-v mono">{money(selected.viatico)}</span>
-              </div>
-            )}
-            {/* Sin seña no hay dato que mostrar; con seña, es lo primero que
-                hay que saber antes de contar con el turno. */}
-            {selected.pago && (
-              <div className="kv">
-                <span className="kv-k">Seña</span>
-                <span className="kv-v">
-                  {selected.pago === 'pagado'
-                    ? 'Pagada'
-                    : `Sin pagar · el horario se libera a los ${DEPOSIT_HOLD_MINUTES} min`}
-                </span>
               </div>
             )}
             <div className="kv">
