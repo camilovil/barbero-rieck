@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-export function middleware(req: NextRequest) {
+/* Esto era middleware.ts. Next 16 renombró la convención a «proxy» —misma
+   función, mismo matcher, sólo cambia el nombre del archivo y el de la
+   export— y dejaba un aviso de deprecación en cada arranque del server.
+
+   Es lo único que protege el panel: sin esto, /admin y /api/admin quedan
+   abiertos. */
+
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   // No proteger el login (página ni API)
