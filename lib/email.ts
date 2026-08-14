@@ -455,7 +455,7 @@ function clienteCancelado(opts: {
       ${parrafo(opts.texto, ink)}
       ${kvTable(opts.rows, ink)}
       ${motivoBloque}
-      <div style="margin-top:22px">${btnSolid(getAppUrl(), opts.cta ?? 'Elegir otro horario', ink)}</div>
+      <div style="margin-top:22px">${btnSolid(`${getAppUrl()}/reservar`, opts.cta ?? 'Elegir otro horario', ink)}</div>
       ${trama(ink)}
       ${pie(`Reserva ${opts.code} &middot; ${opts.pieTxt ?? 'cerrada.'}<br>${esc(BARBER_ADDRESS)} &middot; ${instagram(ink)}`, ink)}
     `,

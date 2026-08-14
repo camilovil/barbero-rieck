@@ -132,7 +132,7 @@ export default function PagoClient() {
                   El pago no se pudo hacer, así que el turno no quedó confirmado.
                   Podés intentarlo de nuevo eligiendo el horario otra vez.
                 </Estado_>
-                <a href="/" className="btn-cta" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
+                <a href="/reservar" className="btn-cta" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
                   Reservar de nuevo
                 </a>
               </div>
@@ -144,7 +144,7 @@ export default function PagoClient() {
                   Pasaron los {DEPOSIT_HOLD_MINUTES} minutos que guardamos el horario sin la seña,
                   y volvió a quedar disponible. Si llegaste a pagar, escribile a Santiago.
                 </Estado_>
-                <a href="/" className="btn-cta" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
+                <a href="/reservar" className="btn-cta" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
                   Reservar de nuevo
                 </a>
               </div>

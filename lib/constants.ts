@@ -117,6 +117,18 @@ export function viaticoDeBarrio(barrio: string | null): number {
 export const BARBER_NAME = 'Santiago Rieck'
 export const BARBER_ADDRESS = 'Congreso 1865, Belgrano, CABA'
 
+/* La voz de la portada. Va acá y no escrita en el componente porque
+   son datos de la casa, como la dirección: el día que Santiago se mude
+   o abra los domingos, se cambia en un solo lugar.
+
+   El sistema de diseño trae estas líneas ambientadas en Rosario
+   —«ROSARIO · UN SILLÓN», «CENTRO · PICHINCHA · MAR – SÁB»—, que son
+   el ejemplo del diseñador y no la casa: el estudio está en Belgrano y
+   abre de lunes a sábado. Las versalitas las pone el CSS. */
+export const CASA_LEMA = 'Belgrano · un sillón'
+export const CASA_KICKER = 'Belgrano · un sillón · turnos de a uno'
+export const CASA_META = ['Belgrano', 'CABA', 'Lun – Sáb']
+
 export const INSTAGRAM_HANDLE = '@santii_barber07'
 export const INSTAGRAM_URL = 'https://www.instagram.com/santii_barber07'
 

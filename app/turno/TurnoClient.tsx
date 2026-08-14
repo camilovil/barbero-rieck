@@ -91,7 +91,7 @@ export default function TurnoClient() {
                   {error} Puede que se haya cancelado, o que la reserva se haya
                   vencido sin la seña.
                 </p>
-                <a href="/" className="btn-cta" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
+                <a href="/reservar" className="btn-cta" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
                   Reservar un turno
                 </a>
               </div>

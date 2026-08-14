@@ -1434,9 +1434,317 @@ textarea.w-input { line-height: 1.5; }
 }
 
 /* =============================================
+   APERTURA — la capa de carga y la portada
+   ============================================= */
+
+/* --- La pasada de navaja -------------------------------------
+ *
+ * No es un spinner y no espera nada: la portada ya está detrás,
+ * cargada. Un filo de oro cruza la pantalla y va DESCUBRIENDO el
+ * logotipo a su paso — por recorte, no por fundido. Que el logo
+ * aparezca solo, con opacidad, es el gesto de cualquier app; lo que
+ * hace a la marca es que algo lo corte al pasar. */
+.splash {
+  /* Apagada por defecto. La prende el script de <head>, y sólo la
+     primera vez de cada sesión: así el HTML del servidor no la
+     destella ni cuando ya se vio, ni en una vuelta atrás. */
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--app-bg) url('/splash-cueva.webp') center / cover no-repeat;
+  transition: opacity 460ms ease, transform 620ms cubic-bezier(.4, 0, .2, 1);
+}
+/* Floja a propósito: si la viñeta cierra, la roca deja de verse y
+   queda un fondo negro cualquiera con un logo encima. */
+.splash::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(62% 46% at 50% 50%,
+    rgba(10, 9, 8, .14) 0%, rgba(10, 9, 8, .34) 62%, rgba(10, 9, 8, .58) 100%);
+}
+html[data-apertura] .splash { display: block; }
+.splash[data-sale='1'] { opacity: 0; transform: scale(1.08); }
+
+.splash-caja {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 250px;
+  overflow: hidden;
+}
+.splash-logo {
+  display: block;
+  width: 100%; height: auto;
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 660ms cubic-bezier(.22, .75, .2, 1);
+}
+.splash[data-revelado='1'] .splash-logo { clip-path: inset(0 0 0 0); }
+
+/* El filo mide 1px a cualquier ancho — lo que crece en escritorio es
+   el resplandor, no la línea. Una línea de 2px ya no es un filo. */
+.navaja {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 1px;
+  left: -2%;
+  background: var(--acento-txt);
+  opacity: 0;
+  box-shadow: 0 0 22px 3px rgba(232, 185, 107, .55);
+  transition: left 660ms cubic-bezier(.22, .75, .2, 1), opacity 320ms ease;
+}
+.splash[data-revelado='1'] .navaja { left: 101%; opacity: 1; }
+.splash[data-apagada='1'] .navaja { opacity: 0; }
+
+.splash-pie {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 38px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  color: var(--text-meta);
+  opacity: 0;
+  transition: opacity 440ms ease;
+}
+.splash[data-apagada='1'] .splash-pie { opacity: 1; }
+
+@media (min-width: 720px) {
+  .splash-caja { width: 340px; }
+}
+@media (min-width: 1200px) {
+  .splash-caja { width: 420px; }
+  /* La roca es apaisada acá: la viñeta se para para acompañarla. */
+  .splash::before {
+    background: radial-gradient(52% 58% at 50% 50%,
+      rgba(10, 9, 8, .14) 0%, rgba(10, 9, 8, .34) 60%, rgba(10, 9, 8, .6) 100%);
+  }
+  .navaja { box-shadow: 0 0 30px 4px rgba(232, 185, 107, .5); }
+  .splash-pie { bottom: 52px; font-size: 10.5px; letter-spacing: .34em; }
+}
+
+/* --- La portada ----------------------------------------------- */
+.portada {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--app-bg) url('/portada-cueva.webp') center top / cover no-repeat;
+}
+/* El scrim carga abajo, que es donde va el texto, y deja la boca de
+   la cueva limpia arriba. */
+.portada::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    rgba(10, 9, 8, .1) 0%, rgba(10, 9, 8, 0) 40%,
+    rgba(10, 9, 8, .82) 78%, rgba(10, 9, 8, .97) 100%);
+}
+.portada > * { position: relative; }
+
+/* La entrada la maneja el splash, y sólo cuando efectivamente corre:
+   sin el atributo la portada está visible y quieta. Si el script no
+   llega a ejecutarse, se ve la portada — nunca una pantalla en blanco. */
+html[data-apertura='espera'] .portada { opacity: 0; transform: scale(1.04); }
+html[data-apertura='entra'] .portada {
+  opacity: 1;
+  transform: none;
+  transition: opacity 520ms ease, transform 760ms cubic-bezier(.2, .7, .2, 1);
+}
+html[data-apertura='espera'] .portada-marca { opacity: 0; }
+html[data-apertura='entra'] .portada-marca {
+  opacity: 1;
+  transition: opacity 600ms ease 120ms;
+}
+
+.portada-hero {
+  margin-top: auto;
+  padding: 0 26px calc(env(safe-area-inset-bottom) + 34px);
+}
+.portada-logo { width: 150px; height: auto; display: block; margin-bottom: 18px; }
+.portada-bajada {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-mut);
+  max-width: 30ch;
+  text-wrap: pretty;
+  margin: 0;
+}
+.portada-cta { width: 100%; margin-top: 22px; }
+/* Los datos de la casa, en la misma voz que el resto de los datos. */
+.portada-meta {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 22px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text-meta);
+}
+.portada-meta i { color: var(--border-strong); font-style: normal; }
+
+/* De 720 para abajo el lockup ocupa el lugar del titular: dos voces
+   display en la misma pantalla se pelean. Pero el titular es el h1 de
+   la página, así que no se apaga con display:none —eso lo sacaría del
+   árbol de accesibilidad y la portada se quedaría sin encabezado—:
+   se esconde a la vista y se sigue leyendo. */
+.portada-kicker { display: none; }
+.portada-titular {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* La barra y la columna de precios no existen abajo de 1200. */
+.portada-barra, .portada-precios { display: none; }
+
+@media (min-width: 720px) {
+  .portada-kicker { display: block; }
+  .portada-titular {
+    position: static;
+    width: auto; height: auto;
+    margin: 0 0 22px;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
+  .portada-kicker {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--text-meta);
+    margin: 0 0 20px;
+  }
+  .portada-titular {
+    font-size: 72px;
+    font-weight: 800;
+    line-height: .9;
+    letter-spacing: -.05em;
+    color: var(--text);
+  }
+}
+
+@media (min-width: 720px) and (max-width: 1199px) {
+  .portada-hero {
+    margin: auto;
+    width: 100%;
+    max-width: 620px;
+    padding-bottom: 56px;
+  }
+  .portada-logo { width: 186px; margin-bottom: 22px; }
+}
+
+@media (min-width: 1200px) {
+  .portada { background-position: center 20%; }
+  /* Girado a 100°: sostiene el titular contra la izquierda y deja
+     respirar la roca a la derecha, que es donde está la boca. */
+  .portada::before {
+    background: linear-gradient(100deg,
+      rgba(10, 9, 8, .94) 0%, rgba(10, 9, 8, .72) 44%,
+      rgba(10, 9, 8, .28) 72%, rgba(10, 9, 8, .5) 100%);
+  }
+
+  .portada-barra {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 34px;
+    padding: 30px 56px;
+    border-bottom: 1px solid var(--border);
+  }
+  .portada-barra-logo { width: 186px; height: auto; display: block; }
+  .portada-nav { display: flex; align-items: center; gap: 34px; }
+  .portada-nav a {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--text-mut);
+    text-decoration: none;
+    transition: color .15s;
+    /* 44px de área de toque, como todo control del sistema. */
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .portada-nav a:hover { color: var(--text); }
+  .portada-nav .btn-cta {
+    padding: 12px 22px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    min-height: 44px;
+  }
+
+  .portada-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    align-items: end;
+    gap: 60px;
+    padding: 0 56px 64px;
+  }
+  /* El lockup ya está en la barra: repetirlo en el hero sería decir
+     la marca dos veces en la misma pantalla. */
+  .portada-logo { display: none; }
+  .portada-titular { font-size: 108px; }
+  .portada-bajada { font-size: 16px; line-height: 1.65; max-width: 44ch; }
+  /* `width: auto` no alcanza: .btn-cta es display:flex y un flex de
+     nivel bloque se estira a todo el ancho de la columna. Acá el botón
+     tiene que medir su texto. */
+  .portada-cta { width: fit-content; padding: 19px 40px; }
+  .portada-meta { justify-content: flex-start; margin-top: 26px; }
+
+  .portada-precios {
+    display: block;
+    border-left: 1px solid var(--border);
+    padding-left: 34px;
+  }
+  .portada-precio {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .portada-precio-n { font-size: 12.5px; color: var(--text-mut); }
+  .portada-precio-v {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+  .portada-horario {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    line-height: 1.6;
+    color: var(--text-meta);
+    margin-top: 18px;
+  }
+}
+
+/* =============================================
    MOVIMIENTO — se apaga entero si el sistema lo pide
    ============================================= */
 @media (prefers-reduced-motion: reduce) {
+  /* Sin pasada de filo: el logo simplemente está. Lo demás lo resuelve
+     la regla de abajo, que apaga toda transición del sistema. */
+  .navaja { display: none; }
+
   *, *::before, *::after {
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;

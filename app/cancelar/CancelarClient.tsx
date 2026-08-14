@@ -162,7 +162,7 @@ export default function CancelarClient() {
                 <Estado_ rotulo="Listo" titulo="Turno cancelado">
                   Te mandamos un mail de confirmación. El horario quedó libre para otros clientes.
                 </Estado_>
-                <a href="/" className="btn-cta" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
+                <a href="/reservar" className="btn-cta" style={{ textDecoration: 'none', width: '100%', marginTop: 26 }}>
                   Reservar otro turno
                 </a>
               </div>

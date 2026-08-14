@@ -66,19 +66,45 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" className={`h-full ${sans.variable} ${mono.variable}`} suppressHydrationWarning>
       <head>
-        {/* Sin clase, el sistema es la cueva. Esto sólo se ocupa del
-            caso contrario: el panel en papel, aplicado antes del
-            primer paint para que no haya destello. La app del cliente
-            no entra acá nunca — se ve siempre en la cueva. */}
+        {/* Dos cosas que tienen que estar resueltas ANTES del primer
+            paint, o se ven como un destello:
+
+            1. El panel en papel. Sin clase el sistema es la cueva;
+               esto sólo se ocupa del caso contrario. La app del
+               cliente no entra acá nunca.
+            2. La apertura. Deja `data-apertura="espera"` en el <html>
+               la primera vez de cada sesión, y sólo en la portada. El
+               CSS cuelga de ese atributo tanto la capa de carga como
+               el estado inicial de la portada: sin él no hay apertura
+               y se ve la portada quieta, que es lo que tiene que pasar
+               en cada navegación posterior.
+
+            La red de seguridad del final es por si el bundle no llega
+            a ejecutarse: el atributo lo pone este script, así que
+            tiene que ser este script el que sepa sacarlo. Si a los
+            2,5 s nadie se hizo cargo, entrega la portada igual. Nadie
+            se queda mirando una pantalla negra porque falló un chunk. */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
                 try {
-                  if (location.pathname.indexOf('/admin') !== 0) return;
-                  if (localStorage.getItem('hohle-theme') === 'papel') {
-                    document.documentElement.classList.add('papel');
+                  if (location.pathname.indexOf('/admin') === 0) {
+                    if (localStorage.getItem('hohle-theme') === 'papel') {
+                      document.documentElement.classList.add('papel');
+                    }
+                    return;
                   }
+                  if (location.pathname !== '/') return;
+                  if (sessionStorage.getItem('bh_splash_visto') === '1') return;
+                  sessionStorage.setItem('bh_splash_visto', '1');
+                  document.documentElement.dataset.apertura = 'espera';
+                  setTimeout(function () {
+                    if (document.documentElement.dataset.apertura !== 'espera') return;
+                    document.documentElement.dataset.apertura = 'entra';
+                    var capa = document.querySelector('.splash');
+                    if (capa) capa.style.display = 'none';
+                  }, 2500);
                 } catch (e) {}
               })();
             `,
