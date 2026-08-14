@@ -1706,7 +1706,12 @@ html[data-apertura='entra'] .portada-marca {
   }
   .portada-barra-logo { width: 186px; height: auto; display: block; }
   .portada-nav { display: flex; align-items: center; gap: 34px; }
-  .portada-nav a {
+  /* `:not(.btn-cta)` no es cosmético. Sin eso esta regla también le
+     pega al botón —es un <a> adentro de la barra, y gana por
+     especificidad sobre el color propio de .btn-cta—, y el texto salía
+     en --text-mut sobre el oro: 1.1:1, ilegible. El botón trae su par
+     de colores del sistema y nadie de afuera se lo toca. */
+  .portada-nav a:not(.btn-cta) {
     font-family: var(--font-mono);
     font-size: 10.5px;
     letter-spacing: .16em;
@@ -1719,7 +1724,7 @@ html[data-apertura='entra'] .portada-marca {
     align-items: center;
     min-height: 44px;
   }
-  .portada-nav a:hover { color: var(--text); }
+  .portada-nav a:not(.btn-cta):hover { color: var(--text); }
   .portada-nav .btn-cta {
     padding: 12px 22px;
     font-family: var(--font-mono);
