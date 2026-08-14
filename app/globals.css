@@ -1543,8 +1543,8 @@ html[data-apertura] .splash { display: block; }
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg,
-    rgba(10, 9, 8, .1) 0%, rgba(10, 9, 8, 0) 40%,
-    rgba(10, 9, 8, .82) 78%, rgba(10, 9, 8, .97) 100%);
+    rgba(10, 9, 8, .1) 0%, rgba(10, 9, 8, 0) 36%,
+    rgba(10, 9, 8, .9) 70%, rgba(10, 9, 8, .99) 100%);
 }
 .portada > * { position: relative; }
 
@@ -1655,6 +1655,22 @@ html[data-apertura='entra'] .portada-marca {
     background: linear-gradient(100deg,
       rgba(10, 9, 8, .94) 0%, rgba(10, 9, 8, .72) 44%,
       rgba(10, 9, 8, .28) 72%, rgba(10, 9, 8, .5) 100%);
+  }
+
+  /* El scrim girado deja respirar la roca a la derecha, y ahí es donde
+     cae todo el texto de abajo: medido contra el píxel más claro de la
+     foto, la meta daba 1.35:1 y el horario de la columna 1.58:1 — texto
+     invisible sobre la parte iluminada de la piedra. Esta segunda capa
+     le devuelve a escritorio el refuerzo de abajo que la versión mobile
+     ya tenía en su scrim vertical. Arranca transparente para no tocar la
+     boca de la cueva, que es lo que el giro venía a mostrar. */
+  .portada::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg,
+      rgba(10, 9, 8, 0) 26%, rgba(10, 9, 8, .80) 46%,
+      rgba(10, 9, 8, .97) 68%, rgba(10, 9, 8, 1) 100%);
   }
 
   .portada-barra {
