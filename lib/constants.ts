@@ -190,9 +190,16 @@ export const CANCELLATION_MIN_HOURS = 24
    sola. Con transferencia el reloj mide otra cosa: el cliente tiene que
    abrir el homebanking, transferir, sacar la captura y mandársela a
    Santiago, y él tiene que verla y confirmar. Veinte minutos hacían que un
-   turno pagado se cayera antes de que nadie lo mirara. */
+   turno pagado se cayera antes de que nadie lo mirara.
+
+   Son 36 y no 24 horas porque el que decide es Santiago, no un webhook: con
+   un día justo, el que transfiere a la noche depende de que él mire el
+   WhatsApp antes de la misma hora del día siguiente, y si no lo hace se cae
+   un turno pagado. Media jornada de más le da margen a él sin regalar el
+   horario: lo que se paga a cambio es que una reserva que nadie va a pagar
+   tape el horario medio día más. */
 export const DEPOSIT_PERCENT = 50
-export const DEPOSIT_HOLD_MINUTES = 1440
+export const DEPOSIT_HOLD_MINUTES = 36 * 60
 
 export function depositAmount(price: number): number {
   return Math.round((price * DEPOSIT_PERCENT) / 100)

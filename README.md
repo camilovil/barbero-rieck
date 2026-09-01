@@ -147,7 +147,7 @@ minutos el día que el proyecto pase a Pro, o a un cron externo.
 `lib/flags.ts`:
 
 - **`DEPOSIT_ENABLED`** — con esto en `1` el turno nace sin confirmar y hay que
-  transferir una seña del 50%. El horario queda guardado 24 horas
+  transferir una seña del 50%. El horario queda guardado 36 horas
   (`DEPOSIT_HOLD_MINUTES`) y después se cae.
 - **`VIATICO_ENABLED`** — con esto en `1` se pide el barrio en el paso de datos y
   se cobra el traslado según la banda. Apagado, el precio a domicilio es plano y

@@ -21,7 +21,7 @@ también, así que la puerta está cerrada al público hasta que se abra a mano.
 4. **Santiago mira el comprobante y toca «Recibí la seña — confirmar»** en el
    panel. Ahí el turno pierde el ⏳, queda confirmado y recién entonces salen
    los dos mails: la confirmación al cliente y el aviso a él.
-5. Si a las 24 horas la seña no llegó, el turno se borra solo, el horario
+5. Si a las 36 horas la seña no llegó, el turno se borra solo, el horario
    vuelve a la agenda y al cliente le llega el mail de reserva vencida.
 
 **Lo único que confirma un turno es Santiago.** No hay ningún camino
@@ -131,9 +131,9 @@ El recorrido, mirando el calendario y el mail en cada paso:
    por Santiago`, y **ahí sí** salen los dos mails.
 6. **Tocá el botón dos veces.** La segunda tiene que decir que ese turno ya no
    está esperando la seña, y **no** volver a mandar los mails.
-7. **El caso del abandono**: reservá y no transfieras. A las 24 horas el evento
+7. **El caso del abandono**: reservá y no transfieras. A las 36 horas el evento
    tiene que desaparecer, el horario volver a estar libre y llegarle al cliente
-   el mail de reserva vencida. Para no esperar un día, golpeá
+   el mail de reserva vencida. Para no esperar un día y medio, golpeá
    `/api/cron/expire-holds` con el `CRON_SECRET` después de mover a mano el
    `reservadoEn` del evento, o bajá `DEPOSIT_HOLD_MINUTES` un rato.
 
@@ -158,12 +158,19 @@ abajo, y es también lo que hace que un cron caído no se note. Si los ⏳
 empiezan a quedarse pegados en la agenda, mirá primero si el Action sigue
 corriendo.
 
-**El plazo son 24 horas** (`DEPOSIT_HOLD_MINUTES`, en minutos). Era de 20
+**El plazo son 36 horas** (`DEPOSIT_HOLD_MINUTES`, en minutos). Era de 20
 minutos cuando la seña se pagaba con tarjeta y entraba sola; con transferencia
 el reloj mide otra cosa —homebanking, captura, WhatsApp, y que Santiago lo
 mire— y veinte minutos hacían que un turno pagado se cayera antes de que nadie
-lo viera. El texto que ve el cliente sale de `DEPOSIT_HOLD_LABEL`, que se
-calcula de ese número: cambiar el plazo no deja seis pantallas mintiendo.
+lo viera.
+
+Son 36 y no 24 porque el que confirma es él: con un día justo, quien transfiere
+a la noche depende de que Santiago mire el WhatsApp antes de la misma hora del
+día siguiente. Media jornada de más le da margen; lo que se paga a cambio es
+que una reserva que nadie va a pagar tape el horario medio día más.
+
+El texto que ve el cliente sale de `DEPOSIT_HOLD_LABEL`, que se calcula de ese
+número: cambiar el plazo no deja seis pantallas mintiendo.
 
 ---
 
