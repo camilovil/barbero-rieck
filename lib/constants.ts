@@ -1,21 +1,19 @@
 import type { Location, Service } from '@/types/booking'
 
-/* Cada precio lleva $1.000 arriba de lo que Santiago cobraba hasta el 1 de
-   septiembre de 2026. Ese aumento se decidió para absorber la comisión de
-   Mercado Pago, y ese mismo día Mercado Pago se dio de baja: la seña pasó a
-   cobrarse por transferencia, que no tiene comisión.
+/* Estos precios subieron $1.000 el 1 de septiembre de 2026 para absorber la
+   comisión de Mercado Pago, y volvieron a bajar el mismo día: Mercado Pago se
+   dio de baja y la seña pasó a cobrarse por transferencia, que no tiene
+   comisión. Sin comisión que absorber, el aumento no tenía motivo.
 
-   O sea que los mil pesos siguen acá pero su motivo ya no existe. Quedan
-   porque bajar un precio es una decisión de la casa y no una consecuencia
-   técnica, y porque el aumento ya estuvo publicado. Si Santiago los quiere
-   sacar, es cambiar estos tres números. */
+   Queda escrito para que a nadie le parezca que estos números se movieron sin
+   razón: se movieron dos veces y volvieron a donde estaban. */
 export const SERVICES: Record<Location, Service[]> = {
   local: [
-    { name: 'Corte', duration: 40, price: 17000 },
-    { name: 'Corte y barba', duration: 60, price: 20000 },
+    { name: 'Corte', duration: 40, price: 16000 },
+    { name: 'Corte y barba', duration: 60, price: 19000 },
   ],
   domicilio: [
-    { name: 'Corte (incluye barba)', duration: 120, price: 41000 },
+    { name: 'Corte (incluye barba)', duration: 120, price: 40000 },
   ],
 }
 
