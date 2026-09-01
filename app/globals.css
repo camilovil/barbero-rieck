@@ -1795,3 +1795,57 @@ html[data-apertura='entra'] .portada-marca {
     transition-duration: .01ms !important;
   }
 }
+
+/* ─── El cartel de próximamente ────────────────────────────────────
+ *
+ * Reusa la portada entera —lockup, bajada, CTA, meta— y cambia una sola
+ * cosa: en celular el titular se ve. En la portada el h1 se esconde a la
+ * vista porque el lockup del fondo hace esa voz y dos display en la misma
+ * pantalla se pelean; acá la palabra «Próximamente» ES el mensaje, y un
+ * cartel que no dice que está cerrado no es un cartel.
+ *
+ * Va al final del archivo a propósito: pisa a .portada-titular, que tiene
+ * la misma especificidad, y eso lo decide el orden. */
+.proximamente-titular {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: 0;
+  margin: 0 0 18px;
+  overflow: visible;
+  clip-path: none;
+  white-space: normal;
+  font-size: 44px;
+  font-weight: 800;
+  line-height: .95;
+  letter-spacing: -.04em;
+  color: var(--text);
+}
+
+@media (min-width: 720px) {
+  .proximamente-titular { font-size: 72px; margin-bottom: 22px; }
+}
+
+/* Los dos canales del cartel. Apilados en celular —el pulgar no tiene
+   ancho para dos botones de 44px al lado— y en fila desde 720, con el
+   de WhatsApp llevándose el espacio que sobra. */
+.proximamente-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 22px;
+}
+.proximamente-acciones > * { width: 100%; }
+
+@media (min-width: 720px) {
+  .proximamente-acciones { flex-direction: row; align-items: stretch; }
+  .proximamente-acciones > .btn-cta { flex: 1; }
+  .proximamente-acciones > .btn-outline { width: auto; flex: 0 0 auto; }
+}
+
+@media (min-width: 1200px) {
+  /* La portada apaga el lockup del hero en este ancho porque la barra de
+     arriba ya muestra la marca. El cartel no tiene barra —no hay adónde
+     navegar—, así que sin esto se queda sin marca en escritorio. */
+  .proximamente-hero .portada-logo { display: block; width: 186px; margin-bottom: 22px; }
+}

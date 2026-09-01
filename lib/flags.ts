@@ -17,3 +17,12 @@ export function isDepositEnabled(): boolean {
 export function isViaticoEnabled(): boolean {
   return process.env.VIATICO_ENABLED === '1'
 }
+
+/** Con esto en 1 la web no toma reservas: la puerta de entrada es un
+    cartel de próximamente. El panel de Santiago sigue funcionando, y
+    también las pantallas de un turno ya reservado —quien tenga un link
+    en el mail lo puede ver, mover o cancelar—, porque cerrar la puerta
+    no es dejar a nadie adentro sin salida. */
+export function isComingSoon(): boolean {
+  return process.env.COMING_SOON === '1'
+}

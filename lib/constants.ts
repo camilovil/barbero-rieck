@@ -30,8 +30,8 @@ export const BLOCKED_SLOTS: string[] = []
  * armó esta tabla, y el cliente sólo elige de una lista.
  *
  * Cambiar montos o mover un barrio de zona se hace en este arreglo y en
- * ningún otro lado. Los valores de hoy son provisorios, a confirmar con
- * Santiago. */
+ * ningún otro lado. Santiago confirmó esta tabla —los montos y los cuatro
+ * barrios del límite, uno por uno— el 31 de agosto de 2026. */
 export const VIATICO_POR_BANDA = 10000
 
 export type Zona = {
@@ -46,10 +46,10 @@ export type Zona = {
 
 /* Cada barrio cayó en su banda midiendo desde el estudio en línea recta y
    agregando un 25%, que es lo que el callejero le suma a esa recta cuando
-   uno maneja de verdad. Es una estimación, no un GPS: los que quedaron
-   pegados al límite —Vicente López 4,9 · Villa Pueyrredón 5,0 · Paternal
-   5,1 · Palermo 5,7— son los que conviene que Santiago revise, porque medio
-   kilómetro los cambia de precio.
+   uno maneja de verdad. Es una estimación, no un GPS: los cuatro que
+   quedaron pegados al límite —Vicente López 4,9 · Villa Pueyrredón 5,0 ·
+   Paternal 5,1 · Palermo 5,7— se le mostraron a Santiago uno por uno, con
+   lo que cambiaba en cada caso, y los dejó como estaban.
 
    Mover un barrio de banda es mover un nombre de un arreglo al otro. */
 export const ZONAS: Zona[] = [

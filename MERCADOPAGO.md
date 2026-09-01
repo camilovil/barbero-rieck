@@ -7,9 +7,13 @@ Este documento existe para que el día que aparezcan, encender esto sea seguir
 una lista y no reconstruir el razonamiento. Está en orden de ejecución: leelo de
 arriba abajo y hacé los pasos en ese orden, que no es caprichoso.
 
-**Estado hoy:** `DEPOSIT_ENABLED` y `VIATICO_ENABLED` apagados. Nada del circuito
-de pago se probó nunca contra Mercado Pago de verdad — ni con credenciales de
-prueba.
+**Estado al 31 de agosto de 2026:** el sitio vive en `barberhohle.com`, con
+`COMING_SOON=1` puesto: la puerta de entrada es un cartel de próximamente y nadie
+puede reservar mientras la seña no esté probada. `DEPOSIT_ENABLED` apagado;
+`VIATICO_ENABLED` prendido, con la tabla de zonas ya confirmada por Santiago
+(§6). El agujero de §5 está tapado: el barrido de vencidos corre cada quince
+minutos desde un GitHub Action. Nada del circuito de pago se probó todavía contra
+Mercado Pago de verdad — ni con credenciales de prueba.
 
 ---
 
@@ -299,7 +303,22 @@ siguiente. Y el mail de "tu reserva venció" le llega al cliente doce horas tard
 No se pierde plata, pero se pierden turnos, y a Santiago le aparece un ⏳ en la
 agenda que no significa nada.
 
-### La salida recomendada: un cron externo
+### Resuelto: el GitHub Action
+
+**Ya está hecho** — `.github/workflows/expire-holds.yml`, cada 15 minutos contra
+`https://barberhohle.com/api/cron/expire-holds`, con `CRON_SECRET` en los secretos
+del repo. Se eligió Actions sobre un servicio externo porque el secreto queda
+versionado con el resto y el día que se rote está claro dónde se cambia; la
+contra es que sus crons se atrasan bajo carga, y que GitHub los apaga solo si el
+repo pasa 60 días sin actividad. Las dos cosas están escritas en el encabezado
+del workflow.
+
+El job falla ruidoso a propósito: cualquier respuesta que no sea 200 rompe la
+corrida y llega el mail. Un cron apagado se ve idéntico a no tener cron, porque
+el barrido oportunista tapa el síntoma.
+
+Lo que sigue es el razonamiento original, por si alguna vez hay que mudarlo a un
+servicio externo:
 
 Un servicio gratuito que golpee la URL cada 15 minutos. Cualquiera sirve —
 cron-job.org, EasyCron, UptimeRobot, un GitHub Action con `schedule` en un repo
@@ -359,29 +378,36 @@ que quedó viejo, no el código.
 
 ## 6. Lo que falta que decida Santiago
 
-### La tabla de zonas de viáticos
+### La tabla de zonas de viáticos — **confirmada**
 
-`lib/constants.ts`, arreglo `ZONAS`. **Los montos y los barrios de hoy son
-provisorios.** Se armaron midiendo desde Congreso 1865 en línea recta y sumando
-un 25%, que es lo que el callejero le agrega a esa recta cuando uno maneja de
-verdad. Es una estimación, no un GPS.
+**Santiago confirmó la tabla el 31 de agosto de 2026**, tal como estaba. Esta
+sección queda como registro de qué se le preguntó y qué contestó, no como
+pendiente.
+
+`lib/constants.ts`, arreglo `ZONAS`. Se armó midiendo desde Congreso 1865 en
+línea recta y sumando un 25%, que es lo que el callejero le agrega a esa recta
+cuando uno maneja de verdad. Es una estimación, no un GPS — y así se le presentó.
 
 **Los montos.** `VIATICO_POR_BANDA = 10000`, y cada banda de 5 km suma esos diez
 mil: hasta 5 km sin viático, 5–10 km $10.000, 10–15 km $20.000, 15–20 km $30.000.
-Nadie confirmó ninguno de esos números.
+Confirmados.
 
-**Los cuatro barrios que quedaron pegados al límite de 5 km**, que son los que
-medio kilómetro les cambia el precio:
+**Los cuatro barrios que quedaron pegados al límite de 5 km** son los que medio
+kilómetro les cambia el precio. Se le mostraron uno por uno y los dejó como
+estaban:
 
-| Barrio | Distancia estimada | Zona hoy | Qué está en juego |
+| Barrio | Distancia estimada | Zona | Qué estaba en juego |
 |---|---|---|---|
 | Vicente López | 4,9 km | Sin viático | 100 metros de que le cobre $10.000 |
-| Villa Pueyrredón | 5,0 km | $10.000 | Justo en el límite; podría ir sin viático |
+| Villa Pueyrredón | 5,0 km | $10.000 | Justo en el límite; podría haber ido sin viático |
 | Paternal | 5,1 km | $10.000 | Ídem |
-| Palermo | 5,7 km | Sin viático | **Decisión de la casa, no error.** Por la regla iría a $10.000, pero es de donde más viene la gente y se decidió no cobrarle el traslado (commit `6c29f4e`). Confirmar que sigue siendo así |
+| Palermo | 5,7 km | Sin viático | **Decisión de la casa, no error.** Por la regla iría a $10.000, pero es de donde más viene la gente y se decidió no cobrarle el traslado (commit `6c29f4e`). Ratificado |
 
 Mover un barrio de banda es mover un nombre de un arreglo al otro, en ese archivo
 y en ningún otro lado.
+
+Con esto, `VIATICO_ENABLED=1` deja de estar bloqueado: era lo único que le
+faltaba (§3, paso 0).
 
 Dos cosas que ya están decididas y no hace falta rediscutir:
 
