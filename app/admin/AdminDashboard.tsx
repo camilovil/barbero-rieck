@@ -920,6 +920,25 @@ export default function AdminDashboard() {
                               )}
 
                               {ev.nota && <p className="turno-nota">{ev.nota}</p>}
+
+                              {/* La salida para el que paga en efectivo. En PC
+                                  vive en la columna del detalle, que en celular
+                                  no existe: sin este botón acá, Santiago no
+                                  tiene cómo dar la seña por recibida desde el
+                                  teléfono, que es donde mira la agenda. Va al
+                                  final del cuerpo y a todo el ancho: cierra el
+                                  turno, y es lo último que se lee antes del
+                                  contacto. Un turno pasado ya no se cobra. */}
+                              {!isHistory && ev.pago === 'pendiente' && (
+                                <button
+                                  className="btn-outline turno-sena"
+                                  disabled={confirmando === ev.id}
+                                  onClick={() => confirmarAMano(ev)}
+                                  aria-label={`Confirmar que recibí la seña del turno de ${ev.nombre}`}
+                                >
+                                  {confirmando === ev.id ? 'Confirmando…' : 'Recibí la seña — confirmar'}
+                                </button>
+                              )}
                             </div>
 
                             <div className="turno-pie">

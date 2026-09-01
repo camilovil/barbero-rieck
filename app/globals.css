@@ -1034,6 +1034,18 @@ textarea.w-input { line-height: 1.5; }
   color: var(--text-mut);
 }
 
+/* Dar la seña por recibida es la acción que cierra el turno, y en
+   celular la tarjeta es el único lugar donde puede vivir: no hay
+   columna de detalle. A todo el ancho, para que no compita con
+   Cancelar y Modificar —que mueven el turno, no lo cierran— y para
+   que el área de toque sea la del pulgar. */
+.turno-sena {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 13px;
+}
+
 /* Pie: contacto a la izquierda, turno a la derecha. Dos grupos
    separados porque son dos decisiones distintas —hablarle o
    moverle el turno— y antes estaban mezcladas en una fila. */
