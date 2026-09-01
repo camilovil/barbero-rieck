@@ -36,6 +36,15 @@
    lo que hace que el negro se lea como roca y no como interfaz
    apagada. */
 :root {
+  /* Lo primero, antes que cualquier color nuestro: decirle al navegador
+     que este sistema es oscuro. Lo que él dibuja y nosotros no —la lista
+     desplegada de un <select>, las barras de scroll, el relleno
+     automático, los selectores de fecha— lo pinta con SU paleta, no con
+     la nuestra. Sin esta línea la lista de barrios salía blanca con el
+     texto gris claro que hereda del campo: ilegible, y del lado del
+     navegador, así que no se arregla con ningún color nuestro. */
+  color-scheme: dark;
+
   /* Superficies */
   --app-bg:      #0A0908;   /* fondo   */
   --surface:     #0A0908;
@@ -110,6 +119,10 @@
    el acento es la tinta misma. No lleva la roca — una foto de roca
    negra sobre papel no es el mismo sistema, es una mancha. */
 html.papel {
+  /* El contrario de lo de arriba: en papel los controles nativos vuelven
+     a ser claros, o el panel de Santiago se llena de listas negras. */
+  color-scheme: light;
+
   --app-bg:      #EDECE8;
   --surface:     #F6F5F3;
   /* En claro alcanza con --surface: el fondo ya es un paso más oscuro. */
@@ -1849,3 +1862,9 @@ html[data-apertura='entra'] .portada-marca {
      navegar—, así que sin esto se queda sin marca en escritorio. */
   .proximamente-hero .portada-logo { display: block; width: 186px; margin-bottom: 22px; }
 }
+
+/* Firefox y algún Android dibujan la lista de un <select> con el color que
+   hereda del campo, aunque el color-scheme esté declarado. Un <option> casi
+   no acepta estilo, pero fondo y color sí, y con eso alcanza. */
+.w-input option { background: var(--surface-alta); color: var(--text); }
+.w-input optgroup { background: var(--surface-alta); color: var(--text-meta); }
