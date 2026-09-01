@@ -1,0 +1,75 @@
+# Libera los turnos que reservaron y nunca pagaron la seña.
+#
+# Por qué vive acá y no en vercel.json: el plan Hobby admite dos crons —ya
+# usados por el recordatorio y el resumen diario— y no baja de una corrida por
+# día, que para un plazo de veinte minutos no sirve para nada. La ventaja de
+# hacerlo con Actions es que el secreto y la frecuencia quedan versionados con
+# el resto del proyecto: el día que se rote CRON_SECRET, se ve dónde se cambia.
+#
+# El plazo real son 20 minutos (DEPOSIT_HOLD_MINUTES). Corriendo cada 15, en el
+# peor caso un horario queda tapado 35 en vez de 20.
+#
+# Antes de que esto sirva hay que cargar, en Settings del repo:
+#   · Secrets → CRON_SECRET   — el mismo valor que está en Vercel, no uno nuevo
+#   · Variables → APP_URL     — opcional; sin ella se usa el dominio de abajo
+#
+# Dos cosas que hay que saber de los crons de Actions:
+#   · No son puntuales. Bajo carga se atrasan, y a veces bastante.
+#   · GitHub los apaga solo si el repo pasa 60 días sin actividad, y avisa por
+#     mail. Si los ⏳ empiezan a quedarse pegados en la agenda, mirá esto
+#     primero: un cron apagado se ve exactamente igual que no tener cron,
+#     porque el barrido oportunista de /api/booking tapa el síntoma.
+
+name: Liberar turnos sin seña
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  # Para probarlo a mano desde la pestaña Actions, sin esperar al cuarto de hora.
+  workflow_dispatch:
+
+# Si una corrida se atrasa y se pisa con la siguiente, no tiene sentido hacer
+# las dos: el barrido es el mismo y no acumula trabajo pendiente.
+concurrency:
+  group: expire-holds
+  cancel-in-progress: false
+
+jobs:
+  expirar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Golpear /api/cron/expire-holds
+        env:
+          # El dominio de producción. Se puede pisar con una variable del repo
+          # (Settings → Variables) sin tocar este archivo.
+          APP_URL: ${{ vars.APP_URL || 'https://barberhohle.com' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+
+          # Sin el secreto la ruta responde 401 y esto correría en vano cada
+          # quince minutos sin que nadie se entere. Mejor que falle fuerte.
+          if [ -z "${CRON_SECRET}" ]; then
+            echo "Falta el secreto CRON_SECRET en Settings → Secrets del repo." >&2
+            echo "Tiene que ser el mismo valor que está cargado en Vercel." >&2
+            exit 1
+          fi
+
+          respuesta=$(mktemp)
+          codigo=$(curl -sS --max-time 60 --retry 2 --retry-delay 10 \
+            -o "${respuesta}" -w '%{http_code}' \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL}/api/cron/expire-holds")
+
+          echo "HTTP ${codigo}"
+          cat "${respuesta}"
+          echo
+
+          # 401 significa que el secreto de acá y el de Vercel no coinciden;
+          # 500, que falló la consulta al calendario. Los dos tienen que romper
+          # el job para que llegue el mail de GitHub.
+          if [ "${codigo}" != "200" ]; then
+            echo "El barrido no corrió." >&2
+            exit 1
+          fi
