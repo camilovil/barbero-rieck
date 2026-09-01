@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createCalendarEvent, getDayBookingCount, isDateBlocked, getSettings, expirePendingEvents, deleteCalendarEvent } from '@/lib/googleCalendar'
-import { sendBookingEmails } from '@/lib/email'
-import { createDepositPreference } from '@/lib/mercadopago'
+import { createCalendarEvent, getDayBookingCount, isDateBlocked, getSettings, expirePendingEvents } from '@/lib/googleCalendar'
+import { sendBookingEmails, sendDepositInstructionsEmail } from '@/lib/email'
 import { isDepositEnabled } from '@/lib/flags'
 import { depositAmount, SERVICES, TIME_SLOTS } from '@/lib/constants'
 import type { BookingState, Location } from '@/types/booking'
@@ -25,7 +24,7 @@ export async function POST(req: NextRequest) {
        hasta acá se guardaba tal cual: alcanzaba con un POST a mano con
        `price: 0` para que `sena` diera cero, `pending` diera falso y el
        turno quedara confirmado sin pagar la seña. Con cualquier otro
-       número, la preferencia de Mercado Pago se armaba por ese monto.
+       número, la seña que se le pedía salía de ese monto.
 
        Así que del cliente se toma UNA sola cosa, el nombre del servicio, y
        con eso se busca en el catálogo. El precio y la duración que se
@@ -72,29 +71,22 @@ export async function POST(req: NextRequest) {
     const eventId = await createCalendarEvent(booking, { pending })
 
     /* Con seña, el turno todavía no es un turno: el horario le queda guardado
-       mientras paga y recién ahí salen los mails. Confirmar por mail algo que
-       no está pago es prometer un turno que en veinte minutos se cae. */
+       mientras transfiere, y los mails de confirmación salen cuando Santiago
+       ve el comprobante. Confirmar por mail algo que no está pago es prometer
+       un turno que se cae solo cuando vence el plazo.
+
+       Lo que sí sale ahora es el mail con el alias y el monto, y no es un
+       detalle: es lo único que le queda al cliente si cierra la pestaña. */
     if (pending) {
       try {
-        const paymentUrl = await createDepositPreference({
-          booking,
-          eventId,
-          amount: sena,
-          baseUrl: req.nextUrl.origin,
-        })
-        return NextResponse.json({ success: true, eventId, pendingPayment: true, paymentUrl })
-      } catch (mpErr) {
-        /* Sin link de pago la reserva es un horario tomado que nadie puede
-           completar: la sacamos en vez de dejarla bloqueando veinte minutos. */
-        console.error('[api/booking] Mercado Pago no dio link de pago:', mpErr)
-        await deleteCalendarEvent(eventId).catch(err =>
-          console.error('[api/booking] tampoco se pudo soltar el horario:', err),
-        )
-        return NextResponse.json(
-          { error: 'No pudimos abrir el pago de la seña. Probá de nuevo en un momento.' },
-          { status: 502 },
-        )
+        await sendDepositInstructionsEmail(booking, eventId, sena)
+      } catch (emailErr) {
+        /* El horario no se suelta por esto. La pantalla siguiente muestra el
+           alias igual, así que el cliente puede pagar aunque el mail no haya
+           salido; tirar la reserva sería el peor de los dos males. */
+        console.error('[api/booking] no salió el mail con las instrucciones de la seña:', emailErr)
       }
+      return NextResponse.json({ success: true, eventId, pendingPayment: true })
     }
 
     // Luego enviamos emails con el link de cancelación incluido

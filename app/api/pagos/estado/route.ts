@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPaymentState } from '@/lib/googleCalendar'
 
-/* La pantalla de vuelta pregunta acá si la seña llegó. No alcanza con el
-   parámetro que trae Mercado Pago en la URL: el aviso bueno viaja por el
-   webhook y puede tardar unos segundos más que el navegador del cliente. */
+/* La pantalla que le explica al cliente cómo transferir pregunta acá dos
+   cosas: cuánto es la seña y si Santiago ya la dio por recibida.
+
+   Sigue preguntando cada tanto porque la confirmación no llega sola como
+   llegaba el webhook: la hace Santiago desde el panel cuando ve el
+   comprobante. Si el cliente todavía tiene la pantalla abierta, la ve pasar
+   a confirmado sin tocar nada. */
 export async function GET(req: NextRequest) {
   const eventId = req.nextUrl.searchParams.get('turno')
   if (!eventId) {
@@ -11,7 +15,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    return NextResponse.json({ estado: await getPaymentState(eventId) })
+    const { estado, sena } = await getPaymentState(eventId)
+    return NextResponse.json({ estado, sena })
   } catch (err) {
     console.error('[api/pagos/estado] error:', err)
     return NextResponse.json({ error: 'No se pudo consultar el turno' }, { status: 500 })

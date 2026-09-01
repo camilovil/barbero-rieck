@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { TIME_SLOTS, BLOCKED_SLOTS, DEPOSIT_HOLD_MINUTES } from '@/lib/constants'
+import { TIME_SLOTS, BLOCKED_SLOTS, DEPOSIT_HOLD_LABEL } from '@/lib/constants'
 import type { Location } from '@/types/booking'
 import { capitalize as upperFirst, toDateParam } from '@/lib/format'
 
@@ -140,7 +140,7 @@ export default function StepCalendar({ location, selectedDate, selectedTime, sen
         Los domingos no hay turnos.
         {/* El plazo se dice al elegir la hora, que es cuando empieza a
             correr: enterarse después de haber elegido es enterarse tarde. */}
-        {senaActiva && ` Cuando elijas el horario te lo guardamos ${DEPOSIT_HOLD_MINUTES} minutos para que pagues la seña.`}
+        {senaActiva && ` Cuando elijas el horario te lo guardamos ${DEPOSIT_HOLD_LABEL} para que transfieras la seña.`}
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>

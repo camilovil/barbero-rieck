@@ -103,7 +103,7 @@ export async function createCalendarEvent(
     /* Fuera de cobertura Santiago tiene que acordar el traslado por WhatsApp:
        si no queda escrito acá, se entera cuando llega. */
     viaticoAConvenir ? 'Viático: A CONVENIR — el barrio quedó fuera de la grilla' : null,
-    opts.pending && sena ? `Seña: pendiente de pago — $${sena.toLocaleString('es-AR')}` : null,
+    opts.pending && sena ? `Seña: pendiente de transferencia — $${sena.toLocaleString('es-AR')}` : null,
     booking.location === 'domicilio' && direccion ? `Dirección cliente: ${direccion}` : null,
     booking.location === 'domicilio' && direccion ? `Cómo llegar: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}` : null,
     nota ? `Nota: ${nota}` : null,
@@ -205,23 +205,15 @@ function bookingFromEvent(desc: Record<string, string>, start: string, end: stri
   }
 }
 
-/* La llama el webhook de Mercado Pago cuando la seña entró: saca al turno del
-   limbo y lo deja como cualquier otro. Devuelve el turno confirmado, o null si
-   no había nada que confirmar —ya estaba pago, o se venció y no existe más—,
-   porque Mercado Pago manda la misma notificación varias veces y los mails
-   tienen que salir una sola. */
-export type OrigenDelCobro =
-  /** Lo confirmó el webhook: la plata entró por Mercado Pago. */
-  | { via: 'mercadopago'; paymentId: string }
-  /** Lo confirmó Santiago desde el panel, normalmente porque cobró en
-      efectivo. La seña existe para cubrirse de ausencias, no para
-      impedirle cobrar como quiera: su confirmación vale igual que la de
-      Mercado Pago, y queda escrito cuál fue cuál. */
-  | { via: 'mano' }
+/* Saca al turno del limbo y lo deja como cualquier otro. La llama Santiago
+   desde el panel, cuando le llegó el comprobante de la transferencia o cobró
+   en efectivo: es él quien mira la plata, no un webhook.
 
+   Devuelve el turno confirmado, o null si no había nada que confirmar —ya
+   estaba pago, o se venció y no existe más—. Ese null es el que evita que
+   dos toques al botón manden los mails dos veces. */
 export async function confirmCalendarEvent(
   eventId: string,
-  origen: OrigenDelCobro,
 ): Promise<BookingState | null> {
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return null
   const calendar = google.calendar({ version: 'v3', auth: getAuth() })
@@ -232,10 +224,7 @@ export async function confirmCalendarEvent(
 
   const sena = Number(props.sena)
   const cobrado = sena ? ` — $${sena.toLocaleString('es-AR')}` : ''
-  const comoSePago =
-    origen.via === 'mercadopago'
-      ? `Seña: pagada${cobrado} (Mercado Pago ${origen.paymentId})`
-      : `Seña: cobrada a mano por Santiago${cobrado}`
+  const comoSePago = `Seña: cobrada${cobrado} — confirmada por Santiago`
   const description = (existing.description ?? '')
     .split('\n')
     .map(line =>
@@ -254,12 +243,11 @@ export async function confirmCalendarEvent(
         private: {
           ...props,
           pago: 'pagado',
-          /* Queda registrado CÓMO se cobró: un turno confirmado a mano y uno
-             cobrado por Mercado Pago son cosas distintas a la hora de cuadrar
-             la caja, y sin esto son indistinguibles. */
-          ...(origen.via === 'mercadopago'
-            ? { pagoId: origen.paymentId, pagoVia: 'mercadopago' }
-            : { pagoVia: 'mano' }),
+          /* Queda registrado cuándo lo confirmó. El «cómo» ya no se guarda
+             porque hay un solo camino: la vista de Santiago. Antes convivían
+             el webhook y su mano y había que poder distinguirlos para cuadrar
+             la caja; hoy distinguir no significa nada. */
+          confirmadoEn: new Date().toISOString(),
         },
       },
     },
@@ -272,15 +260,25 @@ export async function confirmCalendarEvent(
   )
 }
 
-/* El estado de la seña de un turno, para la pantalla de vuelta del pago.
+/* El estado de la seña de un turno, para la pantalla que le dice al cliente
+   cómo transferir. Devuelve también el monto, que es lo que esa pantalla
+   tiene que mostrarle: sale del evento y no de la URL, para que nadie pueda
+   cambiarse la seña editando la barra de direcciones.
+
    Si Google no contesta, esto tira y la pantalla sigue preguntando: al que
    acaba de pagar no se le puede decir «tu reserva venció» por un hipo de red,
    porque de ese cartel no vuelve. */
-export async function getPaymentState(eventId: string): Promise<'pendiente' | 'pagado' | 'vencido'> {
+export async function getPaymentState(
+  eventId: string,
+): Promise<{ estado: 'pendiente' | 'pagado' | 'vencido'; sena: number }> {
   const event = await getCalendarEvent(eventId)
   // Si el evento ya no está, el plazo se venció y el horario volvió a la calle.
-  if (!event) return 'vencido'
-  return event.extendedProperties?.private?.pago === 'pagado' ? 'pagado' : 'pendiente'
+  if (!event) return { estado: 'vencido', sena: 0 }
+  const props = event.extendedProperties?.private
+  return {
+    estado: props?.pago === 'pagado' ? 'pagado' : 'pendiente',
+    sena: Number(props?.sena ?? 0) || 0,
+  }
 }
 
 /* Borra los turnos que reservaron y nunca pagaron, y devuelve cuántos

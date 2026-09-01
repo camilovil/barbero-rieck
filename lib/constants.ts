@@ -1,17 +1,14 @@
 import type { Location, Service } from '@/types/booking'
 
-/* Cada precio lleva $1.000 arriba del que Santiago cobraba antes de la
-   seña: es la comisión de Mercado Pago, absorbida por la casa en vez de
-   sumarse aparte en el checkout.
+/* Cada precio lleva $1.000 arriba de lo que Santiago cobraba hasta el 1 de
+   septiembre de 2026. Ese aumento se decidió para absorber la comisión de
+   Mercado Pago, y ese mismo día Mercado Pago se dio de baja: la seña pasó a
+   cobrarse por transferencia, que no tiene comisión.
 
-   La comisión se cobra sólo sobre la seña —el resto se paga en el lugar y
-   no pasa por Mercado Pago—, y es un porcentaje, así que los mil pesos no
-   rinden igual en los tres. A la tasa de acreditación inmediata (~6,29% +
-   IVA) la cuenta da: Corte $647 de comisión, Corte y barba $761, y el de
-   domicilio $1.560 sobre una seña de $20.500 — o sea que ahí los mil pesos
-   se quedan cortos por unos $560. Está así porque el aumento se definió
-   como un monto fijo; si el domicilio tiene que cubrirse solo, son $2.000
-   y no $1.000. */
+   O sea que los mil pesos siguen acá pero su motivo ya no existe. Quedan
+   porque bajar un precio es una decisión de la casa y no una consecuencia
+   técnica, y porque el aumento ya estuvo publicado. Si Santiago los quiere
+   sacar, es cambiar estos tres números. */
 export const SERVICES: Record<Location, Service[]> = {
   local: [
     { name: 'Corte', duration: 40, price: 17000 },
@@ -159,10 +156,28 @@ export const CANCELLATION_MIN_HOURS = 24
 /* Seña: la mitad del servicio, y el rato que le guardamos el horario a quien
    todavía no la pagó. Pasado ese rato el turno se cae y el horario vuelve a
    estar libre — si no, cualquiera que abandone la pantalla de pago se queda
-   con el turno para siempre. */
+   con el turno para siempre.
+
+   El plazo era de 20 minutos cuando la seña se pagaba con tarjeta y entraba
+   sola. Con transferencia el reloj mide otra cosa: el cliente tiene que
+   abrir el homebanking, transferir, sacar la captura y mandársela a
+   Santiago, y él tiene que verla y confirmar. Veinte minutos hacían que un
+   turno pagado se cayera antes de que nadie lo mirara. */
 export const DEPOSIT_PERCENT = 50
-export const DEPOSIT_HOLD_MINUTES = 20
+export const DEPOSIT_HOLD_MINUTES = 1440
 
 export function depositAmount(price: number): number {
   return Math.round((price * DEPOSIT_PERCENT) / 100)
 }
+
+/* El mismo plazo, dicho para una persona. Existe para que cambiar el número
+   de arriba no deje seis pantallas diciendo «20 minutos» cuando ya son
+   veinticuatro horas: la constante es una, y el texto sale de ella. */
+export const DEPOSIT_HOLD_LABEL: string =
+  DEPOSIT_HOLD_MINUTES % 1440 === 0
+    ? DEPOSIT_HOLD_MINUTES === 1440
+      ? '24 horas'
+      : `${DEPOSIT_HOLD_MINUTES / 1440} días`
+    : DEPOSIT_HOLD_MINUTES % 60 === 0
+      ? `${DEPOSIT_HOLD_MINUTES / 60} horas`
+      : `${DEPOSIT_HOLD_MINUTES} minutos`

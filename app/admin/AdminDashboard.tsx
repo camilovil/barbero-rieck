@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import type { BookingEvent } from '@/lib/googleCalendar'
 import ThemeToggle from '@/components/ThemeToggle'
 import TurnoTracker from '@/components/TurnoTracker'
-import { TIME_SLOTS, LOCATION_LABELS, DEPOSIT_HOLD_MINUTES } from '@/lib/constants'
+import { TIME_SLOTS, LOCATION_LABELS, DEPOSIT_HOLD_LABEL } from '@/lib/constants'
 import {
   capitalize as upperFirst,
   fechaLarga,
@@ -1068,7 +1068,7 @@ export default function AdminDashboard() {
                 estado={selected.pago === 'pagado' ? 'confirmado' : 'pendiente'}
                 nota={selected.pago === 'pagado'
                   ? 'Seña pagada'
-                  : `Sin seña · se libera a los ${DEPOSIT_HOLD_MINUTES} min`}
+                  : `Sin seña · se libera en ${DEPOSIT_HOLD_LABEL}`}
               />
             )}
 
@@ -1084,7 +1084,7 @@ export default function AdminDashboard() {
                 disabled={confirmando === selected.id}
                 onClick={() => confirmarAMano(selected)}
               >
-                {confirmando === selected.id ? 'Confirmando…' : 'Cobré en efectivo — confirmar'}
+                {confirmando === selected.id ? 'Confirmando…' : 'Recibí la seña — confirmar'}
               </button>
             )}
 

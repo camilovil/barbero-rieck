@@ -94,10 +94,10 @@ tenga vería los datos de otro.
   recorrido **Reservado → Pago pendiente → Confirmado** se dibuja como los pasos
   del flujo. Reprogramar va primero y cancelar como secundario: la seña no se
   devuelve, así que la salida cara no puede ser la que se ve mejor.
-- **`/pago`** — la vuelta de Mercado Pago. No le cree al parámetro que trae
-  Mercado Pago en la URL: le pregunta al servidor por el estado que dejó el
-  webhook, que es el aviso bueno y puede tardar unos segundos más que el
-  navegador del cliente.
+- **`/pago`** — cómo pagar la seña: el monto, el alias de Santiago con un botón
+  para copiarlo, y otro que abre WhatsApp con el mensaje del comprobante ya
+  escrito. Se queda preguntando por el turno cada diez segundos, por si Santiago
+  lo confirma mientras el cliente tiene la pantalla abierta.
 - **`/cancelar`** — cancela hasta 24 horas antes (`CANCELLATION_MIN_HOURS`).
 - **`/modificar`** — reprograma. Borra el evento y crea uno nuevo, así que el id
   cambia: por eso el panel guarda el id del turno abierto y no el objeto.
@@ -142,25 +142,28 @@ el barrido que hacen `/api/booking` y `/api/availability` cada vez que alguien
 mira o toma un horario. La ruta queda para engancharla a un cron cada quince
 minutos el día que el proyecto pase a Pro, o a un cron externo.
 
-## Los dos interruptores
+## Los tres interruptores
 
 `lib/flags.ts`:
 
 - **`DEPOSIT_ENABLED`** — con esto en `1` el turno nace sin confirmar y hay que
-  pagar una seña del 50% por Mercado Pago. El horario queda guardado 20 minutos
+  transferir una seña del 50%. El horario queda guardado 24 horas
   (`DEPOSIT_HOLD_MINUTES`) y después se cae.
 - **`VIATICO_ENABLED`** — con esto en `1` se pide el barrio en el paso de datos y
   se cobra el traslado según la banda. Apagado, el precio a domicilio es plano y
   el campo ni siquiera aparece: un campo obligatorio que no decide nada es peor
   que no tenerlo.
 
-**Los dos están apagados a propósito, y ninguno cuelga de que existan las
-credenciales.** El día que Santiago pegue su token de Mercado Pago en Vercel, o
-que confirmemos la tabla de zonas, nada tiene que encenderse solo: se prende a
-mano, cuando el circuito está probado.
+- **`COMING_SOON`** — con esto en `1` la web no toma reservas: la portada y
+  `/reservar` llevan a un cartel de próximamente y `/api/booking` devuelve 503.
+  No cierra el panel, ni las pantallas de un turno ya reservado, ni le tapa el
+  sitio a quien tenga la cookie del panel.
 
-Para el detalle de cómo encender la seña —credenciales, webhook, pruebas— está
-[MERCADOPAGO.md](MERCADOPAGO.md).
+**Ninguno cuelga de que existan los datos.** Cargar el alias en Vercel no
+enciende el cobro: se prende a mano, cuando el circuito está probado.
+
+Para el detalle de cómo funciona la seña —pantallas, plazos, pruebas— está
+[SENA.md](SENA.md).
 
 ## El sistema visual
 
@@ -207,9 +210,9 @@ Next es el que viene por defecto.
 Sin credenciales de Google el flujo se recorre igual: el calendario devuelve un
 stub y no se escribe nada. Los mails, sin `GMAIL_USER`, quedan en el log.
 
-Mercado Pago no se puede probar del todo desde local: necesita una URL pública
-para volver al sitio y para el webhook, y a `localhost` no llega. La preferencia
-se crea igual, sin `auto_return` — el cliente vuelve tocando «Volver al sitio».
+La seña sí se puede recorrer entera desde local: el alias sale de una variable
+de entorno y quien confirma es Santiago desde el panel, así que no hace falta que
+nadie de afuera llegue hasta acá.
 
 ## Comprobar antes de subir
 
@@ -229,7 +232,7 @@ tabla de viáticos, la integridad del catálogo y el parseo de la línea
 verdad del precio de un turno ya tomado.
 
 Lo que los tests NO cubren, y conviene tenerlo presente: nada que hable con
-Google Calendar o con Mercado Pago, y nada visual.
+Google Calendar, y nada visual.
 
 ESLint se agregó tarde, con el proyecto ya escrito. Hoy sale limpio de errores y
 deja siete avisos de `react-hooks/set-state-in-effect` — efectos que buscan
@@ -252,10 +255,11 @@ En `.env.local` para desarrollo, en Vercel para producción.
 | `SANTIAGO_EMAIL` | A dónde le llegan a Santiago los avisos y el resumen diario. |
 | `SANTIAGO_WHATSAPP` | Su número, para el link de WhatsApp de la pantalla de reprogramar. |
 | `CRON_SECRET` | Protege las rutas de cron. Vercel lo manda como `Bearer`. |
-| `MP_ACCESS_TOKEN` | El token de Mercado Pago con el que se crea la preferencia de pago. |
-| `MP_WEBHOOK_SECRET` | La clave para verificar la firma del webhook. Sin ella el webhook sigue funcionando, pero avisa por log que no verifica. |
+| `SANTIAGO_ALIAS` | El alias al que el cliente transfiere la seña. Sin esto la pantalla de pago no puede pedir la transferencia. |
+| `SANTIAGO_TITULAR` | El titular de esa cuenta, para que el cliente confirme a quién le transfiere. |
 | `DEPOSIT_ENABLED` | `1` prende la seña. Cualquier otra cosa, apagada. |
 | `VIATICO_ENABLED` | `1` prende el viático por zona. Cualquier otra cosa, apagado. |
-| `APP_URL` | La URL pública del sitio, para los links de los mails y la vuelta de Mercado Pago. Si no está, se usa `VERCEL_URL`, que Vercel inyecta sola. |
+| `COMING_SOON` | `1` cierra la puerta: cartel de próximamente y nadie reserva. |
+| `APP_URL` | La URL pública del sitio, para los links de los mails y las etiquetas de OpenGraph. Si no está, se usa `VERCEL_URL`, que Vercel inyecta sola. |
 
-Todo lo que toca plata o credenciales está en [MERCADOPAGO.md](MERCADOPAGO.md).
+Todo lo que toca la seña está en [SENA.md](SENA.md).

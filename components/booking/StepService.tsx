@@ -68,7 +68,7 @@ export default function StepService({ location, selected, senaActiva = false, vi
               : 'Incluye el traslado de Santiago hasta tu dirección.'
           )}
           {location === 'domicilio' && senaActiva && <br />}
-          {senaActiva && `Para reservar se paga una seña del ${DEPOSIT_PERCENT}% por Mercado Pago. El resto, en el turno.`}
+          {senaActiva && `Para reservar se transfiere una seña del ${DEPOSIT_PERCENT}%. El resto, en el turno.`}
         </p>
       )}
     </div>

@@ -29,7 +29,7 @@ export default function StepResumen({ booking, senaActiva = false, viaticoActivo
 
   /* Con seña, el número grande deja de ser el total y pasa a ser lo que se
      paga ahora: es la plata que el cliente está por poner en el próximo
-     toque, y tiene que verla antes de que lo mande Mercado Pago. */
+     toque, y tiene que verla antes de llegar a la pantalla de la transferencia. */
   const precio = booking.service?.price ?? 0
   /* El viático no entra en la seña: se paga entero en el turno, junto con el
      saldo del servicio. La seña sigue siendo la mitad del servicio. */

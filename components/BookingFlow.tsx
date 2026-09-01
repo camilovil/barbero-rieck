@@ -94,14 +94,27 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
       if (!res.ok) throw new Error(data.error ?? 'Error al confirmar')
 
       /* Con seña, acá el turno todavía no está cerrado: el horario le queda
-         guardado y manda Mercado Pago. Se confirma cuando avisa que la plata
-         entró, y el cliente vuelve a /pago. Por eso no hay pantalla de éxito. */
-      if (data.paymentUrl) {
+         guardado y le toca transferir. /pago le dice cuánto, a qué alias y
+         cómo mandar el comprobante, y se queda mirando hasta que Santiago lo
+         confirma. Por eso no hay pantalla de éxito en este camino. */
+      if (data.pendingPayment && data.eventId) {
         setRedirigiendo(true)
+        /* Quién es y para cuándo, para que el WhatsApp del comprobante le
+           llegue a Santiago ya redactado. Va por la sesión del navegador y no
+           por la URL: es el dato del cliente y no tiene por qué quedar en un
+           link que después se comparte o queda en el historial. */
+        try {
+          sessionStorage.setItem('bh_pago', JSON.stringify({
+            nombre: state.nombre,
+            cuando: state.date
+              ? `${state.date.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })} a las ${state.time ?? ''}`.trim()
+              : undefined,
+          }))
+        } catch { /* sin storage el mensaje sale genérico, que también sirve */ }
         /* assign() y no `location.href = ...`: hace exactamente lo mismo,
            pero es una llamada y no la mutación de un objeto de afuera, que es
            lo que el linter marca con razón en el caso general. */
-        window.location.assign(data.paymentUrl)
+        window.location.assign(`/pago?turno=${encodeURIComponent(data.eventId)}`)
         return
       }
 
@@ -155,10 +168,10 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
   /* El CTA es siempre el mismo control en el mismo lugar: cambia la
      etiqueta y a quién llama, no la posición. En el paso 5 confirma. */
   const ctaConfirmar = redirigiendo
-    ? 'Te llevamos a pagar…'
+    ? 'Un momento…'
     : loading
       ? 'Confirmando…'
-      : senaActiva ? 'Pagar la seña' : 'Confirmar turno'
+      : senaActiva ? 'Reservar y pagar la seña' : 'Confirmar turno'
 
   const cta = state.step === 5
     ? { label: ctaConfirmar, onClick: handleConfirm, enabled: !loading && !redirigiendo }

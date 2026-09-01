@@ -15,13 +15,14 @@ import {
   BARBER_ADDRESS,
   CANCELLATION_MIN_HOURS,
   viaticoDeBarrio,
-  DEPOSIT_HOLD_MINUTES,
+  DEPOSIT_HOLD_LABEL,
   INSTAGRAM_HANDLE,
   INSTAGRAM_URL,
   LOCATION_LABELS,
   SERVICES,
   TIME_SLOTS,
 } from './constants'
+import { datosDeTransferencia, linkDeComprobante, mensajeDeComprobante } from './transferencia'
 import { getAppUrl } from './url'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -702,6 +703,110 @@ export async function sendReminderEmail(opts: {
   })
 }
 
+/* El cliente reservó y le toca transferir la seña. Este mail es lo único que
+   le queda si cierra la pestaña: sin él, el alias, el monto y el plazo se van
+   con la pantalla y el turno se cae solo.
+
+   No dice «turno confirmado» en ningún lado, y es a propósito: todavía no lo
+   es. El mail de confirmación sale cuando Santiago ve el comprobante.
+
+   Sale sólo al cliente. A Santiago no se le avisa de cada reserva sin pagar
+   —le llegaría el WhatsApp con el comprobante igual, y las que nadie paga son
+   ruido—; en el panel las ve marcadas como «sin seña». */
+/* El armado va aparte del envío para que la pantalla de preview pueda
+   mirarlo sin mandar nada: es el único mail que el cliente recibe antes de
+   tener turno, así que conviene poder verlo. */
+function senaInstruccionesHtml(opts: {
+  booking: BookingState
+  eventId: string
+  sena: number
+  logoSrc?: string
+}): { html: string; asunto: string } {
+  const { booking, eventId, sena } = opts
+  const datos = datosDeTransferencia()
+  const esDomicilio = booking.location === 'domicilio'
+  const lugarMain = LOCATION_LABELS[booking.location ?? 'local']
+  const lugarSub = esDomicilio ? (booking.direccion || '') : BARBER_ADDRESS
+  const dateShort = booking.date ? shortDate(booking.date) : '—'
+  const cuando = `${dateShort} a las ${booking.time ?? ''}`.trim()
+
+  const waLink = datos.whatsapp
+    ? linkDeComprobante(datos, mensajeDeComprobante({ nombre: booking.nombre, cuando, sena }))
+    : null
+
+  /* Si el alias no está cargado, este mail no puede pedir una transferencia a
+     ningún lado. Antes que mandar una fila vacía, manda a arreglarlo por
+     WhatsApp, que es lo que el cliente haría igual. */
+  const ink = DARK
+  const rows = [
+    kv('Servicio', [serviceName(booking.service?.name ?? ''), `${booking.service?.duration ?? 60} min`].filter(Boolean).join(' · '), ink),
+    kv('Dónde', lugarSub ? `${lugarMain} · ${lugarSub}` : lugarMain, ink),
+    kv('Seña a transferir', money(sena), ink, { mono: true, last: !datos.alias }),
+    ...(datos.alias
+      ? [
+          kv('Alias', datos.alias, ink, { mono: true }),
+          kv('A nombre de', datos.titular, ink, { last: true }),
+        ]
+      : []),
+  ].join('')
+
+  const acciones = waLink
+    ? btnPair(
+        btnSolid(waLink, 'Mandar el comprobante', ink),
+        btnGhost(turnoUrl(eventId, booking.email), 'Ver mi turno', ink),
+      )
+    : `<div style="margin-top:22px">${btnSolid(turnoUrl(eventId, booking.email), 'Ver mi turno', ink)}</div>`
+
+  const texto = datos.alias
+    ? `${booking.nombre.split(' ')[0]}, te guardamos el horario ${DEPOSIT_HOLD_LABEL}. Transferí la seña al alias de acá abajo y mandale el comprobante a Santiago: cuando lo vea, tu turno queda confirmado y te llega el mail. El resto se paga en el lugar.`
+    : `${booking.nombre.split(' ')[0]}, te guardamos el horario ${DEPOSIT_HOLD_LABEL}. Escribile a Santiago por WhatsApp para coordinar la seña: cuando la reciba, tu turno queda confirmado.`
+
+  const html = shell({
+    ink,
+    conMarca: false,
+    logoSrc: opts.logoSrc,
+    preheader: `Falta la seña · ${cuando}`,
+    body: `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td align="left">${logotipo(opts.logoSrc ?? LOGO_SRC)}</td>
+          <td align="right" style="font-family:${SANS};font-size:17px;font-weight:700;letter-spacing:-.9px;color:${ORO_ALTO}">Hö</td>
+        </tr>
+      </table>
+      ${trama(ink)}
+      <div style="margin-top:26px">${rotulo('Falta la seña', ink, { estado: true })}</div>
+      ${display(`${esc(dateShort)}<br>${esc(booking.time ?? '')}`, ink)}
+      ${parrafo(texto, ink)}
+      ${kvTable(rows, ink)}
+      ${acciones}
+      ${pie(`Reserva ${bookingCode(eventId)} &middot; si la seña no llega en ${DEPOSIT_HOLD_LABEL}, el horario vuelve a la agenda.<br>${instagram(ink)}`, ink)}
+    `,
+  })
+
+  return { html, asunto: `Falta la seña · ${dateShort} · ${booking.time ?? ''}` }
+}
+
+export async function sendDepositInstructionsEmail(
+  booking: BookingState,
+  eventId: string,
+  sena: number,
+): Promise<void> {
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.log('[email] stub — instrucciones de seña para', booking.nombre)
+    return
+  }
+
+  const { html, asunto } = senaInstruccionesHtml({ booking, eventId, sena })
+
+  await getTransporter().sendMail({
+    from: FROM(),
+    to: booking.email,
+    subject: asunto,
+    html,
+    attachments: logoAttachment(),
+  })
+}
+
 /* La reserva se venció sin que entrara la seña y el horario volvió a la
    agenda. Sale un solo mail, al cliente: para Santiago no pasó nada —nunca
    tuvo un turno— y avisarle de cada reserva abandonada sería ruido. */
@@ -729,7 +834,7 @@ export async function sendExpiredHoldEmail(opts: {
     rotuloTxt: 'Reserva no confirmada',
     preheader: 'No llegó la seña y el horario volvió a la agenda.',
     titulo: `${esc(dateShort)}<br>${esc(time)}`,
-    texto: `${opts.nombre.split(' ')[0]}, te guardamos el horario ${DEPOSIT_HOLD_MINUTES} minutos y la seña no llegó, así que volvió a la agenda. Si todavía lo querés, reservalo de nuevo — si llegaste a pagar, escribile a Santiago y lo resolvemos.`,
+    texto: `${opts.nombre.split(' ')[0]}, te guardamos el horario ${DEPOSIT_HOLD_LABEL} y la seña no llegó, así que volvió a la agenda. Si todavía lo querés, reservalo de nuevo — si llegaste a pagar, escribile a Santiago y lo resolvemos.`,
     rows: [
       kv('Servicio', [serviceName(opts.servicio), durationOf(opts.servicio)].filter(Boolean).join(' · '), DARK),
       kv('Dónde', lugarSub ? `${lugarMain} · ${lugarSub}` : lugarMain, DARK, { last: true }),
@@ -743,50 +848,6 @@ export async function sendExpiredHoldEmail(opts: {
     from: FROM(),
     to: opts.email,
     subject: `Reserva no confirmada · ${dateShort} · ${time}`,
-    html,
-    attachments: logoAttachment(),
-  })
-}
-
-/* Al revés que el anterior: la seña entró y el turno ya no estaba. Se venció
-   en el rato que el cliente tardó en pagar, o se canceló en el medio. Es plata
-   cobrada sin turno que la respalde, así que sale un solo mail y es a Santiago
-   —el cliente ya recibió el de la reserva vencida—. Va por mail y no sólo al
-   log porque los logs de Vercel no los lee nadie, y esto hay que resolverlo
-   con alguien que pagó esperando del otro lado. */
-export async function sendOrphanDepositEmail(opts: {
-  paymentId: string
-  eventId: string
-  amount: number | null
-}): Promise<void> {
-  const monto = opts.amount ? money(opts.amount) : '—'
-
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD || !process.env.SANTIAGO_EMAIL) {
-    // Sin correo configurado, que por lo menos quede escrito con los tres datos.
-    console.error(`[email] stub — seña sin turno: ${monto}, pago ${opts.paymentId}, turno ${opts.eventId}`)
-    return
-  }
-
-  const html = interno({
-    rotuloTxt: 'Revisar a mano',
-    nombre: 'Seña sin turno',
-    bloque: parrafo(
-      'Entró una seña aprobada y el turno ya no estaba esperando: se venció mientras el cliente pagaba, o se canceló en el medio. Hay que devolverle la plata o reubicarlo. Con quién hablar sale del pago, en Mercado Pago.',
-      LIGHT,
-    ),
-    rows: [
-      kv('Cobrado', monto, LIGHT, { mono: true }),
-      kv('Pago', opts.paymentId, LIGHT, { mono: true }),
-      kv('Turno', opts.eventId, LIGHT, { mono: true, last: true }),
-    ].join(''),
-    acciones: `<div style="margin-top:22px">${btnSolid('https://www.mercadopago.com.ar/activities', 'Buscar el pago en Mercado Pago', LIGHT)}</div>`,
-    pieTxt: 'Este turno no está en la agenda: no lo busques ahí.',
-  })
-
-  await getTransporter().sendMail({
-    from: FROM(),
-    to: process.env.SANTIAGO_EMAIL,
-    subject: `Seña cobrada sin turno · ${monto} · pago ${opts.paymentId}`,
     html,
     attachments: logoAttachment(),
   })
@@ -1128,7 +1189,35 @@ export function previewEmails(): { id: string; nombre: string; asunto: string; h
       start: at(15, 0), end: at(17, 0) },
   ]
 
+  /* Va primero porque es el primero que recibe el cliente: antes del de
+     confirmación, y el único que llega cuando todavía no tiene turno. */
+  const instrucciones = senaInstruccionesHtml({
+    booking: {
+      nombre: 'Tomás Vega',
+      email: 't@correo.com',
+      whatsapp: '+5491100000001',
+      date: fecha,
+      time: '18:30',
+      service: SERVICES.local[1],
+      location: 'local',
+      direccion: '',
+      nota: '',
+      barrio: null,
+      step: 5,
+    } as BookingState,
+    eventId: '7f3k9c1m2d8p0qav5s6t4u',
+    sena: 10000,
+    logoSrc,
+  })
+
   return [
+    {
+      id: 'cliente-sena',
+      nombre: 'Cliente · falta la seña',
+      asunto: instrucciones.asunto,
+      alto: 620,
+      html: instrucciones.html,
+    },
     {
       id: 'cliente-confirmacion',
       nombre: 'Cliente · turno confirmado',
@@ -1195,7 +1284,7 @@ export function previewEmails(): { id: string; nombre: string; asunto: string; h
         rotuloTxt: 'Reserva no confirmada',
         preheader: 'No llegó la seña y el horario volvió a la agenda.',
         titulo: `${dateShort}<br>18:30`,
-        texto: `Tomás, te guardamos el horario ${DEPOSIT_HOLD_MINUTES} minutos y la seña no llegó, así que volvió a la agenda. Si todavía lo querés, reservalo de nuevo — si llegaste a pagar, escribile a Santiago y lo resolvemos.`,
+        texto: `Tomás, te guardamos el horario ${DEPOSIT_HOLD_LABEL} y la seña no llegó, así que volvió a la agenda. Si todavía lo querés, reservalo de nuevo — si llegaste a pagar, escribile a Santiago y lo resolvemos.`,
         rows: [
           kv('Servicio', 'Corte y barba · 60 min', DARK),
           kv('Dónde', `${LOCATION_LABELS.local} · ${BARBER_ADDRESS}`, DARK, { last: true }),
@@ -1247,28 +1336,6 @@ export function previewEmails(): { id: string; nombre: string; asunto: string; h
         ].join(''),
         acciones: `<div style="margin-top:22px">${btnSolid(`${getAppUrl()}/admin`, 'Ver en la agenda', LIGHT)}</div>`,
         pieTxt: `Reserva ${code} &middot; el horario anterior volvió a la agenda.`,
-        logoSrc,
-      }),
-    },
-    {
-      id: 'interno-sena-sin-turno',
-      nombre: 'Santiago · seña sin turno',
-      asunto: `Seña cobrada sin turno · ${money(9500)} · pago 1334455667`,
-      alto: 660,
-      html: interno({
-        rotuloTxt: 'Revisar a mano',
-        nombre: 'Seña sin turno',
-        bloque: parrafo(
-          'Entró una seña aprobada y el turno ya no estaba esperando: se venció mientras el cliente pagaba, o se canceló en el medio. Hay que devolverle la plata o reubicarlo. Con quién hablar sale del pago, en Mercado Pago.',
-          LIGHT,
-        ),
-        rows: [
-          kv('Cobrado', money(9500), LIGHT, { mono: true }),
-          kv('Pago', '1334455667', LIGHT, { mono: true }),
-          kv('Turno', '7f3k9c1m2d8p0qav5s6t4u', LIGHT, { mono: true, last: true }),
-        ].join(''),
-        acciones: `<div style="margin-top:22px">${btnSolid('https://www.mercadopago.com.ar/activities', 'Buscar el pago en Mercado Pago', LIGHT)}</div>`,
-        pieTxt: 'Este turno no está en la agenda: no lo busques ahí.',
         logoSrc,
       }),
     },
