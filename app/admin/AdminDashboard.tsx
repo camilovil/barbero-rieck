@@ -94,6 +94,18 @@ function duracionMin(ev: BookingEvent): number {
 }
 
 const WEEK_DAYS_SHORT = ['D', 'L', 'M', 'M', 'J', 'V', 'S']
+
+/* «1 – 7 de septiembre», y con el mes de los dos extremos cuando la semana
+   lo cruza. Los números de la grilla solos no dicen de qué mes son, y en la
+   última semana de cada mes eso importa. */
+function rangoDeSemana(dias: Date[]): string {
+  const mes = (d: Date) => d.toLocaleDateString('es-AR', { month: 'long' })
+  const desde = dias[0]
+  const hasta = dias[6]
+  return mes(desde) === mes(hasta)
+    ? `${desde.getDate()} – ${hasta.getDate()} de ${mes(hasta)}`
+    : `${desde.getDate()} de ${mes(desde)} – ${hasta.getDate()} de ${mes(hasta)}`
+}
 const FILTERS = [
   { key: 'upcoming', label: 'Próximos' },
   { key: 'today', label: 'Hoy' },
@@ -126,6 +138,11 @@ export default function AdminDashboard() {
   const [history, setHistory] = useState<BookingEvent[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [historyLoaded, setHistoryLoaded] = useState(false)
+
+  /* Qué semana muestra la vista semanal: 0 es la de hoy, -1 la anterior,
+     1 la que viene. Es lo único que se mueve; el resto del panel siempre
+     habla del presente. */
+  const [weekOffset, setWeekOffset] = useState(0)
 
   // Qué sección de la navegación está abierta
   const [seccion, setSeccion] = useState<Seccion>('agenda')
@@ -323,16 +340,31 @@ export default function AdminDashboard() {
       .finally(() => setLoadingEditSlots(false))
   }
 
+  /* El historial se pide una sola vez y cuando hace falta: al abrir su
+     pestaña, o al retroceder a una semana pasada, que es la otra forma de
+     mirar turnos que ya fueron. */
+  function cargarHistorial() {
+    if (historyLoaded || loadingHistory) return
+    setLoadingHistory(true)
+    fetch('/api/admin/bookings/history')
+      .then(r => r.json())
+      .then(data => { setHistory(data.events ?? []); setHistoryLoaded(true) })
+      .catch(() => {})
+      .finally(() => setLoadingHistory(false))
+  }
+
   function handleFilterChange(f: Filter) {
     setFilter(f)
-    if (f === 'history' && !historyLoaded) {
-      setLoadingHistory(true)
-      fetch('/api/admin/bookings/history')
-        .then(r => r.json())
-        .then(data => { setHistory(data.events ?? []); setHistoryLoaded(true) })
-        .catch(() => {})
-        .finally(() => setLoadingHistory(false))
-    }
+    /* Cambiar de pestaña vuelve a la semana de hoy. Si no, se vuelve a
+       «Semana» días después y sigue mostrando la que uno había dejado
+       abierta, sin ninguna pista de por qué. */
+    if (f !== 'week') setWeekOffset(0)
+    if (f === 'history') cargarHistorial()
+  }
+
+  function irASemana(offset: number) {
+    setWeekOffset(offset)
+    if (offset < 0) cargarHistorial()
   }
 
   function openEdit(ev: BookingEvent) {
@@ -394,11 +426,25 @@ export default function AdminDashboard() {
     }
   }
 
-  function getWeekDays(): Date[] {
+  /* Los siete días de una semana, de lunes a domingo. `offset` la corre:
+     0 es la de hoy, -1 la anterior.
+
+     Dos cosas que estaban mal y se arreglan acá:
+
+     · El domingo caía en la semana siguiente. `getDay()` devuelve 0 el
+       domingo, así que la cuenta daba el lunes de mañana y el panel saltaba
+       de semana un día antes de tiempo. Se atiende de lunes a sábado, así
+       que casi no se veía — pero el domingo que Santiago abriera el panel,
+       su semana no estaría.
+     · El lunes conservaba la hora actual, y el filtro de la lista compara
+       contra él: a las seis de la tarde, un turno del lunes a las nueve de
+       la mañana quedaba afuera de «esta semana». */
+  function getWeekDays(offset = 0): Date[] {
     const today = new Date()
-    const day = today.getDay()
+    const day = today.getDay() === 0 ? 7 : today.getDay()
     const monday = new Date(today)
-    monday.setDate(today.getDate() - day + 1)
+    monday.setDate(today.getDate() - day + 1 + offset * 7)
+    monday.setHours(0, 0, 0, 0)
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(monday)
       d.setDate(monday.getDate() + i)
@@ -406,14 +452,39 @@ export default function AdminDashboard() {
     })
   }
 
-  const weekDays = getWeekDays()
+  const weekDays = getWeekDays(weekOffset)
+  /* El domingo entero, no el domingo a las cero horas: si no, los turnos
+     del último día de la semana no entran en su propia semana. */
+  const finDeSemana = new Date(weekDays[6])
+  finDeSemana.setHours(23, 59, 59, 999)
+
+  /* La vista semanal mira el pasado y el futuro, así que se sirve de las dos
+     listas. El historial puede no estar cargado todavía: se pide al
+     retroceder, y mientras tanto la semana pasada se ve vacía por un
+     segundo. */
+  const eventosDeLaSemana = [...events, ...history]
+    .filter(e => {
+      const d = new Date(e.start)
+      return d >= weekDays[0] && d <= finDeSemana
+    })
+    /* De lunes a domingo, como se lee la grilla de arriba. El historial viene
+       del más reciente al más viejo —que es lo correcto en su pestaña, donde
+       uno busca lo último— pero acá dejaba el sábado arriba del lunes. */
+    .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+
+  /* Hasta dónde llega lo que el panel tiene cargado: la agenda viene con 30
+     días para adelante. Más allá no hay «semana vacía», hay «semana que no
+     pedimos», y son cosas distintas: por eso el botón se apaga en vez de
+     mostrar un vacío que parece una agenda libre. */
+  const SEMANAS_ADELANTE = 4
+  const SEMANAS_ATRAS = 8
 
   const filteredBase = filter === 'history'
     ? history
     : filter === 'today'
     ? events.filter(e => new Date(e.start).toDateString() === new Date().toDateString())
     : filter === 'week'
-    ? events.filter(e => { const d = new Date(e.start); return d >= weekDays[0] && d <= weekDays[6] })
+    ? eventosDeLaSemana
     : events
 
   const filtered = filteredBase.filter(e =>
@@ -430,9 +501,15 @@ export default function AdminDashboard() {
      Santiago abre el panel a la mañana, y hasta ahora no estaba: lo
      calculaba sólo el mail del resumen diario. */
   const previstoHoy = eventosHoy.reduce((sum, e) => sum + precioServicio(e.servicio) + e.viatico, 0)
+  /* El número de arriba es siempre el de la semana en curso, aunque abajo se
+     esté mirando otra: la fila de cifras es el estado de la casa hoy, no un
+     resumen de lo que hay en pantalla. */
+  const semanaDeHoy = getWeekDays(0)
+  const finDeLaSemanaDeHoy = new Date(semanaDeHoy[6])
+  finDeLaSemanaDeHoy.setHours(23, 59, 59, 999)
   const totalSemana = events.filter(e => {
     const d = new Date(e.start)
-    return d >= weekDays[0] && d <= weekDays[6]
+    return d >= semanaDeHoy[0] && d <= finDeLaSemanaDeHoy
   }).length
 
   const isHistory = filter === 'history'
@@ -453,7 +530,9 @@ export default function AdminDashboard() {
   const emptyText = searching
     ? `Ningún turno coincide con «${search.trim()}».`
     : filter === 'today' ? 'Hoy no tenés turnos.'
-    : filter === 'week' ? 'Esta semana no tenés turnos.'
+    : filter === 'week'
+      ? weekOffset === 0 ? 'Esta semana no tenés turnos.'
+        : `Ningún turno entre el ${rangoDeSemana(weekDays)}.`
     : isHistory ? 'No hay turnos en los últimos 60 días.'
     : 'No tenés turnos próximos.'
 
@@ -613,13 +692,60 @@ export default function AdminDashboard() {
               /* A 375px, siete columnas dejan 50px por día y los nombres se
                  truncan hasta no decir nada. Se le da un ancho mínimo real y
                  se arrastra al costado, como la tira de días del flujo. */
-              <div style={{ marginTop: 22, overflowX: 'auto' }}>
+              <div style={{ marginTop: 22 }}>
+                {/* La barra de la semana. El rótulo del medio dice de qué
+                    semana se está hablando, porque los números de la grilla
+                    solos no alcanzan para saber si son de marzo o de abril. */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  gap: 12, marginBottom: 12,
+                }}>
+                  <button
+                    onClick={() => irASemana(weekOffset - 1)}
+                    disabled={weekOffset <= -SEMANAS_ATRAS}
+                    className="btn-outline btn-sm"
+                    aria-label="Semana anterior"
+                  >
+                    ←
+                  </button>
+
+                  <div style={{ textAlign: 'center', minWidth: 0 }}>
+                    <div className="rotulo" style={{ whiteSpace: 'nowrap' }}>
+                      {weekOffset === 0
+                        ? 'Esta semana'
+                        : weekOffset === 1
+                          ? 'La semana que viene'
+                          : weekOffset === -1
+                            ? 'La semana pasada'
+                            : rangoDeSemana(weekDays)}
+                    </div>
+                    {weekOffset !== 0 && (
+                      <button onClick={() => irASemana(0)} className="link-btn" style={{ marginTop: 4 }}>
+                        {rangoDeSemana(weekDays)} · volver a hoy
+                      </button>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => irASemana(weekOffset + 1)}
+                    disabled={weekOffset >= SEMANAS_ADELANTE}
+                    className="btn-outline btn-sm"
+                    aria-label="Semana siguiente"
+                  >
+                    →
+                  </button>
+                </div>
+
+                {/* A 375px, siete columnas dejan 50px por día y los nombres se
+                    truncan hasta no decir nada. Se le da un ancho mínimo real
+                    y se arrastra al costado, como la tira de días del flujo. */}
+                <div style={{ overflowX: 'auto' }}>
                 <div style={{
                   minWidth: 560, border: '1px solid var(--border)',
                   display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
                 }}>
                   {weekDays.map((day, i) => {
-                    const dayEvents = events.filter(e => new Date(e.start).toDateString() === day.toDateString())
+                    const dayEvents = eventosDeLaSemana.filter(e => new Date(e.start).toDateString() === day.toDateString())
                     const isToday = day.toDateString() === new Date().toDateString()
                     return (
                       <div key={i} style={{ borderLeft: i === 0 ? 'none' : '1px solid var(--border-soft)', minHeight: 96 }}>
@@ -657,6 +783,7 @@ export default function AdminDashboard() {
                       </div>
                     )
                   })}
+                </div>
                 </div>
               </div>
             )}
