@@ -28,6 +28,36 @@ export const TIME_SLOTS: Record<Location, string[]> = {
 
 export const BLOCKED_SLOTS: string[] = []
 
+/* Las reglas de cuándo se puede tomar un turno, del lado del servidor.
+   Vivían sólo en el calendario del navegador: los domingos y los días pasados
+   se dibujaban deshabilitados y ahí terminaba todo. Un POST a mano —o una
+   pestaña abierta desde ayer— metía un turno un domingo a las tres de la
+   mañana en la agenda de Santiago. Es la misma clase de agujero que el precio
+   que decidía el navegador (commit 590720f): lo que el cliente manda es una
+   propuesta, no un permiso.
+
+   El día se mira en UTC a propósito, porque es de donde sale la fecha del
+   evento (`toUTCDateStr` en googleCalendar.ts). Mirarlo en otra zona haría que
+   la validación y el evento hablaran de días distintos justo en los bordes,
+   que es donde estas cosas fallan.
+
+   Devuelve el motivo del rechazo, ya escrito para el cliente, o null si el
+   turno se puede tomar. */
+export function motivoParaNoTomarlo(
+  date: Date,
+  time: string,
+  location: Location,
+): string | null {
+  if (Number.isNaN(date.getTime())) return 'Esa fecha no existe'
+  if (!TIME_SLOTS[location].includes(time)) return 'Ese horario no existe'
+  if (date.getUTCDay() === 0) return 'Los domingos no hay turnos'
+
+  const inicio = new Date(`${date.toISOString().slice(0, 10)}T${time}:00-03:00`)
+  if (inicio.getTime() < Date.now()) return 'Ese horario ya pasó'
+
+  return null
+}
+
 /* ─── Viáticos a domicilio ─────────────────────────────────────────
  *
  * Santiago cobra el traslado cuando tiene que salir de los 5 km del

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCalendarEvent, deleteCalendarEvent, createCalendarEvent } from '@/lib/googleCalendar'
 import { sendRescheduleEmails } from '@/lib/email'
-import { CANCELLATION_MIN_HOURS } from '@/lib/constants'
+import { CANCELLATION_MIN_HOURS, motivoParaNoTomarlo } from '@/lib/constants'
 import type { BookingState } from '@/types/booking'
 import { fechaLarga, hhmm, nombreServicio, precioServicio } from '@/lib/format'
 
@@ -89,6 +89,20 @@ export async function POST(req: NextRequest) {
 
     // Rebuild booking state from calendar event description
     const isLocal = !desc['modalidad']?.toLowerCase().includes('domicilio')
+
+    /* El horario nuevo se valida igual que uno recién reservado. Reprogramar
+       borra el evento y crea otro con lo que venga en el cuerpo, así que sin
+       esto se podía mover un turno a un domingo, a las tres de la mañana o al
+       mes pasado — con un link de mail, que es público para quien lo tenga. */
+    const rechazo = motivoParaNoTomarlo(
+      new Date(newDate),
+      newTime,
+      isLocal ? 'local' : 'domicilio',
+    )
+    if (rechazo) {
+      return NextResponse.json({ error: rechazo }, { status: 400 })
+    }
+
     const servicioRaw = desc['servicio'] ?? ''
     const durationMatch = event.end?.dateTime
       ? Math.round((new Date(event.end.dateTime).getTime() - new Date(event.start!.dateTime!).getTime()) / 60000)

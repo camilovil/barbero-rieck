@@ -6,6 +6,7 @@ import {
   ZONAS,
   DEPOSIT_PERCENT,
   depositAmount,
+  motivoParaNoTomarlo,
   zonaDeBarrio,
   viaticoDeBarrio,
 } from '../lib/constants.ts'
@@ -135,5 +136,44 @@ describe('el catálogo', () => {
         assert.match(s, /^([01]\d|2[0-3]):[0-5]\d$/, `"${s}" no es una hora válida`)
       }
     }
+  })
+})
+
+/* Las reglas de cuándo se puede tomar un turno. Vivían sólo en el calendario
+   del navegador, así que un POST a mano metía un turno un domingo o en el
+   pasado. Se prueban acá porque son la última palabra: si esto se rompe, el
+   agujero vuelve sin que se note. */
+describe('cuándo se puede tomar un turno', () => {
+  /* Un lunes y un domingo cualesquiera, lejos en el futuro para que no los
+     tumbe la regla del pasado. Se construyen en UTC porque es la zona en la
+     que se decide el día del evento. */
+  const lunes = new Date('2027-03-01T15:00:00.000Z')
+  const domingo = new Date('2027-02-28T15:00:00.000Z')
+
+  test('un lunes en un horario de la grilla se puede', () => {
+    assert.equal(motivoParaNoTomarlo(lunes, '11:00', 'local'), null)
+  })
+
+  test('los domingos no', () => {
+    assert.equal(domingo.getUTCDay(), 0)
+    assert.equal(motivoParaNoTomarlo(domingo, '11:00', 'local'), 'Los domingos no hay turnos')
+  })
+
+  test('un horario que no está en la grilla, tampoco', () => {
+    assert.equal(motivoParaNoTomarlo(lunes, '03:00', 'local'), 'Ese horario no existe')
+    // 08:30 existe a domicilio pero no en el local: la grilla es por modalidad.
+    assert.equal(motivoParaNoTomarlo(lunes, '08:30', 'local'), 'Ese horario no existe')
+    assert.equal(motivoParaNoTomarlo(lunes, '08:30', 'domicilio'), null)
+  })
+
+  test('el pasado, tampoco', () => {
+    const ayer = new Date(Date.now() - 1000 * 60 * 60 * 24)
+    // Se busca un día que no caiga domingo, para probar la regla del pasado.
+    if (ayer.getUTCDay() === 0) ayer.setUTCDate(ayer.getUTCDate() - 1)
+    assert.equal(motivoParaNoTomarlo(ayer, '11:00', 'local'), 'Ese horario ya pasó')
+  })
+
+  test('una fecha inválida no explota', () => {
+    assert.equal(motivoParaNoTomarlo(new Date('nada'), '11:00', 'local'), 'Esa fecha no existe')
   })
 })

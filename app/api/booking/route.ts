@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createCalendarEvent, getDayBookingCount, isDateBlocked, getSettings, expirePendingEvents } from '@/lib/googleCalendar'
 import { sendBookingEmails, sendDepositInstructionsEmail } from '@/lib/email'
 import { isDepositEnabled } from '@/lib/flags'
-import { depositAmount, SERVICES, TIME_SLOTS } from '@/lib/constants'
+import { depositAmount, motivoParaNoTomarlo, SERVICES } from '@/lib/constants'
 import type { BookingState, Location } from '@/types/booking'
 
 export async function POST(req: NextRequest) {
@@ -34,8 +34,9 @@ export async function POST(req: NextRequest) {
     if (!delCatalogo) {
       return NextResponse.json({ error: 'Ese servicio no existe' }, { status: 400 })
     }
-    if (!TIME_SLOTS[location].includes(booking.time)) {
-      return NextResponse.json({ error: 'Ese horario no existe' }, { status: 400 })
+    const rechazo = motivoParaNoTomarlo(booking.date, booking.time, location)
+    if (rechazo) {
+      return NextResponse.json({ error: rechazo }, { status: 400 })
     }
     booking.location = location
     booking.service = delCatalogo
