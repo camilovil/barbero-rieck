@@ -7,13 +7,22 @@ Este documento existe para que el día que aparezcan, encender esto sea seguir
 una lista y no reconstruir el razonamiento. Está en orden de ejecución: leelo de
 arriba abajo y hacé los pasos en ese orden, que no es caprichoso.
 
-**Estado al 31 de agosto de 2026:** el sitio vive en `barberhohle.com`, con
-`COMING_SOON=1` puesto: la puerta de entrada es un cartel de próximamente y nadie
-puede reservar mientras la seña no esté probada. `DEPOSIT_ENABLED` apagado;
-`VIATICO_ENABLED` prendido, con la tabla de zonas ya confirmada por Santiago
-(§6). El agujero de §5 está tapado: el barrido de vencidos corre cada quince
-minutos desde un GitHub Action. Nada del circuito de pago se probó todavía contra
-Mercado Pago de verdad — ni con credenciales de prueba.
+**Estado al 1 de septiembre de 2026 — el circuito está probado y andando.** El
+sitio vive en `barberhohle.com`. `DEPOSIT_ENABLED`, `VIATICO_ENABLED` y
+`COMING_SOON` prendidos los tres en producción, con el Access Token de la cuenta
+de Santiago (`SANTIAGORIECK`, verificada contra `/users/me`). La tabla de zonas
+la confirmó él (§6) y el agujero de §5 está tapado: el barrido de vencidos corre
+cada quince minutos desde un GitHub Action.
+
+La prueba de §4 se hizo **sobre producción y con plata real** —una seña de $8.000
+pagada con tarjeta, acreditada como `MERPAGO*BARBERHOHLE`—, no en una preview: la
+protección de deploys de Vercel deja las previews detrás de un login, así que el
+webhook de Mercado Pago habría recibido 401 y el turno no se habría confirmado
+nunca. Se pudo probar en producción sin riesgo porque `COMING_SOON` cierra la
+puerta al público y la cookie del panel la abre para la casa. Mercado Pago mandó
+cinco avisos del mismo pago y el turno se confirmó una sola vez.
+
+**Lo único que falta para abrir es sacar `COMING_SOON`.**
 
 ---
 
@@ -219,7 +228,7 @@ rechaza la preferencia entera— y el cliente vuelve tocando "Volver al sitio"
 1. **Reservá** un turno en el local, con servicio con precio. Elegí un horario
    que no moleste si queda tomado un rato.
 2. **Mirá el paso del resumen**: tiene que decir que se paga una seña del 50% —
-   $8.000 sobre un corte de $16.000— y que el resto va en el lugar.
+   $8.500 sobre un corte de $17.000— y que el resto va en el lugar.
 3. **Confirmá.** Te tiene que mandar al checkout de Mercado Pago. Si en vez de
    eso ves *"No pudimos abrir el pago de la seña"*, el token está mal: mirá los
    logs, ahí sale el error de Mercado Pago tal cual.
@@ -420,7 +429,12 @@ Dos cosas que ya están decididas y no hace falta rediscutir:
 ### Lo que hay que preguntarle además
 
 - **La seña es el 50% del servicio** (`DEPOSIT_PERCENT`). ¿Está de acuerdo? Sobre
-  un corte de $16.000 son $8.000; sobre el domicilio de $40.000, $20.000.
+  un corte de $17.000 son $8.500; sobre el domicilio de $41.000, $20.500.
+- **La comisión de Mercado Pago la absorbe la casa.** El 1 de septiembre de 2026
+  los tres precios subieron $1.000 con ese fin. Sobre las señas de hoy y a la
+  tasa de acreditación inmediata la comisión da unos $647 en el corte, $761 en
+  corte y barba, y **$1.560 en el de domicilio, donde los mil pesos no alcanzan
+  por unos $560**. Si eso tiene que cerrar, el domicilio va a $42.000.
 - **La seña no se devuelve** — así está escrito en la web, a la vista antes de
   pagar, y por eso "Reprogramar" va antes que "Cancelar" en la vista del turno.
   Si él quiere devolverla en algún caso, lo hace a mano desde el panel de Mercado

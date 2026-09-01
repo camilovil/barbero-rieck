@@ -1,12 +1,24 @@
 import type { Location, Service } from '@/types/booking'
 
+/* Cada precio lleva $1.000 arriba del que Santiago cobraba antes de la
+   seña: es la comisión de Mercado Pago, absorbida por la casa en vez de
+   sumarse aparte en el checkout.
+
+   La comisión se cobra sólo sobre la seña —el resto se paga en el lugar y
+   no pasa por Mercado Pago—, y es un porcentaje, así que los mil pesos no
+   rinden igual en los tres. A la tasa de acreditación inmediata (~6,29% +
+   IVA) la cuenta da: Corte $647 de comisión, Corte y barba $761, y el de
+   domicilio $1.560 sobre una seña de $20.500 — o sea que ahí los mil pesos
+   se quedan cortos por unos $560. Está así porque el aumento se definió
+   como un monto fijo; si el domicilio tiene que cubrirse solo, son $2.000
+   y no $1.000. */
 export const SERVICES: Record<Location, Service[]> = {
   local: [
-    { name: 'Corte', duration: 40, price: 16000 },
-    { name: 'Corte y barba', duration: 60, price: 19000 },
+    { name: 'Corte', duration: 40, price: 17000 },
+    { name: 'Corte y barba', duration: 60, price: 20000 },
   ],
   domicilio: [
-    { name: 'Corte (incluye barba)', duration: 120, price: 40000 },
+    { name: 'Corte (incluye barba)', duration: 120, price: 41000 },
   ],
 }
 
