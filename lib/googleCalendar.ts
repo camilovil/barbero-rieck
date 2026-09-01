@@ -161,7 +161,15 @@ export async function getCalendarEvent(eventId: string) {
       calendarId: process.env.GOOGLE_CALENDAR_ID,
       eventId,
     })
-    return res.data
+    /* Un evento borrado no siempre da 404: Google lo sigue devolviendo un buen
+       rato con `status: 'cancelled'`, que es su forma de decir «esto ya no
+       está». Sin esta línea, un turno cancelado le seguía diciendo al cliente
+       «transferí la seña» en vez de «la reserva venció», y peor: el botón de
+       confirmar del panel lo daba por vivo y lo confirmaba.
+
+       Se filtra acá y no en cada llamador porque son cinco y todos quieren lo
+       mismo — si el turno no está, no está. */
+    return res.data.status === 'cancelled' ? null : res.data
   } catch (err) {
     if (eventoInexistente(err)) return null
     throw err
