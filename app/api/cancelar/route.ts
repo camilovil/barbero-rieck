@@ -70,6 +70,8 @@ export async function POST(req: NextRequest) {
         location,
         direccion,
         duration: `${durationMins} min`,
+        // Para que el turno también desaparezca del calendario del cliente.
+        uid: event.extendedProperties?.private?.icsUid,
       })
     } catch (emailErr) {
       console.error('[api/cancelar] email error (non-fatal):', emailErr)

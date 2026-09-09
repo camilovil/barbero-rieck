@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
     const { eventId } = await req.json()
     if (!eventId) return NextResponse.json({ error: 'Falta eventId' }, { status: 400 })
 
-    const booking = await confirmCalendarEvent(eventId)
-    if (!booking) {
+    const confirmado = await confirmCalendarEvent(eventId)
+    if (!confirmado) {
       /* confirmCalendarEvent sólo toca lo que está esperando la seña. Si
          devuelve null, o ya estaba confirmado —el webhook ganó de mano, o
          Santiago tocó dos veces— o el hold se venció y el evento no existe
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
        tiene que enterarse. Es el mismo mail que sale cuando se reserva sin
        seña — no la menciona, así que no le promete nada que no haya pasado. */
     try {
-      await sendBookingEmails(booking, eventId)
+      await sendBookingEmails(confirmado.booking, eventId, confirmado.icsUid)
     } catch (emailErr) {
       // El turno ya está confirmado; que falle un mail no lo desconfirma.
       console.error('[api/admin/confirmar] email error (non-fatal):', emailErr)

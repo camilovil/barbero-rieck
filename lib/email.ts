@@ -24,6 +24,7 @@ import {
 } from './constants'
 import { datosDeTransferencia, linkDeComprobante, mensajeDeComprobante } from './transferencia'
 import { getAppUrl } from './url'
+import { buildICS, icsUid, instanteDeTurno } from './ics'
 
 /* ═══════════════════════════════════════════════════════════════
    MAILS — sistema Barber Höhle, tema «Höhle»
@@ -98,6 +99,18 @@ function durationOf(servicio: string): string {
     if (s) return `${s.duration} min`
   }
   return ''
+}
+
+/* Lo mismo en minutos: la etiqueta la lee una persona, el .ics necesita el
+   número. El respaldo por modalidad es el mismo que usan las rutas cuando el
+   evento no dice la duración. */
+function durationMinutes(servicio: string, location?: string): number {
+  const nombre = serviceName(servicio).trim().toLowerCase()
+  for (const lista of Object.values(SERVICES)) {
+    const s = lista.find(x => x.name.toLowerCase() === nombre)
+    if (s) return s.duration
+  }
+  return location === 'domicilio' ? 120 : 40
 }
 
 function bookingCode(eventId: string): string {
@@ -548,46 +561,57 @@ function bloqueCambio(
 
 // ─── ICS ─────────────────────────────────────────────────────────
 
-function generateICS(b: BookingState): string {
-  if (!b.date || !b.time) return ''
-  const [h, m] = b.time.split(':').map(Number)
-  const start = new Date(b.date)
-  start.setHours(h, m, 0, 0)
-  const end = new Date(start.getTime() + (b.service?.duration ?? 60) * 60000)
-  const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
-  const uid = `${start.getTime()}@barberhohle`
-  const location = b.location === 'domicilio' ? (b.direccion || 'A domicilio') : BARBER_ADDRESS
-  const description = `Servicio: ${b.service?.name ?? ''} (${b.service?.duration ?? 60} min)`
+/* La invitación que se agrega al calendario del cliente. El armado del
+   archivo vive en lib/ics.ts —ahí está por qué la hora salía tres horas
+   antes y por qué antes no se agregaba a ningún lado—; acá se decide qué
+   dice. */
+function turnoICS(opts: {
+  method: 'REQUEST' | 'CANCEL'
+  uid: string
+  start: Date
+  durationMin: number
+  servicio: string
+  nombre: string
+  email: string
+  location?: string
+  direccion?: string
+  link?: string
+}): string {
+  const esDomicilio = opts.location === 'domicilio'
+  return buildICS({
+    method: opts.method,
+    uid: opts.uid,
+    start: opts.start,
+    durationMin: opts.durationMin,
+    summary: `${opts.servicio || 'Turno'} — Barber Höhle`,
+    description: [
+      `Servicio: ${opts.servicio || '—'} (${opts.durationMin} min)`,
+      esDomicilio ? 'Santiago va hasta tu dirección.' : 'Llegá cinco minutos antes.',
+      opts.link ? `Modificar o cancelar: ${opts.link}` : null,
+    ].filter(Boolean).join('\n'),
+    location: esDomicilio ? (opts.direccion || 'A domicilio') : BARBER_ADDRESS,
+    nombre: opts.nombre,
+    email: opts.email,
+    /* Dos horas antes: el mismo aviso que manda el recordatorio por mail,
+       para el que vive en el calendario y no en la bandeja. */
+    alarmaMin: opts.method === 'REQUEST' ? 120 : undefined,
+  })
+}
 
-  return [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Barber Höhle//Turnos//ES',
-    'CALSCALE:GREGORIAN',
-    'METHOD:REQUEST',
-    'BEGIN:VEVENT',
-    `UID:${uid}`,
-    `DTSTART:${fmt(start)}`,
-    `DTEND:${fmt(end)}`,
-    `SUMMARY:${b.service?.name ?? 'Turno'} — Barber Höhle`,
-    `DESCRIPTION:${description}`,
-    `LOCATION:${location}`,
-    'STATUS:CONFIRMED',
-    'BEGIN:VALARM',
-    'TRIGGER:-PT2H',
-    'ACTION:DISPLAY',
-    'DESCRIPTION:Recordatorio de turno',
-    'END:VALARM',
-    'END:VEVENT',
-    'END:VCALENDAR',
-  ].join('\r\n')
+/* nodemailer lo manda como parte text/calendar con su METHOD, que es lo que
+   Gmail mira para ofrecer «agregar al calendario». Como adjunto suelto —lo
+   que hacía antes— es un archivo que hay que abrir a mano. */
+function icsAttachment(content: string) {
+  return {
+    icalEvent: { method: content.includes('METHOD:CANCEL') ? 'CANCEL' : 'REQUEST', filename: 'turno-barber-hohle.ics', content },
+  }
 }
 
 // ─── Envíos ──────────────────────────────────────────────────────
 
 const FROM = () => `"Barber Höhle" <${process.env.GMAIL_USER}>`
 
-export async function sendBookingEmails(booking: BookingState, eventId: string): Promise<void> {
+export async function sendBookingEmails(booking: BookingState, eventId: string, uidDelTurno?: string): Promise<void> {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
     console.log('[email] stub — falta GMAIL_USER/GMAIL_APP_PASSWORD. Link de cancelación:', cancelUrl(eventId, booking.email))
     return
@@ -635,7 +659,25 @@ export async function sendBookingEmails(booking: BookingState, eventId: string):
     pieTxt: `Reserva ${code} &middot; ${esc(dateLong)}.`,
   })
 
-  const icsContent = generateICS(booking)
+  /* El UID que se manda acá es el que después mueve o borra este mismo
+     turno en el calendario del cliente. Se guarda en el evento de Google al
+     crearlo (`icsUid`), así reprogramar —que borra y vuelve a crear— sigue
+     hablando del mismo turno. */
+  const start = booking.date && booking.time ? instanteDeTurno(booking.date, booking.time) : null
+  const ics = start
+    ? turnoICS({
+        method: 'REQUEST',
+        uid: uidDelTurno ?? icsUid(start, booking.email),
+        start,
+        durationMin: booking.service?.duration ?? 60,
+        servicio: booking.service?.name ?? '',
+        nombre: booking.nombre,
+        email: booking.email,
+        location: booking.location ?? 'local',
+        direccion: booking.direccion,
+        link: modificarUrl(eventId, booking.email),
+      })
+    : null
 
   await Promise.all([
     transporter.sendMail({
@@ -643,12 +685,8 @@ export async function sendBookingEmails(booking: BookingState, eventId: string):
       to: booking.email,
       subject: `Turno confirmado · ${dateShort} · ${booking.time}`,
       html: clienteHtml,
-      attachments: [
-        ...logoAttachment(),
-        ...(icsContent
-          ? [{ filename: 'turno-barber-hohle.ics', content: Buffer.from(icsContent), contentType: 'text/calendar' }]
-          : []),
-      ],
+      attachments: logoAttachment(),
+      ...(ics ? icsAttachment(ics) : {}),
     }),
     process.env.SANTIAGO_EMAIL
       ? transporter.sendMail({
@@ -872,6 +910,9 @@ export async function sendCancellationEmails(opts: {
   direccion?: string
   duration?: string
   motivo?: string
+  /** El UID guardado en el evento, para borrar el turno del calendario
+   *  del cliente y no dejarlo ahí ocupando una tarde que ya no existe. */
+  uid?: string
 }): Promise<void> {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
     console.log('[email] stub — cancelación de', opts.nombre)
@@ -917,6 +958,22 @@ export async function sendCancellationEmails(opts: {
     pieTxt: `Reserva ${code} &middot; ${esc(dateLong)} &middot; el horario volvió a estar disponible.`,
   })
 
+  /* El mismo turno, con METHOD:CANCEL: el calendario que lo agregó lo saca
+     solo. Sin esto el cliente cancelaba en la web y le seguía sonando el
+     recordatorio el día del turno. */
+  const durMin = Number((opts.duration ?? '').replace(/\D/g, '')) || durationMinutes(opts.servicio, opts.location)
+  const ics = turnoICS({
+    method: 'CANCEL',
+    uid: opts.uid ?? icsUid(opts.start, opts.email),
+    start: opts.start,
+    durationMin: durMin,
+    servicio: serviceName(opts.servicio),
+    nombre: opts.nombre,
+    email: opts.email,
+    location: opts.location,
+    direccion: opts.direccion,
+  })
+
   await Promise.all([
     transporter.sendMail({
       from: FROM(),
@@ -924,6 +981,7 @@ export async function sendCancellationEmails(opts: {
       subject: `Turno cancelado · ${dateShort} · ${time}`,
       html: clienteHtml,
       attachments: logoAttachment(),
+      ...icsAttachment(ics),
     }),
     process.env.SANTIAGO_EMAIL
       ? transporter.sendMail({
@@ -952,6 +1010,9 @@ export async function sendRescheduleEmails(opts: {
   newEventId: string
   location?: string
   direccion?: string
+  /** El UID del turno, que no cambia aunque el evento de Google se recree:
+   *  es lo que hace que el calendario MUEVA el turno en vez de dejar dos. */
+  uid?: string
 }): Promise<void> {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return
 
@@ -1000,6 +1061,22 @@ export async function sendRescheduleEmails(opts: {
     pieTxt: `Reserva ${code} &middot; el horario anterior volvió a la agenda.`,
   })
 
+  /* Misma invitación, horario nuevo: el calendario del cliente mueve el
+     turno que ya tenía. Por eso el UID es el viejo y no uno nuevo. */
+  const nuevoInicio = instanteDeTurno(opts.newDate, opts.newTime)
+  const ics = turnoICS({
+    method: 'REQUEST',
+    uid: opts.uid ?? icsUid(opts.oldDate, opts.email),
+    start: nuevoInicio,
+    durationMin: durationMinutes(opts.servicio, opts.location),
+    servicio: nombreSrv,
+    nombre: opts.nombre,
+    email: opts.email,
+    location: opts.location,
+    direccion: opts.direccion,
+    link: modificarUrl(opts.newEventId, opts.email),
+  })
+
   await Promise.all([
     transporter.sendMail({
       from: FROM(),
@@ -1007,6 +1084,7 @@ export async function sendRescheduleEmails(opts: {
       subject: `Turno reprogramado · ${newDateStr} · ${opts.newTime}`,
       html: clienteHtml,
       attachments: logoAttachment(),
+      ...icsAttachment(ics),
     }),
     process.env.SANTIAGO_EMAIL
       ? transporter.sendMail({

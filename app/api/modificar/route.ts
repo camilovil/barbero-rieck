@@ -132,8 +132,14 @@ export async function POST(req: NextRequest) {
     const oldTime = hhmm(startTime)
 
     // Delete old event and create updated one
+    /* El UID del turno en el calendario del cliente. Viaja con el turno para
+       que reprogramar lo MUEVA en su teléfono en vez de dejarle dos, y para
+       que cancelar lo borre. Los turnos anteriores a esto no lo tienen: ahí
+       el mail lo deriva del horario viejo, que es como se armó la primera vez. */
+    const uid = event.extendedProperties?.private?.icsUid
+
     await deleteCalendarEvent(eventId)
-    const newEventId = await createCalendarEvent(booking)
+    const newEventId = await createCalendarEvent(booking, { icsUid: uid })
 
     // Send reschedule email (shows old date crossed out + new date)
     await sendRescheduleEmails({
@@ -148,6 +154,7 @@ export async function POST(req: NextRequest) {
       newEventId,
       location: isLocal ? 'local' : 'domicilio',
       direccion,
+      uid,
     })
 
     return NextResponse.json({ success: true, eventId: newEventId })

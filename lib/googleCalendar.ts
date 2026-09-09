@@ -3,6 +3,7 @@ import type { calendar_v3 } from 'googleapis'
 import type { BookingState } from '@/types/booking'
 import { TIME_SLOTS, LOCATION_LABELS, DEPOSIT_HOLD_MINUTES, depositAmount, viaticoDeBarrio, zonaDeBarrio } from './constants'
 import { hhmm, nombreServicio, precioServicio } from './format'
+import { icsUid, instanteDeTurno } from './ics'
 import { sendExpiredHoldEmail } from './email'
 import type { Location } from '@/types/booking'
 
@@ -34,7 +35,7 @@ const PENDING_PREFIX = '⏳'
 
 export async function createCalendarEvent(
   booking: BookingState,
-  opts: { pending?: boolean } = {},
+  opts: { pending?: boolean; icsUid?: string } = {},
 ): Promise<string> {
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) {
     console.log('[googleCalendar] stub — GOOGLE_SERVICE_ACCOUNT_EMAIL o GOOGLE_CALENDAR_ID no configurado')
@@ -124,16 +125,21 @@ export async function createCalendarEvent(
       location: locationLabel,
       start: { dateTime: startStr, timeZone: 'America/Argentina/Buenos_Aires' },
       end: { dateTime: endStr, timeZone: 'America/Argentina/Buenos_Aires' },
-      ...(opts.pending && {
-        status: 'tentative',
-        extendedProperties: {
-          private: {
+      ...(opts.pending && { status: 'tentative' }),
+      extendedProperties: {
+        private: {
+          /* El identificador del turno en el calendario del cliente. Se guarda
+             acá porque reprogramar borra este evento y crea otro: sin esto, el
+             .ics del horario nuevo sería un turno nuevo también para su
+             teléfono, y le quedarían los dos. */
+          icsUid: opts.icsUid ?? icsUid(instanteDeTurno(booking.date, booking.time), booking.email),
+          ...(opts.pending && {
             pago: 'pendiente',
             sena: String(sena),
             reservadoEn: new Date().toISOString(),
-          },
+          }),
         },
-      }),
+      },
     },
   })
 
@@ -222,7 +228,7 @@ function bookingFromEvent(desc: Record<string, string>, start: string, end: stri
    dos toques al botón manden los mails dos veces. */
 export async function confirmCalendarEvent(
   eventId: string,
-): Promise<BookingState | null> {
+): Promise<{ booking: BookingState; icsUid?: string } | null> {
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return null
   const calendar = google.calendar({ version: 'v3', auth: getAuth() })
 
@@ -261,11 +267,17 @@ export async function confirmCalendarEvent(
     },
   })
 
-  return bookingFromEvent(
-    parseDesc(description),
-    existing.start?.dateTime ?? '',
-    existing.end?.dateTime ?? '',
-  )
+  return {
+    booking: bookingFromEvent(
+      parseDesc(description),
+      existing.start?.dateTime ?? '',
+      existing.end?.dateTime ?? '',
+    ),
+    /* El identificador con el que el turno ya viajó al calendario del
+       cliente, para que el mail de confirmación hable del mismo y no le
+       agregue un segundo turno al lado. */
+    icsUid: props.icsUid,
+  }
 }
 
 /* El estado de la seña de un turno, para la pantalla que le dice al cliente

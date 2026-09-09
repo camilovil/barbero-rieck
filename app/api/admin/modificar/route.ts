@@ -72,8 +72,14 @@ export async function POST(req: NextRequest) {
        POST /api/admin/confirmar, que además deja escrito en el evento que
        se cobró a mano. Esta ruta no lo escribe: acá el turno se recrea
        desde cero y la línea de la seña no sobrevive. */
+    /* El UID del turno en el calendario del cliente. Viaja con el turno para
+       que reprogramar lo MUEVA en su teléfono en vez de dejarle dos, y para
+       que cancelar lo borre. Los turnos anteriores a esto no lo tienen: ahí
+       el mail lo deriva del horario viejo, que es como se armó la primera vez. */
+    const uid = event.extendedProperties?.private?.icsUid
+
     await deleteCalendarEvent(eventId)
-    const newEventId = await createCalendarEvent(booking)
+    const newEventId = await createCalendarEvent(booking, { icsUid: uid })
 
     // Notify client and Santiago
 
@@ -90,6 +96,7 @@ export async function POST(req: NextRequest) {
             newEventId,
             location: isLocal ? 'local' : 'domicilio',
             direccion,
+            uid,
           })
         : Promise.resolve(),
     ])
