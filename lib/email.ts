@@ -5,6 +5,7 @@ import type { BookingState } from '@/types/booking'
 import type { BookingEvent } from '@/lib/googleCalendar'
 import {
   capitalize,
+  diaBA,
   fechaCorta as shortDate,
   fechaLarga as formatDate,
   hhmm,
@@ -1249,11 +1250,11 @@ export function previewEmails(): { id: string; nombre: string; asunto: string; h
   const fechaNueva = new Date(fecha.getTime() + 86400000)
   const dateShortNueva = shortDate(fechaNueva)
 
-  const at = (h: number, m: number) => {
-    const d = new Date(fecha)
-    d.setHours(h, m, 0, 0)
-    return d.toISOString()
-  }
+  /* Los horarios de la muestra son de Buenos Aires. Con `setHours` salían
+     en la zona del proceso —UTC en Vercel—, así que la agenda de ejemplo se
+     veía tres horas corrida respecto de la que se manda. */
+  const at = (h: number, m: number) =>
+    new Date(`${diaBA(fecha)}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00-03:00`).toISOString()
   const eventosDemo: BookingEvent[] = [
     { id: 'a1', nombre: 'Julián R.', email: 'j@correo.com', whatsapp: '+5491100000001',
       servicio: 'Corte — $16.000', modalidad: LOCATION_LABELS.local, direccion: '', nota: '', viatico: 0,

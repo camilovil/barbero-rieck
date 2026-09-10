@@ -14,8 +14,8 @@ import {
 /* Acá vive la plata. Todo lo que se prueba en este archivo decide cuánto
    se le cobra a alguien, así que se prueba solo — sin navegador, sin
    credenciales y sin tocar el calendario.
-   `lib/constants.ts` sólo importa tipos, y Node los borra al ejecutar, así
-   que corre sin ninguna dependencia. */
+   `lib/constants.ts` sólo importa tipos y el formateo de fechas, así que
+   corre sin credenciales ni red. */
 
 describe('la seña', () => {
   test('es la mitad del servicio', () => {

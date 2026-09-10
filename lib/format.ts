@@ -31,7 +31,11 @@ export function fechaCorta(date: Date | string): string {
   const d = new Date(date)
   const dow = d.toLocaleDateString('es-AR', { weekday: 'short', timeZone: TZ }).replace('.', '')
   const mon = d.toLocaleDateString('es-AR', { month: 'short', timeZone: TZ }).replace('.', '')
-  return `${capitalize(dow)} ${d.getDate()} ${mon}`
+  /* El número del día sale de la misma zona que el nombre y el mes. Con
+     `getDate()` salía del reloj del servidor, y como los otros dos ya venían
+     en hora de Buenos Aires, un turno de la noche podía titular «Jue 2 oct»:
+     el jueves de Buenos Aires con el número del viernes de Londres. */
+  return `${capitalize(dow)} ${Number(diaBA(d).slice(8))} ${mon}`
 }
 
 /** "Mié 5" — sin mes. El titular de los pasos, donde el mes se sobreentiende. */
@@ -40,9 +44,57 @@ export function diaCorto(date: Date): string {
   return `${capitalize(dow)} ${date.getDate()}`
 }
 
-/** "2026-08-08" — el formato que hablan las APIs, no la interfaz. */
+/** "2026-08-08" — el formato que hablan las APIs, no la interfaz.
+ *  Lee el día del reloj de quien llama, que en el navegador es el día que la
+ *  persona tocó en el calendario. Es la forma de mandar un día por la red sin
+ *  que se corra: una fecha con hora viaja como instante y del otro lado, en
+ *  otro huso, puede ser el día anterior. */
 export function toDateParam(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/* ─── Un día de la agenda ──────────────────────────────────────────
+ *
+ * En este proyecto «el 1 de octubre» se representa SIEMPRE como la
+ * medianoche de Buenos Aires —2026-10-01T00:00:00-03:00— y no como
+ * medianoche UTC. No es un capricho: la fecha del turno se lee de dos
+ * maneras incompatibles según el archivo. Unos sacan el día con los
+ * getters UTC (`toUTCDateStr`, para armar el evento) y otros lo muestran
+ * con `timeZone: 'America/Argentina/Buenos_Aires'` (los mails). La
+ * medianoche UTC es el único valor que los dos leen distinto: el mail de
+ * reprogramación decía «miércoles, 30 de septiembre» para un turno del
+ * jueves 1 de octubre, porque en Buenos Aires esa medianoche todavía es
+ * el día anterior a las nueve de la noche.
+ *
+ * La medianoche de Buenos Aires cae a las 03:00 UTC del mismo día, así que
+ * las dos lecturas coinciden. Todo lo que entra por la red pasa por acá. */
+
+/** El día que dice una fecha "AAAA-MM-DD", como medianoche de Buenos Aires.
+ *  Cualquier otra cosa —un ISO con hora, de una versión anterior del
+ *  formulario— se toma como el instante que es. */
+export function diaDeAgenda(v: string | Date): Date {
+  if (v instanceof Date) return v
+  return /^\d{4}-\d{2}-\d{2}$/.test(v.trim())
+    ? new Date(`${v.trim()}T00:00:00-03:00`)
+    : new Date(v)
+}
+
+/** "2026-10-01" — el día de Buenos Aires que le toca a un instante. */
+export function diaBA(d: Date): string {
+  // en-CA ya escribe la fecha en el orden que hablan las APIs.
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(d)
+}
+
+/** Hoy en Buenos Aires, como día de agenda. */
+export function hoyEnBA(ahora: Date = new Date()): Date {
+  return diaDeAgenda(diaBA(ahora))
+}
+
+/** El mismo día de la agenda, corrido n días. */
+export function sumarDias(dia: Date, n: number): Date {
+  return new Date(dia.getTime() + n * 86400000)
 }
 
 /* ─── El servicio, tal como queda guardado en el calendario ────────

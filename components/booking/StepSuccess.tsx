@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import type { BookingState } from '@/types/booking'
 import { BARBER_ADDRESS, CANCELLATION_MIN_HOURS, LOCATION_LABELS } from '@/lib/constants'
-import { capitalize as upperFirst, diaCorto as shortDate } from '@/lib/format'
+import { capitalize as upperFirst, diaCorto as shortDate, toDateParam } from '@/lib/format'
 
 interface Props {
   booking: BookingState
@@ -41,9 +41,10 @@ export default function StepSuccess({ booking, eventId, onReset }: Props) {
 
   const calUrl = booking.date && booking.time
     ? (() => {
-        const [h, m] = booking.time.split(':').map(Number)
-        const start = new Date(booking.date)
-        start.setHours(h, m, 0, 0)
+        /* La hora del turno es hora de Buenos Aires, se mire desde donde se
+           mire: con `setHours` salía en la zona del teléfono, así que uno con
+           la zona cambiada se agregaba el turno corrido. */
+        const start = new Date(`${toDateParam(booking.date)}T${booking.time}:00-03:00`)
         const end = new Date(start.getTime() + (booking.service?.duration ?? 60) * 60000)
         const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
         const details = encodeURIComponent(`Servicio: ${booking.service?.name ?? ''}\nLugar: ${lugar.main} ${lugar.sub}`)

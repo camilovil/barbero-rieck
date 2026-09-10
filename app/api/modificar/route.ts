@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCalendarEvent, deleteCalendarEvent, createCalendarEvent } from '@/lib/googleCalendar'
+import { getCalendarEvent, deleteCalendarEvent, createCalendarEvent, motivoDeLaAgenda } from '@/lib/googleCalendar'
 import { sendRescheduleEmails } from '@/lib/email'
 import { CANCELLATION_MIN_HOURS, motivoParaNoTomarlo } from '@/lib/constants'
 import type { BookingState } from '@/types/booking'
-import { fechaLarga, hhmm, nombreServicio, precioServicio } from '@/lib/format'
+import { diaDeAgenda, fechaLarga, hhmm, nombreServicio, precioServicio } from '@/lib/format'
 
 function parseDescription(desc: string): Record<string, string> {
   const result: Record<string, string> = {}
@@ -94,13 +94,20 @@ export async function POST(req: NextRequest) {
        borra el evento y crea otro con lo que venga en el cuerpo, así que sin
        esto se podía mover un turno a un domingo, a las tres de la mañana o al
        mes pasado — con un link de mail, que es público para quien lo tenga. */
-    const rechazo = motivoParaNoTomarlo(
-      new Date(newDate),
-      newTime,
-      isLocal ? 'local' : 'domicilio',
-    )
+    const dia = diaDeAgenda(newDate)
+    const modalidad = isLocal ? 'local' : 'domicilio'
+    const rechazo = motivoParaNoTomarlo(dia, newTime, modalidad)
     if (rechazo) {
       return NextResponse.json({ error: rechazo }, { status: 400 })
+    }
+
+    /* Y lo que dice la agenda de ese día, que es lo que faltaba: con este
+       link se podía mover el turno a un día que Santiago cerró por
+       vacaciones, o encima de otro turno. El propio turno no cuenta —si no,
+       moverlo de 18:30 a 18:00 chocaría contra sí mismo—. */
+    const ocupada = await motivoDeLaAgenda(dia, newTime, modalidad, { ignorarEventId: eventId })
+    if (ocupada) {
+      return NextResponse.json({ error: ocupada }, { status: 409 })
     }
 
     const servicioRaw = desc['servicio'] ?? ''
@@ -118,7 +125,7 @@ export async function POST(req: NextRequest) {
       direccion,
       barrio: desc['barrio'] ?? null,
       nota: desc['nota'] ?? '',
-      date: new Date(newDate),
+      date: dia,
       time: newTime,
       service: {
         name: nombreServicio(servicioRaw),
@@ -147,7 +154,7 @@ export async function POST(req: NextRequest) {
       email: booking.email,
       oldDate: startTime,
       oldTime,
-      newDate: new Date(newDate),
+      newDate: dia,
       newTime,
       // La línea completa, con precio: el mail muestra cuánto se paga.
       servicio: servicioRaw || '—',

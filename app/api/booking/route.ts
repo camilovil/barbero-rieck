@@ -1,18 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createCalendarEvent, getDayBookingCount, isDateBlocked, getSettings, expirePendingEvents } from '@/lib/googleCalendar'
+import { createCalendarEvent, motivoDeLaAgenda, expirePendingEvents } from '@/lib/googleCalendar'
 import { sendBookingEmails, sendDepositInstructionsEmail } from '@/lib/email'
 import { isDepositEnabled } from '@/lib/flags'
 import { depositAmount, motivoParaNoTomarlo, SERVICES } from '@/lib/constants'
+import { diaDeAgenda } from '@/lib/format'
 import type { BookingState, Location } from '@/types/booking'
 
 export async function POST(req: NextRequest) {
   try {
     const raw = await req.json()
 
-    // JSON serializa Date como string — restaurar el objeto Date
+    /* El día llega como "2026-10-01" y se convierte en la medianoche de
+       Buenos Aires. Ver la nota en format.ts: el navegador mandaba un
+       instante —medianoche de SU huso—, así que un teléfono con la zona
+       cambiada reservaba el día anterior. */
     const booking: BookingState = {
       ...raw,
-      date: raw.date ? new Date(raw.date) : null,
+      date: raw.date ? diaDeAgenda(raw.date) : null,
     }
 
     if (!booking.nombre || !booking.email || !booking.whatsapp || !booking.date || !booking.time || !booking.service) {
@@ -53,17 +57,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Verificar que el día no esté bloqueado
-    const dayBlocked = await isDateBlocked(booking.date)
-    if (dayBlocked) {
-      return NextResponse.json({ error: 'Este día no tiene turnos disponibles' }, { status: 409 })
-    }
-
-    // Verificar límite diario (configurable desde el admin)
-    const { maxDailyBookings } = await getSettings()
-    const count = await getDayBookingCount(booking.date)
-    if (count >= maxDailyBookings) {
-      return NextResponse.json({ error: 'No hay más turnos disponibles para este día' }, { status: 409 })
+    /* Lo que dice la agenda: día cerrado, cupo lleno, o el horario ya
+       tomado. Esto último no se preguntaba —alcanzaba con que dos personas
+       tuvieran la pantalla abierta a la misma hora para que las dos se
+       llevaran el mismo turno— y va acá, contra el calendario, y no en la
+       grilla que dibujó el navegador hace cinco minutos. */
+    const ocupada = await motivoDeLaAgenda(booking.date, booking.time, location)
+    if (ocupada) {
+      return NextResponse.json({ error: ocupada }, { status: 409 })
     }
 
     // Primero creamos el evento para tener el eventId y generar el link de cancelación

@@ -1,6 +1,17 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
-import { capitalize, nombreServicio, precioServicio, toDateParam } from '../lib/format.ts'
+import {
+  capitalize,
+  diaBA,
+  diaDeAgenda,
+  fechaCorta,
+  fechaLarga,
+  hoyEnBA,
+  nombreServicio,
+  precioServicio,
+  sumarDias,
+  toDateParam,
+} from '../lib/format.ts'
 import { SERVICES } from '../lib/constants.ts'
 
 /* El parser de la línea «Servicio: X — $Y» de la descripción del evento.
@@ -71,5 +82,61 @@ describe('capitalize', () => {
 
   test('aguanta el vacío', () => {
     assert.equal(capitalize(''), '')
+  })
+})
+
+/* ─── El día de la agenda ─────────────────────────────────────────
+ *
+ * El bug que trajo esto: el mail de reprogramación le decía al cliente
+ * «movimos tu turno al miércoles, 30 de septiembre» cuando el turno era el
+ * jueves 1 de octubre. La ruta hacía `new Date("2026-10-01")` —medianoche
+ * UTC— y el mail la mostraba en hora de Buenos Aires, donde esa medianoche
+ * todavía es el día anterior a las nueve de la noche. */
+
+describe('un día de la agenda', () => {
+  const jueves = diaDeAgenda('2026-10-01')
+
+  test('un día suelto es la medianoche de Buenos Aires', () => {
+    assert.equal(jueves.toISOString(), '2026-10-01T03:00:00.000Z')
+  })
+
+  test('los mails lo escriben con el día que es', () => {
+    assert.equal(fechaLarga(jueves), 'jueves, 1 de octubre')
+    assert.equal(fechaCorta(jueves), 'Jue 1 oct')
+  })
+
+  /* Lo que hacía la ruta antes de esto. Se prueba el valor viejo para que
+     quede escrito qué es lo que estaba mal. */
+  test('la medianoche UTC, en cambio, decía el día anterior', () => {
+    assert.equal(fechaLarga(new Date('2026-10-01')), 'miércoles, 30 de septiembre')
+  })
+
+  test('el día no depende de la zona del que lo lee', () => {
+    assert.equal(diaBA(jueves), '2026-10-01')
+    // Las once de la noche en Londres son las ocho acá: sigue siendo jueves.
+    assert.equal(diaBA(new Date('2026-10-01T23:00:00.000Z')), '2026-10-01')
+    // Y la medianoche de Londres ya es viernes allá, pero acá son las nueve.
+    assert.equal(diaBA(new Date('2026-10-02T00:00:00.000Z')), '2026-10-01')
+  })
+
+  test('el titular de un turno de la noche no salta de día', () => {
+    // 21:00 de Buenos Aires: en UTC ya es el 2 de octubre.
+    assert.equal(fechaCorta(new Date('2026-10-02T00:00:00.000Z')), 'Jue 1 oct')
+  })
+
+  test('un ISO con hora se toma como el instante que es', () => {
+    const instante = '2026-10-01T21:30:00.000Z'
+    assert.equal(diaDeAgenda(instante).toISOString(), instante)
+  })
+
+  test('correr un día cruza el fin de mes', () => {
+    assert.equal(diaBA(sumarDias(diaDeAgenda('2026-10-31'), 1)), '2026-11-01')
+    assert.equal(diaBA(sumarDias(jueves, -1)), '2026-09-30')
+  })
+
+  test('hoy en Buenos Aires es un día de la agenda', () => {
+    const hoy = hoyEnBA(new Date('2026-10-02T02:00:00.000Z')) // 23:00 del 1 acá
+    assert.equal(diaBA(hoy), '2026-10-01')
+    assert.equal(hoy.toISOString(), '2026-10-01T03:00:00.000Z')
   })
 })

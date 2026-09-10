@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getEventsForDate } from '@/lib/googleCalendar'
 import { sendReminderEmail } from '@/lib/email'
-import { hhmm } from '@/lib/format'
+import { hhmm, hoyEnBA, sumarDias } from '@/lib/format'
 
 // Vercel cron — runs daily at 10:00 AM Argentina time (13:00 UTC)
 // Sends reminder emails for tomorrow's appointments
@@ -13,15 +13,11 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Tomorrow in Argentina time (UTC-3)
-    const now = new Date()
-    const tomorrow = new Date(now)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    // Adjust to Argentina date
-    const argOffset = -3 * 60 // UTC-3 in minutes
-    const argNow = new Date(now.getTime() + (argOffset - now.getTimezoneOffset()) * 60000)
-    const argTomorrow = new Date(argNow)
-    argTomorrow.setDate(argTomorrow.getDate() + 1)
+    /* Mañana en Buenos Aires. Antes esto corregía el huso a mano con
+       `getTimezoneOffset()`, o sea que dependía de en qué zona corriera el
+       proceso: en Vercel (UTC) daba bien y en una máquina argentina
+       avisaba del día equivocado. */
+    const argTomorrow = sumarDias(hoyEnBA(), 1)
 
     const events = await getEventsForDate(argTomorrow)
 

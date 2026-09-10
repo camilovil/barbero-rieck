@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getEventsForDate } from '@/lib/googleCalendar'
 import { sendDailySummaryEmail } from '@/lib/email'
+import { hoyEnBA } from '@/lib/format'
 
 // Vercel cron — runs daily at 8:00 AM Argentina time (11:00 UTC)
 export async function GET(req: NextRequest) {
@@ -10,7 +11,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const today = new Date()
+    // Hoy en Buenos Aires, no en el huso del proceso.
+    const today = hoyEnBA()
     const events = await getEventsForDate(today)
 
     if (!process.env.SANTIAGO_EMAIL) {

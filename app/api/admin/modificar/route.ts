@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCalendarEvent, deleteCalendarEvent, createCalendarEvent } from '@/lib/googleCalendar'
 import { sendRescheduleEmails } from '@/lib/email'
 import type { BookingState } from '@/types/booking'
-import { hhmm, nombreServicio, precioServicio } from '@/lib/format'
+import { diaDeAgenda, hhmm, nombreServicio, precioServicio } from '@/lib/format'
 
 function parseDescription(desc: string): Record<string, string> {
   const result: Record<string, string> = {}
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       direccion,
       barrio: desc['barrio'] ?? null,
       nota: desc['nota'] ?? '',
-      date: new Date(newDate),
+      date: diaDeAgenda(newDate),
       time: newTime,
       service: {
         name: nombreServicio(servicioRaw),
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
             email: desc['email'],
             oldDate: oldStart,
             oldTime,
-            newDate: new Date(newDate),
+            newDate: diaDeAgenda(newDate),
             newTime,
             servicio: servicioRaw || '—',
             newEventId,

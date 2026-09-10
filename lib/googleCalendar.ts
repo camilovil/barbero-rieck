@@ -2,17 +2,19 @@ import { google } from 'googleapis'
 import type { calendar_v3 } from 'googleapis'
 import type { BookingState } from '@/types/booking'
 import { TIME_SLOTS, LOCATION_LABELS, DEPOSIT_HOLD_MINUTES, depositAmount, viaticoDeBarrio, zonaDeBarrio } from './constants'
-import { hhmm, nombreServicio, precioServicio } from './format'
+import { diaBA, hhmm, nombreServicio, precioServicio, sumarDias } from './format'
 import { icsUid, instanteDeTurno } from './ics'
 import { sendExpiredHoldEmail } from './email'
+/* El cálculo de qué horario tapa a cuál vive en lib/agenda.ts, sin
+   credenciales, para poder probarlo. Acá queda lo que habla con Google. */
+import { slotsPisados, BA_OFFSET } from './agenda'
 import type { Location } from '@/types/booking'
 
-// Argentina never observes DST — UTC-3 all year
-const BA_OFFSET = '-03:00'
-
-function toUTCDateStr(d: Date): string {
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
-}
+/* El día de un turno es el día de Buenos Aires, y sale de `diaBA`. Antes lo
+   sacaba una función de acá con los getters UTC: da lo mismo mientras la
+   fecha sea una fecha suelta, pero miente cuando lo que llega es el instante
+   de un turno de la noche —las nueve de acá ya son las doce en Londres— y
+   miente siempre si el proceso no corre en UTC. */
 
 function getAuth() {
   return new google.auth.GoogleAuth({
@@ -49,7 +51,7 @@ export async function createCalendarEvent(
   const calendar = google.calendar({ version: 'v3', auth: getAuth() })
 
   const [hours, minutes] = booking.time.split(':').map(Number)
-  const dateStr = toUTCDateStr(booking.date)
+  const dateStr = diaBA(booking.date)
   const pad = (n: number) => String(n).padStart(2, '0')
   const startStr = `${dateStr}T${pad(hours)}:${pad(minutes)}:00${BA_OFFSET}`
   const totalEndMin = hours * 60 + minutes + booking.service.duration
@@ -529,10 +531,11 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
 
 export async function blockDate(date: Date): Promise<string> {
   const calendar = google.calendar({ version: 'v3', auth: getAuth() })
-  const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`
-  const nextDay = new Date(date)
-  nextDay.setDate(nextDay.getDate() + 1)
-  const nextStr = `${nextDay.getFullYear()}-${String(nextDay.getMonth()+1).padStart(2,'0')}-${String(nextDay.getDate()).padStart(2,'0')}`
+  /* El día sale de Buenos Aires y no del reloj del proceso. En Vercel el
+     proceso corre en UTC y daba lo mismo; corriendo local, bloquear el 8
+     bloqueaba el 7. */
+  const dateStr = diaBA(date)
+  const nextStr = diaBA(sumarDias(date, 1))
   const res = await calendar.events.insert({
     calendarId: process.env.GOOGLE_CALENDAR_ID!,
     requestBody: {
@@ -551,7 +554,7 @@ export async function blockDate(date: Date): Promise<string> {
    horario (`start.dateTime`), así cada lector se queda con el suyo. */
 export async function blockRange(date: Date, from: string, to: string): Promise<string> {
   const calendar = google.calendar({ version: 'v3', auth: getAuth() })
-  const ds = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`
+  const ds = diaBA(date)
   const res = await calendar.events.insert({
     calendarId: process.env.GOOGLE_CALENDAR_ID!,
     requestBody: {
@@ -613,20 +616,13 @@ export async function getBlockedDates(days = 60): Promise<{ id: string; date: st
     .map(e => ({ id: e.id!, date: e.start!.date! }))
 }
 
-export async function isDateBlocked(date: Date): Promise<boolean> {
-  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return false
-  /* Para saber si un día está cerrado alcanza con mirar ese día. Antes se
-     traían noventa días enteros de agenda y se buscaba uno adentro. */
-  return (await eventosDelDia(date)).some(e => e.summary === 'BLOQUEADO' && e.start?.date)
-}
-
 /* Una sola consulta por día, que es de donde sale todo lo que la grilla
    necesita: los turnos tomados, las franjas bloqueadas y si el día entero
    está cerrado. Antes cada una de esas tres preguntas era su propio viaje a
    Google, y las tres salían en cada toque a una fecha del calendario. */
 async function eventosDelDia(date: Date) {
   const calendar = google.calendar({ version: 'v3', auth: getAuth() })
-  const ds = toUTCDateStr(date)
+  const ds = diaBA(date)
   const res = await calendar.events.list({
     calendarId: process.env.GOOGLE_CALENDAR_ID!,
     timeMin: new Date(`${ds}T00:00:00${BA_OFFSET}`).toISOString(),
@@ -664,25 +660,54 @@ export async function getDayAvailability(date: Date, location: Location): Promis
   return { dayBlocked: false, blocked: slotsPisados(date, location, ocupado) }
 }
 
-export async function getDayBookingCount(date: Date): Promise<number> {
-  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return 0
-  const calendar = google.calendar({ version: 'v3', auth: getAuth() })
-  const ds = toUTCDateStr(date)
-  const dayStart = new Date(`${ds}T00:00:00${BA_OFFSET}`)
-  const dayEnd = new Date(`${ds}T23:59:59${BA_OFFSET}`)
-  const res = await calendar.events.list({
-    calendarId: process.env.GOOGLE_CALENDAR_ID!,
-    timeMin: dayStart.toISOString(),
-    timeMax: dayEnd.toISOString(),
-    singleEvents: true,
-  })
-  return (res.data.items ?? []).filter(e => e.summary?.includes('✂️')).length
+/* ─── Lo que la agenda contesta antes de escribir ──────────────────
+ *
+ * La grilla de horarios y la ruta que reserva miraban cosas distintas: la
+ * grilla tapaba el horario ocupado, pero al confirmar nadie volvía a
+ * preguntar. Dos personas con la pantalla abierta a las seis y media se
+ * llevaban las dos el mismo turno, y una franja bloqueada —«de tres a
+ * cinco no estoy»— no frenaba a nadie que tuviera la grilla vieja.
+ *
+ * Ahora las dos preguntas salen de acá, en un solo viaje a Google, y la
+ * respuesta es el motivo para no tomarlo o null. Del lado de Santiago no
+ * se usa: él puede pisar un horario si sabe lo que hace.
+ *
+ * `ignorarEventId` es para reprogramar: el turno que se está moviendo no
+ * puede bloquearse a sí mismo cuando el horario nuevo pisa al viejo. */
+export async function motivoDeLaAgenda(
+  date: Date,
+  time: string,
+  location: Location,
+  opts: { ignorarEventId?: string } = {},
+): Promise<string | null> {
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return null
+
+  const items = (await eventosDelDia(date)).filter(e => e.id !== opts.ignorarEventId)
+
+  if (items.some(e => e.summary === 'BLOQUEADO' && e.start?.date)) {
+    return 'Ese día no tiene turnos disponibles'
+  }
+
+  const { maxDailyBookings } = await getSettings()
+  if (items.filter(e => e.summary?.includes('✂️')).length >= maxDailyBookings) {
+    return 'No hay más turnos disponibles para este día'
+  }
+
+  const ocupado = items
+    .filter(e => e.start?.dateTime && (e.summary?.includes('✂️') || e.summary === 'BLOQUEADO'))
+    .map(e => ({ start: e.start!.dateTime!, end: e.end?.dateTime ?? e.start!.dateTime! }))
+
+  if (slotsPisados(date, location, ocupado).includes(time)) {
+    return 'Ese horario ya está tomado'
+  }
+
+  return null
 }
 
 export async function getEventsForDate(date: Date): Promise<BookingEvent[]> {
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return []
   const calendar = google.calendar({ version: 'v3', auth: getAuth() })
-  const ds = toUTCDateStr(date)
+  const ds = diaBA(date)
   const dayStart = new Date(`${ds}T00:00:00${BA_OFFSET}`)
   const dayEnd = new Date(`${ds}T23:59:59${BA_OFFSET}`)
   const res = await calendar.events.list({
@@ -697,28 +722,4 @@ export async function getEventsForDate(date: Date): Promise<BookingEvent[]> {
     .map(e => toBookingEvent(e.id!, parseDesc(e.description ?? ''), e.summary ?? '—', e.start!.dateTime!, e.end?.dateTime ?? '', e.extendedProperties?.private?.pago))
 }
 
-/* Qué horarios de la grilla pisa lo que ya está ocupado. Puro cálculo: no
-   habla con Google, así que se puede reusar sobre cualquier lista. */
-function slotsPisados(
-  date: Date,
-  location: Location,
-  ocupado: { start: string; end: string }[],
-): string[] {
-  if (ocupado.length === 0) return []
 
-  const slotDurationMs = (location === 'local' ? 60 : 120) * 60 * 1000
-  const ds = toUTCDateStr(date)
-
-  return TIME_SLOTS[location].filter((time) => {
-    const [h, m] = time.split(':').map(Number)
-    const pad = (n: number) => String(n).padStart(2, '0')
-    const slotStart = new Date(`${ds}T${pad(h)}:${pad(m)}:00${BA_OFFSET}`)
-    const slotEnd = new Date(slotStart.getTime() + slotDurationMs)
-
-    return ocupado.some((ev) => {
-      const evStart = new Date(ev.start)
-      const evEnd = new Date(ev.end)
-      return slotStart < evEnd && slotEnd > evStart
-    })
-  })
-}

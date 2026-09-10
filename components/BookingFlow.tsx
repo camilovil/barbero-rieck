@@ -10,7 +10,7 @@ import StepResumen from './booking/StepResumen'
 import StepSuccess from './booking/StepSuccess'
 import type { BookingState, Location, Service } from '@/types/booking'
 import { SERVICES, LOCATION_LABELS, viaticoDeBarrio } from '@/lib/constants'
-import { diaCorto } from '@/lib/format'
+import { diaCorto, toDateParam } from '@/lib/format'
 
 interface Props {
   initialLocation?: Location | null
@@ -88,7 +88,11 @@ export default function BookingFlow({ initialLocation = null, initialServicio = 
       const res = await fetch('/api/booking', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(state),
+        /* El día va como "2026-10-01" y no como Date: serializado, un Date
+           viaja como instante —la medianoche de ESTE huso— y del otro lado,
+           en un servidor UTC, un teléfono con la zona cambiada reservaba el
+           día anterior. */
+        body: JSON.stringify({ ...state, date: state.date ? toDateParam(state.date) : null }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Error al confirmar')

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getBlockedDates, getBlockedRanges, blockDate, blockRange, unblockDate } from '@/lib/googleCalendar'
+import { diaBA, diaDeAgenda, sumarDias } from '@/lib/format'
 
 // La autenticación la resuelve proxy.ts
 
@@ -20,9 +21,10 @@ export async function POST(req: NextRequest) {
     const to   = body.dateTo   ?? body.date
     if (!from) return NextResponse.json({ error: 'Falta date / dateFrom' }, { status: 400 })
 
-    const parseDate = (s: string) => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d) }
-    const fromDate = parseDate(from)
-    const toDate   = parseDate(to)
+    /* El día que bloquea Santiago es un día de Buenos Aires, no uno del
+       reloj del servidor: ver la nota en format.ts. */
+    const fromDate = diaDeAgenda(from)
+    const toDate   = diaDeAgenda(to)
     if (fromDate > toDate) return NextResponse.json({ error: 'dateFrom debe ser <= dateTo' }, { status: 400 })
 
     /* Con horas se bloquea la franja y el resto del día se sigue vendiendo;
@@ -39,14 +41,13 @@ export async function POST(req: NextRequest) {
     }
 
     const blocked: { id: string; date: string }[] = []
-    const cur = new Date(fromDate)
+    let cur = new Date(fromDate)
     while (cur <= toDate) {
       const id = esFranja
         ? await blockRange(new Date(cur), timeFrom!, timeTo!)
         : await blockDate(new Date(cur))
-      const dateStr = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`
-      blocked.push({ id, date: dateStr })
-      cur.setDate(cur.getDate() + 1)
+      blocked.push({ id, date: diaBA(cur) })
+      cur = sumarDias(cur, 1)
     }
 
     return NextResponse.json({ success: true, blocked })

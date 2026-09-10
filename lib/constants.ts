@@ -1,4 +1,5 @@
 import type { Location, Service } from '@/types/booking'
+import { diaBA } from './format.ts'
 
 /* Estos precios subieron $1.000 el 1 de septiembre de 2026 para absorber la
    comisión de Mercado Pago, y volvieron a bajar el mismo día: Mercado Pago se
@@ -36,10 +37,10 @@ export const BLOCKED_SLOTS: string[] = []
    que decidía el navegador (commit 590720f): lo que el cliente manda es una
    propuesta, no un permiso.
 
-   El día se mira en UTC a propósito, porque es de donde sale la fecha del
-   evento (`toUTCDateStr` en googleCalendar.ts). Mirarlo en otra zona haría que
-   la validación y el evento hablaran de días distintos justo en los bordes,
-   que es donde estas cosas fallan.
+   El día se mira en hora de Buenos Aires, que es la que hablan la agenda y
+   los mails (ver la nota de `diaDeAgenda` en format.ts). Mirarlo en otra zona
+   haría que la validación y el evento hablaran de días distintos justo en los
+   bordes, que es donde estas cosas fallan.
 
    Devuelve el motivo del rechazo, ya escrito para el cliente, o null si el
    turno se puede tomar. */
@@ -50,9 +51,12 @@ export function motivoParaNoTomarlo(
 ): string | null {
   if (Number.isNaN(date.getTime())) return 'Esa fecha no existe'
   if (!TIME_SLOTS[location].includes(time)) return 'Ese horario no existe'
-  if (date.getUTCDay() === 0) return 'Los domingos no hay turnos'
 
-  const inicio = new Date(`${date.toISOString().slice(0, 10)}T${time}:00-03:00`)
+  const ds = diaBA(date)
+  // El mediodía: preguntar por el día de la semana lejos de los bordes.
+  if (new Date(`${ds}T12:00:00-03:00`).getUTCDay() === 0) return 'Los domingos no hay turnos'
+
+  const inicio = new Date(`${ds}T${time}:00-03:00`)
   if (inicio.getTime() < Date.now()) return 'Ese horario ya pasó'
 
   return null

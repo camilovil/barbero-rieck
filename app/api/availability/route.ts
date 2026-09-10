@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDayAvailability, expirePendingEvents } from '@/lib/googleCalendar'
 import { isDepositEnabled } from '@/lib/flags'
 import { BLOCKED_SLOTS, TIME_SLOTS } from '@/lib/constants'
+import { diaDeAgenda } from '@/lib/format'
 import type { Location } from '@/types/booking'
 
 export async function GET(req: NextRequest) {
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Faltan parámetros date y location' }, { status: 400 })
   }
 
-  const date = new Date(dateParam)
+  const date = diaDeAgenda(dateParam)
   if (isNaN(date.getTime())) {
     return NextResponse.json({ error: 'Fecha inválida' }, { status: 400 })
   }
