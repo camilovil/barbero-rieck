@@ -10,8 +10,8 @@ import { diaBA } from './format.ts'
    razón: se movieron dos veces y volvieron a donde estaban. */
 export const SERVICES: Record<Location, Service[]> = {
   local: [
-    { name: 'Corte', duration: 40, price: 16000 },
-    { name: 'Corte y barba', duration: 60, price: 19000 },
+    { name: 'Corte', duration: 40, price: 17000 },
+    { name: 'Corte y barba', duration: 60, price: 20000 },
   ],
   domicilio: [
     { name: 'Corte (incluye barba)', duration: 120, price: 40000 },
