@@ -1576,15 +1576,25 @@ function ultimosDoceMeses(): string[] {
 /* ─── Gráfico: lo cobrado mes a mes ───
    Una sola serie, así que una sola tinta y sin leyenda: el título dice qué
    es. Cada barra es un botón —se toca para ver su mes en el registro— y el
-   renglón de arriba lee la barra marcada, que de entrada es el mes en
-   curso. El registro de abajo es la vista en tabla de estos mismos números. */
-function GraficoMensual({ meses, onElegir }: { meses: MesCobrado[]; onElegir: (mes: string) => void }) {
+   renglón de arriba lee la barra marcada. El registro de abajo es la vista
+   en tabla de estos mismos números.
+
+   El mes elegido es el mismo que está abierto en el registro, y queda
+   encendido hasta que se elige otro. Pasar el mouse por otra barra la lee
+   de paso, sin mover la elección: al salir, vuelve a la elegida. */
+function GraficoMensual({ meses, elegido, onElegir }: {
+  meses: MesCobrado[]
+  elegido: string | null
+  onElegir: (mes: string) => void
+}) {
   const claves = ultimosDoceMeses()
   const porMes = new Map(meses.map(m => [m.mes, m]))
   const serie = claves.map(k => porMes.get(k) ?? { mes: k, total: 0, turnos: 0, semanas: [] })
   const max = Math.max(...serie.map(m => m.total), 1)
   const actual = claves[claves.length - 1]
-  const [marcado, setMarcado] = useState(actual)
+  const [encima, setEncima] = useState<string | null>(null)
+  const fijo = elegido && claves.includes(elegido) ? elegido : actual
+  const marcado = encima ?? fijo
   const m = serie.find(x => x.mes === marcado)!
 
   return (
@@ -1602,19 +1612,23 @@ function GraficoMensual({ meses, onElegir }: { meses: MesCobrado[]; onElegir: (m
       </p>
 
       <div
+        onMouseLeave={() => setEncima(null)}
         style={{
           display: 'flex', alignItems: 'flex-end', gap: 2, height: 132,
           borderBottom: '1px solid var(--border)',
         }}
       >
         {serie.map(x => {
+          const esFijo = x.mes === fijo
           const esMarcado = x.mes === marcado
           return (
             <button
               key={x.mes}
-              onMouseEnter={() => setMarcado(x.mes)}
-              onFocus={() => setMarcado(x.mes)}
-              onClick={() => onElegir(x.mes)}
+              onMouseEnter={() => setEncima(x.mes)}
+              onFocus={() => setEncima(x.mes)}
+              onBlur={() => setEncima(null)}
+              onClick={() => { setEncima(null); onElegir(x.mes) }}
+              aria-pressed={esFijo}
               aria-label={`${nombreDelMes(x.mes)}: ${money(x.total)}, ${turnosTxt(x.turnos)}. Ver en el registro.`}
               style={{
                 /* El botón ocupa la columna entera, no sólo la barra: un mes
@@ -1631,7 +1645,9 @@ function GraficoMensual({ meses, onElegir }: { meses: MesCobrado[]; onElegir: (m
                   height: x.total ? `${Math.max((x.total / max) * 100, 2)}%` : 0,
                   borderRadius: '4px 4px 0 0',
                   background: 'var(--acento)',
-                  opacity: esMarcado ? 1 : 0.42,
+                  /* Elegido, a pleno; el que se lee de paso, a medio camino;
+                     el resto, atrás. */
+                  opacity: esFijo ? 1 : esMarcado ? 0.7 : 0.32,
                   transition: 'opacity .16s',
                 }}
               />
@@ -1648,7 +1664,8 @@ function GraficoMensual({ meses, onElegir }: { meses: MesCobrado[]; onElegir: (m
             className="mono"
             style={{
               flex: 1, textAlign: 'center', fontSize: 10,
-              color: x.mes === marcado ? 'var(--text)' : 'var(--text-meta)',
+              color: x.mes === fijo ? 'var(--text)' : 'var(--text-meta)',
+              fontWeight: x.mes === fijo ? 600 : 400,
             }}
           >
             {new Date(Number(x.mes.slice(0, 4)), Number(x.mes.slice(5)) - 1, 1)
@@ -1753,6 +1770,7 @@ function Cobros() {
 
           <GraficoMensual
             meses={resumen.meses}
+            elegido={abierto}
             onElegir={mes => {
               setAbierto(mes)
               document.getElementById(`cobros-mes-${mes}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -1771,7 +1789,18 @@ function Cobros() {
                   const abiertoEste = abierto === m.mes
                   const id = `cobros-${m.mes}`
                   return (
-                    <li key={m.mes} id={`cobros-mes-${m.mes}`} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <li
+                      key={m.mes}
+                      id={`cobros-mes-${m.mes}`}
+                      style={{
+                        borderBottom: '1px solid var(--border)',
+                        /* El mes abierto lleva el filete vivo a la izquierda,
+                           igual que la sección encendida de la navegación. */
+                        borderLeft: `2px solid ${abiertoEste ? 'var(--sel-borde)' : 'transparent'}`,
+                        paddingLeft: 12,
+                        transition: 'border-color .16s',
+                      }}
+                    >
                       <button
                         onClick={() => setAbierto(abiertoEste ? null : m.mes)}
                         aria-expanded={abiertoEste}
