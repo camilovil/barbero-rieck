@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
-import { lunesDe, resumirIngresos } from '../lib/ingresos.ts'
+import { inicioDeMes, lunesDe, planillaDelMes, resumirIngresos, type TurnoDePlanilla } from '../lib/ingresos.ts'
 
 /* Miércoles 23 de septiembre de 2026, 15:00 en Buenos Aires. */
 const AHORA = new Date('2026-09-23T15:00:00-03:00')
@@ -89,4 +89,39 @@ describe('resumirIngresos', () => {
     assert.deepEqual(ago.semanas, [{ total: 1000, turnos: 1, desde: '2026-08-31', hasta: '2026-08-31' }])
     assert.deepEqual(sep.semanas, [{ total: 2000, turnos: 1, desde: '2026-09-01', hasta: '2026-09-06' }])
   })
+})
+
+describe('planillaDelMes', () => {
+  const t = (start: string, extra: Partial<TurnoDePlanilla> = {}): TurnoDePlanilla => ({
+    start, nombre: 'Ana', servicio: 'Corte — $17.000', modalidad: 'En el estudio', viatico: 0, ...extra,
+  })
+
+  test('sólo lo cobrado del mes, ordenado, con el total al pie', () => {
+    const csv = planillaDelMes([
+      t('2026-09-10T18:00:00-03:00', { servicio: 'Corte y barba — $20.000', viatico: 4000 }),
+      t('2026-09-02T10:00:00-03:00'),
+      t('2026-08-31T10:00:00-03:00'),                        // otro mes
+      t('2026-09-05T10:00:00-03:00', { pago: 'pendiente' }),  // sin seña
+      t('2026-09-30T10:00:00-03:00'),                        // todavía no pasó
+    ], '2026-09', AHORA)
+    const filas = csv.replace('\uFEFF', '').trim().split('\r\n')
+    assert.equal(filas[1], '02/09/2026;10:00;Ana;Corte;En el estudio;17000;0;17000')
+    assert.equal(filas[2], '10/09/2026;18:00;Ana;Corte y barba;En el estudio;20000;4000;24000')
+    assert.equal(filas.at(-1), 'Total del mes;;2 turnos;;;;;41000')
+  })
+
+  test('un nombre no se ejecuta como fórmula ni rompe las columnas', () => {
+    const csv = planillaDelMes([
+      t('2026-09-02T10:00:00-03:00', { nombre: '=HYPERLINK("x")' }),
+      t('2026-09-03T10:00:00-03:00', { nombre: 'Pérez; Juan' }),
+    ], '2026-09', AHORA)
+    assert.ok(csv.includes(`"'=HYPERLINK(""x"")"`))
+    assert.ok(csv.includes('"Pérez; Juan"'))
+  })
+})
+
+test('inicioDeMes es la medianoche de Buenos Aires, y cruza el año', () => {
+  assert.equal(inicioDeMes('2026-09').toISOString(), '2026-09-01T03:00:00.000Z')
+  assert.equal(inicioDeMes('2026-12', 1).toISOString(), '2027-01-01T03:00:00.000Z')
+  assert.equal(inicioDeMes('2026-09', -11).toISOString(), '2025-10-01T03:00:00.000Z')
 })

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getTurnosEntre } from '@/lib/googleCalendar'
-import { resumirIngresos } from '@/lib/ingresos'
+import { inicioDeMes, resumirIngresos } from '@/lib/ingresos'
 import { diaBA, precioServicio } from '@/lib/format'
 
 /** Cuántos meses para atrás muestra el registro, contando el actual. */
@@ -13,13 +13,9 @@ export async function GET() {
        días de Buenos Aires. Hasta fin de mes y no hasta hoy: lo que queda
        agendado del mes es lo «previsto» que se muestra al lado. */
     const ahora = new Date()
-    const [y, m] = diaBA(ahora).split('-').map(Number)
-    const mes = (n: number) => {
-      const d = new Date(Date.UTC(y, m - 1 + n, 1))
-      return new Date(`${d.toISOString().slice(0, 10)}T00:00:00-03:00`)
-    }
+    const mes = diaBA(ahora).slice(0, 7)
 
-    const turnos = await getTurnosEntre(mes(-(MESES - 1)), mes(1))
+    const turnos = await getTurnosEntre(inicioDeMes(mes, -(MESES - 1)), inicioDeMes(mes, 1))
     return NextResponse.json(resumirIngresos(
       turnos.map(t => ({ start: t.start, monto: precioServicio(t.servicio) + t.viatico, pago: t.pago })),
       ahora,

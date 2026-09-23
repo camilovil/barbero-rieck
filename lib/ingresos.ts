@@ -10,7 +10,7 @@
  * Es puro cálculo sobre días de Buenos Aires, igual que lib/agenda.ts, para
  * poder probarlo sin credenciales. */
 
-import { diaBA } from './format.ts'
+import { diaBA, hhmm, nombreServicio, precioServicio } from './format.ts'
 
 export type TurnoCobrado = {
   /** El instante del turno, ISO. */
@@ -129,4 +129,58 @@ export function resumirIngresos(turnos: TurnoCobrado[], ahora: Date = new Date()
     })
 
   return { estaSemana, semanaPasada, esteMes, meses }
+}
+
+/** La medianoche de Buenos Aires del día 1 de un mes "AAAA-MM", corrido
+ *  n meses. Es el borde que se le pide al calendario. */
+export function inicioDeMes(mes: string, n = 0): Date {
+  const [y, m] = mes.split('-').map(Number)
+  const d = new Date(Date.UTC(y, m - 1 + n, 1))
+  return new Date(`${d.toISOString().slice(0, 10)}T00:00:00-03:00`)
+}
+
+/* ─── La planilla de un mes ───────────────────────────────────────
+ *
+ * Un CSV y no un .xlsx: Excel lo abre con doble clic, igual que Google
+ * Sheets o Numbers, y no suma una dependencia. Va con punto y coma porque
+ * el Excel en castellano usa la coma para los decimales y separaría mal, y
+ * con BOM para que las tildes no salgan rotas. */
+
+export type TurnoDePlanilla = {
+  start: string
+  nombre: string
+  servicio: string
+  modalidad: string
+  viatico: number
+  pago?: 'pendiente' | 'pagado'
+}
+
+/* Un nombre que empieza con = + - @ Excel lo lee como fórmula. El nombre lo
+   escribe el cliente al reservar, así que se le antepone un apóstrofo: se ve
+   igual y no se ejecuta. */
+function celda(v: string | number): string {
+  let s = String(v)
+  if (/^[=+\-@]/.test(s)) s = `'${s}`
+  return /[;"\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+
+/** Los turnos cobrados de un mes —los mismos que suma el registro—, uno por
+ *  renglón y con el total al pie. */
+export function planillaDelMes(turnos: TurnoDePlanilla[], mes: string, ahora: Date = new Date()): string {
+  const filas = turnos
+    .filter(t => t.pago !== 'pendiente' && new Date(t.start) <= ahora && diaBA(new Date(t.start)).startsWith(mes))
+    .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+    .map(t => {
+      const [y, m, d] = diaBA(new Date(t.start)).split('-')
+      const precio = precioServicio(t.servicio)
+      return [`${d}/${m}/${y}`, hhmm(t.start), t.nombre, nombreServicio(t.servicio), t.modalidad, precio, t.viatico, precio + t.viatico]
+    })
+
+  const total = filas.reduce((s, f) => s + (f[7] as number), 0)
+  return '\uFEFF' + [
+    ['Fecha', 'Hora', 'Cliente', 'Servicio', 'Modalidad', 'Servicio $', 'Viático $', 'Total $'],
+    ...filas,
+    [],
+    ['Total del mes', '', `${filas.length} turnos`, '', '', '', '', total],
+  ].map(f => f.map(celda).join(';')).join('\r\n') + '\r\n'
 }

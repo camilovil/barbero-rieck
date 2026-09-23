@@ -4,12 +4,13 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import type { BookingEvent } from '@/lib/googleCalendar'
-import type { ResumenIngresos } from '@/lib/ingresos'
+import type { MesCobrado, ResumenIngresos } from '@/lib/ingresos'
 import ThemeToggle from '@/components/ThemeToggle'
 import TurnoTracker from '@/components/TurnoTracker'
 import { TIME_SLOTS, LOCATION_LABELS, DEPOSIT_HOLD_LABEL } from '@/lib/constants'
 import {
   capitalize as upperFirst,
+  diaBA,
   fechaLarga,
   hhmm as formatTime,
   nombreServicio,
@@ -1561,6 +1562,104 @@ function turnosTxt(n: number): string {
   return n === 1 ? '1 turno' : `${n} turnos`
 }
 
+/* Los doce meses que muestra el gráfico, del más viejo al actual. Salen del
+   calendario y no de los datos: un mes sin turnos tiene que verse como una
+   barra en cero, no desaparecer y correr a los demás. */
+function ultimosDoceMeses(): string[] {
+  const [y, m] = diaBA(new Date()).split('-').map(Number)
+  return Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(Date.UTC(y, m - 12 + i, 1))
+    return d.toISOString().slice(0, 7)
+  })
+}
+
+/* ─── Gráfico: lo cobrado mes a mes ───
+   Una sola serie, así que una sola tinta y sin leyenda: el título dice qué
+   es. Cada barra es un botón —se toca para ver su mes en el registro— y el
+   renglón de arriba lee la barra marcada, que de entrada es el mes en
+   curso. El registro de abajo es la vista en tabla de estos mismos números. */
+function GraficoMensual({ meses, onElegir }: { meses: MesCobrado[]; onElegir: (mes: string) => void }) {
+  const claves = ultimosDoceMeses()
+  const porMes = new Map(meses.map(m => [m.mes, m]))
+  const serie = claves.map(k => porMes.get(k) ?? { mes: k, total: 0, turnos: 0, semanas: [] })
+  const max = Math.max(...serie.map(m => m.total), 1)
+  const actual = claves[claves.length - 1]
+  const [marcado, setMarcado] = useState(actual)
+  const m = serie.find(x => x.mes === marcado)!
+
+  return (
+    <figure style={{ margin: '36px 0 0', maxWidth: 560 }}>
+      <figcaption className="rotulo rotulo-rule">Cobrado por mes</figcaption>
+
+      <p aria-live="polite" style={{ margin: '0 0 14px', minHeight: 40 }}>
+        <span style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+          {nombreDelMes(m.mes)}{m.mes === actual ? ' · en curso' : ''}
+        </span>
+        <span className="mono" style={{ fontSize: 12, color: 'var(--text-mut)' }}>
+          {money(m.total)} · {turnosTxt(m.turnos)}
+          {m.turnos > 0 && ` · ${money(Math.round(m.total / m.turnos))} por turno`}
+        </span>
+      </p>
+
+      <div
+        style={{
+          display: 'flex', alignItems: 'flex-end', gap: 2, height: 132,
+          borderBottom: '1px solid var(--border)',
+        }}
+      >
+        {serie.map(x => {
+          const esMarcado = x.mes === marcado
+          return (
+            <button
+              key={x.mes}
+              onMouseEnter={() => setMarcado(x.mes)}
+              onFocus={() => setMarcado(x.mes)}
+              onClick={() => onElegir(x.mes)}
+              aria-label={`${nombreDelMes(x.mes)}: ${money(x.total)}, ${turnosTxt(x.turnos)}. Ver en el registro.`}
+              style={{
+                /* El botón ocupa la columna entera, no sólo la barra: un mes
+                   flojo tiene que poder tocarse igual. */
+                flex: 1, minWidth: 0, height: '100%', padding: 0,
+                display: 'flex', alignItems: 'flex-end',
+                background: 'none', border: 'none', cursor: 'pointer',
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  display: 'block', width: '100%',
+                  height: x.total ? `${Math.max((x.total / max) * 100, 2)}%` : 0,
+                  borderRadius: '4px 4px 0 0',
+                  background: 'var(--acento)',
+                  opacity: esMarcado ? 1 : 0.42,
+                  transition: 'opacity .16s',
+                }}
+              />
+            </button>
+          )
+        })}
+      </div>
+
+      {/* La inicial de cada mes. Sin el año: el renglón de arriba lo dice. */}
+      <div aria-hidden="true" style={{ display: 'flex', gap: 2, marginTop: 6 }}>
+        {serie.map(x => (
+          <span
+            key={x.mes}
+            className="mono"
+            style={{
+              flex: 1, textAlign: 'center', fontSize: 10,
+              color: x.mes === marcado ? 'var(--text)' : 'var(--text-meta)',
+            }}
+          >
+            {new Date(Number(x.mes.slice(0, 4)), Number(x.mes.slice(5)) - 1, 1)
+              .toLocaleDateString('es-AR', { month: 'narrow' }).toUpperCase()}
+          </span>
+        ))}
+      </div>
+    </figure>
+  )
+}
+
 /* ─── Cobros ───
    Lo que entró por semana y por mes. Se pide cada vez que se abre la
    sección: son pocas veces por día, y así nunca muestra una cifra de la
@@ -1652,6 +1751,14 @@ function Cobros() {
             </p>
           )}
 
+          <GraficoMensual
+            meses={resumen.meses}
+            onElegir={mes => {
+              setAbierto(mes)
+              document.getElementById(`cobros-mes-${mes}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }}
+          />
+
           {/* ─── Registro ─── */}
           <section style={{ marginTop: 40, maxWidth: 560 }}>
             <h3 className="rotulo rotulo-rule">Registro de los últimos 12 meses</h3>
@@ -1664,7 +1771,7 @@ function Cobros() {
                   const abiertoEste = abierto === m.mes
                   const id = `cobros-${m.mes}`
                   return (
-                    <li key={m.mes} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <li key={m.mes} id={`cobros-mes-${m.mes}`} style={{ borderBottom: '1px solid var(--border)' }}>
                       <button
                         onClick={() => setAbierto(abiertoEste ? null : m.mes)}
                         aria-expanded={abiertoEste}
@@ -1695,6 +1802,20 @@ function Cobros() {
                               <span className="kv-v mono">{money(w.total)}</span>
                             </div>
                           ))}
+                          <div className="kv">
+                            <span className="kv-k">Promedio por turno</span>
+                            <span className="kv-v mono">{money(Math.round(m.total / m.turnos))}</span>
+                          </div>
+                          {/* Un link y no un fetch: el navegador baja el
+                              archivo solo, con el nombre que pone la ruta. */}
+                          <a
+                            href={`/api/admin/ingresos/planilla?mes=${m.mes}`}
+                            download
+                            className="btn-outline btn-sm"
+                            style={{ display: 'inline-flex', marginTop: 14, textDecoration: 'none' }}
+                          >
+                            Descargar {nombreDelMes(m.mes).toLowerCase()} en Excel
+                          </a>
                         </div>
                       )}
                     </li>
