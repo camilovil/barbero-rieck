@@ -427,25 +427,43 @@ function parseDesc(desc: string): Record<string, string> {
   return result
 }
 
-export async function getPastEvents(days = 30): Promise<BookingEvent[]> {
+/* Los turnos entre dos instantes, del más viejo al más nuevo.
+
+   Google devuelve de a una página —250 eventos si no se le pide otra cosa—
+   y sin seguir el `nextPageToken` el resto se pierde en silencio. Ordenado
+   por fecha, lo que se perdía era justamente lo más reciente: el historial
+   de 60 días de una agenda llena se cortaba antes de llegar a ayer, y el
+   registro de cobros de un año no entraría nunca en una sola página. */
+export async function getTurnosEntre(desde: Date, hasta: Date): Promise<BookingEvent[]> {
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_CALENDAR_ID) return []
 
   const calendar = google.calendar({ version: 'v3', auth: getAuth() })
-  const now = new Date()
-  const past = new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
+  const items: calendar_v3.Schema$Event[] = []
+  let pageToken: string | undefined
 
-  const res = await calendar.events.list({
-    calendarId: process.env.GOOGLE_CALENDAR_ID,
-    timeMin: past.toISOString(),
-    timeMax: now.toISOString(),
-    singleEvents: true,
-    orderBy: 'startTime',
-  })
+  do {
+    const res = await calendar.events.list({
+      calendarId: process.env.GOOGLE_CALENDAR_ID,
+      timeMin: desde.toISOString(),
+      timeMax: hasta.toISOString(),
+      singleEvents: true,
+      orderBy: 'startTime',
+      maxResults: 2500,
+      pageToken,
+    })
+    items.push(...(res.data.items ?? []))
+    pageToken = res.data.nextPageToken ?? undefined
+  } while (pageToken)
 
-  return (res.data.items ?? [])
+  return items
     .filter(e => e.id && e.start?.dateTime && e.summary?.includes('✂️'))
     .map(e => toBookingEvent(e.id!, parseDesc(e.description ?? ''), e.summary ?? '—', e.start!.dateTime!, e.end?.dateTime ?? '', e.extendedProperties?.private?.pago))
-    .reverse() // más reciente primero
+}
+
+export async function getPastEvents(days = 30): Promise<BookingEvent[]> {
+  const now = new Date()
+  const past = new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
+  return (await getTurnosEntre(past, now)).reverse() // más reciente primero
 }
 
 export async function getUpcomingEvents(days = 30): Promise<BookingEvent[]> {

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import type { BookingEvent } from '@/lib/googleCalendar'
+import type { ResumenIngresos } from '@/lib/ingresos'
 import ThemeToggle from '@/components/ThemeToggle'
 import TurnoTracker from '@/components/TurnoTracker'
 import { TIME_SLOTS, LOCATION_LABELS, DEPOSIT_HOLD_LABEL } from '@/lib/constants'
@@ -115,12 +116,12 @@ const FILTERS = [
 
 type Filter = (typeof FILTERS)[number]['key']
 
-/* La navegación lleva SÓLO estas dos. El diseño dibuja además
-   Clientes, Servicios, Horarios y Cobros, que no existen como
-   pantallas: un link que no lleva a ningún lado es peor que la
-   ausencia del link. */
+/* La navegación lleva SÓLO estas tres. El diseño dibuja además
+   Clientes, Servicios y Horarios, que no existen como pantallas: un
+   link que no lleva a ningún lado es peor que la ausencia del link. */
 const SECCIONES = [
   { key: 'agenda', label: 'Agenda' },
+  { key: 'cobros', label: 'Cobros' },
   { key: 'ajustes', label: 'Ajustes' },
 ] as const
 
@@ -995,6 +996,8 @@ export default function AdminDashboard() {
               )}
             </div>
           </>
+        ) : seccion === 'cobros' ? (
+          <Cobros />
         ) : (
           <>
             {/* ─── Ajustes ─── */}
@@ -1537,5 +1540,175 @@ export default function AdminDashboard() {
         </div>
       )}
     </div>
+  )
+}
+
+/* "2026-09" → "Septiembre 2026" */
+function nombreDelMes(mes: string): string {
+  const [y, m] = mes.split('-').map(Number)
+  return upperFirst(new Date(y, m - 1, 1).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }))
+}
+
+/* "21 al 27", o "31" cuando la semana se quedó con un solo día del mes. El
+   mes no hace falta: está en el título de arriba. */
+function diasDeSemana(desde: string, hasta: string): string {
+  const d = Number(desde.slice(8))
+  const h = Number(hasta.slice(8))
+  return d === h ? `Día ${d}` : `Del ${d} al ${h}`
+}
+
+function turnosTxt(n: number): string {
+  return n === 1 ? '1 turno' : `${n} turnos`
+}
+
+/* ─── Cobros ───
+   Lo que entró por semana y por mes. Se pide cada vez que se abre la
+   sección: son pocas veces por día, y así nunca muestra una cifra de la
+   mañana a la tarde. */
+function Cobros() {
+  const [resumen, setResumen] = useState<ResumenIngresos | null>(null)
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState(false)
+  /* El mes en curso abierto de entrada: es el que se viene a mirar. */
+  const [abierto, setAbierto] = useState<string | null>(null)
+
+  /* Cada «Recargar» sube la vuelta y el efecto vuelve a pedir. El estado se
+     toca sólo cuando llega la respuesta, y una respuesta vieja que llega
+     tarde se descarta. */
+  const [vuelta, setVuelta] = useState(0)
+
+  useEffect(() => {
+    let vigente = true
+    fetch('/api/admin/ingresos')
+      .then(res => {
+        if (!res.ok) throw new Error()
+        return res.json() as Promise<ResumenIngresos>
+      })
+      .then(data => {
+        if (!vigente) return
+        setResumen(data)
+        setError(false)
+        setAbierto(a => a ?? data.meses[0]?.mes ?? null)
+      })
+      .catch(() => { if (vigente) setError(true) })
+      .finally(() => { if (vigente) setCargando(false) })
+    return () => { vigente = false }
+  }, [vuelta])
+
+  function recargar() {
+    setCargando(true)
+    setVuelta(v => v + 1)
+  }
+
+  const cifras: [string, string][] = resumen
+    ? [
+        ['Esta semana', money(resumen.estaSemana.total)],
+        ['Semana pasada', money(resumen.semanaPasada.total)],
+        ['Este mes', money(resumen.esteMes.total)],
+        ['Turnos del mes', String(resumen.esteMes.turnos)],
+      ]
+    : []
+
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+        <h2 className="rotulo" style={{ margin: '0 0 14px' }}>Cobros</h2>
+        <button onClick={recargar} disabled={cargando} className="link-btn" style={{ flexShrink: 0 }}>
+          {cargando ? 'Cargando…' : 'Recargar'}
+        </button>
+      </div>
+
+      {error ? (
+        <p className="mono" role="alert" style={{ fontSize: 12, color: 'var(--text)', margin: '8px 0 0' }}>
+          No se pudieron calcular los cobros. Probá recargar en un rato.
+        </p>
+      ) : !resumen ? (
+        <p className="rotulo" style={{ lineHeight: 1.8 }}>Sumando los turnos…</p>
+      ) : (
+        <>
+          <dl className="cifras">
+            {cifras.map(([label, valor]) => (
+              <div key={label}>
+                <dt className="rotulo" style={{ order: 2, marginTop: 9 }}>{label}</dt>
+                <dd
+                  className="mono"
+                  style={{
+                    order: 1, margin: 0, lineHeight: 1, color: 'var(--text)', fontWeight: 500,
+                    fontSize: valor.length > 4 ? 19 : 28,
+                  }}
+                >
+                  {valor}
+                </dd>
+              </div>
+            ))}
+          </dl>
+
+          {/* Lo agendado que todavía no pasó. Va aparte y no sumado: es
+              plata que entra sólo si no se cae nada. */}
+          {(resumen.estaSemana.previsto > 0 || resumen.esteMes.previsto > 0) && (
+            <p className="mono" style={{ fontSize: 10.5, letterSpacing: '.06em', color: 'var(--text-meta)', margin: '12px 0 0', lineHeight: 1.7 }}>
+              POR COBRAR SI NO SE CAE NADA: {money(resumen.estaSemana.previsto)} ESTA SEMANA
+              · {money(resumen.esteMes.previsto)} EN LO QUE QUEDA DEL MES
+            </p>
+          )}
+
+          {/* ─── Registro ─── */}
+          <section style={{ marginTop: 40, maxWidth: 560 }}>
+            <h3 className="rotulo rotulo-rule">Registro de los últimos 12 meses</h3>
+
+            {resumen.meses.length === 0 ? (
+              <p className="rotulo" style={{ lineHeight: 1.8 }}>Todavía no hay turnos cobrados.</p>
+            ) : (
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                {resumen.meses.map(m => {
+                  const abiertoEste = abierto === m.mes
+                  const id = `cobros-${m.mes}`
+                  return (
+                    <li key={m.mes} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <button
+                        onClick={() => setAbierto(abiertoEste ? null : m.mes)}
+                        aria-expanded={abiertoEste}
+                        aria-controls={id}
+                        style={{
+                          display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12,
+                          width: '100%', minHeight: 52, padding: '14px 0',
+                          background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+                        }}
+                      >
+                        <span style={{ minWidth: 0 }}>
+                          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{nombreDelMes(m.mes)}</span>
+                          <span className="rotulo" style={{ marginLeft: 10 }}>{turnosTxt(m.turnos)}</span>
+                        </span>
+                        <span className="mono" style={{ fontSize: 15, fontWeight: 500, color: 'var(--text)', flexShrink: 0 }}>
+                          {money(m.total)}
+                          <span aria-hidden="true" style={{ marginLeft: 10, color: 'var(--text-meta)' }}>{abiertoEste ? '−' : '+'}</span>
+                        </span>
+                      </button>
+
+                      {abiertoEste && (
+                        <div id={id} style={{ paddingBottom: 12 }}>
+                          {m.semanas.map(w => (
+                            <div key={w.desde} className="kv">
+                              <span className="kv-k">
+                                {diasDeSemana(w.desde, w.hasta)} · {turnosTxt(w.turnos)}
+                              </span>
+                              <span className="kv-v mono">{money(w.total)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+
+            <p className="rotulo" style={{ lineHeight: 1.8, marginTop: 16 }}>
+              Suma servicio y viático de cada turno que ya pasó. Los cancelados no cuentan.
+            </p>
+          </section>
+        </>
+      )}
+    </>
   )
 }
