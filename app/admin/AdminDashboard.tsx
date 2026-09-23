@@ -135,6 +135,7 @@ export default function AdminDashboard() {
   const [cancelling, setCancelling] = useState<string | null>(null)
   const [cancelTarget, setCancelTarget] = useState<BookingEvent | null>(null)
   const [cancelReason, setCancelReason] = useState('')
+  const [cancelError, setCancelError] = useState('')
   const [filter, setFilter] = useState<Filter>('upcoming')
   const [search, setSearch] = useState('')
   const [history, setHistory] = useState<BookingEvent[]>([])
@@ -155,7 +156,7 @@ export default function AdminDashboard() {
      un turno que ya no existe. */
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  // Modificar turno
+  // Reprogramar turno
   const [editing, setEditing] = useState<BookingEvent | null>(null)
   const [editDate, setEditDate] = useState('')
   const [editTime, setEditTime] = useState('')
@@ -177,36 +178,63 @@ export default function AdminDashboard() {
   const [showBlocked, setShowBlocked] = useState(false)
 
   // Ajustes
-  const [maxDaily, setMaxDaily] = useState(8)
+  /* null hasta que se lee de verdad: mostrar un 8 inventado como «el tope
+     de ahora» es peor que decir que no se pudo leer. */
+  const [maxDaily, setMaxDaily] = useState<number | null>(null)
   const [maxDailyInput, setMaxDailyInput] = useState(8)
   const [savingSettings, setSavingSettings] = useState(false)
 
-  // Lo que se anuncia al lector de pantalla cuando una acción cambia
-  // la pantalla sin decir nada
-  const [status, setStatus] = useState('')
+  /* El resultado de cada acción. Antes sólo lo oía el lector de pantalla:
+     Santiago cancelaba, bloqueaba o confirmaba una seña y la pantalla no le
+     decía si había salido. Ahora se ve abajo y se va solo. Un error queda
+     más tiempo: hay que llegar a leer qué hacer. */
+  const [aviso, setAviso] = useState<{ texto: string; error: boolean } | null>(null)
+  const avisoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const setStatus = useCallback((texto: string, error = false) => {
+    if (avisoTimer.current) clearTimeout(avisoTimer.current)
+    setAviso({ texto, error })
+    avisoTimer.current = setTimeout(() => setAviso(null), error ? 9000 : 5000)
+  }, [])
+  useEffect(() => () => { if (avisoTimer.current) clearTimeout(avisoTimer.current) }, [])
 
+  /* Una sesión vencida contesta 401: se vuelve al login en vez de quedarse
+     esperando una agenda que no va a llegar. */
+  const [agendaError, setAgendaError] = useState(false)
   const fetchEvents = useCallback(async () => {
     setLoading(true)
-    const res = await fetch('/api/admin/bookings')
-    const data = await res.json()
-    setEvents(data.events ?? [])
-    setLoading(false)
-  }, [])
+    try {
+      const res = await fetch('/api/admin/bookings')
+      if (res.status === 401) { router.push('/admin/login'); return }
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      setEvents(data.events ?? [])
+      setAgendaError(false)
+    } catch {
+      setAgendaError(true)
+    } finally {
+      setLoading(false)
+    }
+  }, [router])
 
   const fetchBlockedDates = useCallback(async () => {
-    const res = await fetch('/api/admin/blocked-dates')
-    const data = await res.json()
-    setBlockedDates(data.blocked ?? [])
-    setBlockedRanges(data.ranges ?? [])
-  }, [])
+    try {
+      const res = await fetch('/api/admin/blocked-dates')
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      setBlockedDates(data.blocked ?? [])
+      setBlockedRanges(data.ranges ?? [])
+    } catch {
+      setStatus('No se pudieron leer los bloqueos. Recargá la página.', true)
+    }
+  }, [setStatus])
 
   useEffect(() => {
     fetchEvents()
     fetchBlockedDates()
     fetch('/api/admin/settings')
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error(); return r.json() })
       .then(d => { setMaxDaily(d.maxDailyBookings); setMaxDailyInput(d.maxDailyBookings) })
-      .catch(() => {})
+      .catch(() => setMaxDaily(null))
   }, [fetchEvents, fetchBlockedDates])
 
   /* Al abrir una hoja el foco tiene que entrar en ella; al cerrarla,
@@ -219,12 +247,16 @@ export default function AdminDashboard() {
   function closeSheets() {
     setCancelTarget(null)
     setCancelReason('')
+    setCancelError('')
     setEditing(null)
   }
 
   useEffect(() => {
     if (!sheetOpen) {
-      openerRef.current?.focus()
+      /* Después de cancelar, el botón que abrió la hoja ya no existe: el
+         foco caía en el <body>. Se lo lleva al buscador, arriba de la lista. */
+      const opener = openerRef.current
+      ;(opener?.isConnected ? opener : document.getElementById('admin-search'))?.focus()
       openerRef.current = null
       return
     }
@@ -247,26 +279,61 @@ export default function AdminDashboard() {
 
   const [confirmando, setConfirmando] = useState<string | null>(null)
 
+  /* Si falla, la hoja queda abierta con el error: cerrarla hacía creer que
+     el turno se había cancelado cuando seguía en pie. */
   async function confirmCancel() {
     if (!cancelTarget) return
     setCancelling(cancelTarget.id)
-    const res = await fetch('/api/admin/cancelar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ eventId: cancelTarget.id, reason: cancelReason.trim() || undefined }),
-    })
-    if (res.ok) {
+    setCancelError('')
+    try {
+      const res = await fetch('/api/admin/cancelar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId: cancelTarget.id, reason: cancelReason.trim() || undefined }),
+      })
+      if (!res.ok) throw new Error()
       setEvents(prev => prev.filter(e => e.id !== cancelTarget.id))
       setStatus(`Turno de ${cancelTarget.nombre} cancelado. Le avisamos por mail.`)
+      setCancelTarget(null)
+      setCancelReason('')
+    } catch {
+      setCancelError('No se pudo cancelar. Revisá la conexión y probá de nuevo.')
+    } finally {
+      setCancelling(null)
     }
-    setCancelling(null)
-    setCancelTarget(null)
-    setCancelReason('')
   }
 
   /* Santiago cobró en efectivo, o arregló el turno por WhatsApp. Su
      confirmación vale lo mismo que la del webhook: la seña está para
      cubrirlo de las ausencias, no para atarle la forma de cobrar. */
+  /* Confirmar la seña le manda un mail al cliente y no tiene vuelta atrás,
+     y el botón vive en una lista que se recorre con el pulgar: un roce lo
+     disparaba. El primer toque lo arma y el segundo confirma; si no llega
+     el segundo, se desarma solo. */
+  const [armado, setArmado] = useState<string | null>(null)
+  const armadoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (armadoTimer.current) clearTimeout(armadoTimer.current) }, [])
+
+  function tocarSena(ev: BookingEvent) {
+    if (armadoTimer.current) clearTimeout(armadoTimer.current)
+    if (armado !== ev.id) {
+      setArmado(ev.id)
+      armadoTimer.current = setTimeout(() => setArmado(null), 4000)
+      return
+    }
+    setArmado(null)
+    confirmarAMano(ev)
+  }
+
+  /* El rótulo visible es el principio del nombre accesible: quien dicta
+     por voz pide el control por lo que lee. */
+  function botonSena(ev: BookingEvent, conNombre = true): string {
+    const base = confirmando === ev.id ? 'Confirmando…'
+      : armado === ev.id ? 'Tocá de nuevo para confirmar la seña'
+      : 'Recibí la seña — confirmar'
+    return conNombre ? `${base} · ${ev.nombre}` : base
+  }
+
   async function confirmarAMano(ev: BookingEvent) {
     setConfirmando(ev.id)
     const res = await fetch('/api/admin/confirmar', {
@@ -279,7 +346,7 @@ export default function AdminDashboard() {
       setStatus(`Turno de ${ev.nombre} confirmado. Le avisamos por mail.`)
     } else {
       const { error } = await res.json().catch(() => ({ error: '' }))
-      setStatus(error || 'No se pudo confirmar el turno.')
+      setStatus(error || 'No se pudo confirmar la seña. Probá de nuevo en un rato.', true)
     }
     setConfirmando(null)
   }
@@ -288,7 +355,7 @@ export default function AdminDashboard() {
     if (!blockFrom) return
     const franja = Boolean(blockHoraDesde && blockHoraHasta)
     if (franja && blockHoraDesde >= blockHoraHasta) {
-      setStatus('La hora de inicio tiene que ser anterior a la de fin.')
+      setStatus('La hora de inicio tiene que ser anterior a la de fin.', true)
       return
     }
     setBlockingDate(true)
@@ -313,7 +380,7 @@ export default function AdminDashboard() {
       setBlockHoraHasta('')
     } else {
       const data = await res.json().catch(() => null)
-      setStatus(data?.error ?? 'No se pudo bloquear.')
+      setStatus(data?.error ?? 'No se pudo bloquear. Probá de nuevo en un rato.', true)
     }
     setBlockingDate(false)
   }
@@ -328,6 +395,9 @@ export default function AdminDashboard() {
     if (res.ok) {
       setMaxDaily(maxDailyInput)
       setStatus(`Tope guardado: ${maxDailyInput} turnos por día.`)
+    } else {
+      const data = await res.json().catch(() => null)
+      setStatus(data?.error ?? 'No se pudo guardar el tope. Probá de nuevo.', true)
     }
     setSavingSettings(false)
   }
@@ -345,13 +415,15 @@ export default function AdminDashboard() {
   /* El historial se pide una sola vez y cuando hace falta: al abrir su
      pestaña, o al retroceder a una semana pasada, que es la otra forma de
      mirar turnos que ya fueron. */
+  const [historyError, setHistoryError] = useState(false)
   function cargarHistorial() {
     if (historyLoaded || loadingHistory) return
     setLoadingHistory(true)
+    setHistoryError(false)
     fetch('/api/admin/bookings/history')
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error(); return r.json() })
       .then(data => { setHistory(data.events ?? []); setHistoryLoaded(true) })
-      .catch(() => {})
+      .catch(() => setHistoryError(true))
       .finally(() => setLoadingHistory(false))
   }
 
@@ -407,7 +479,7 @@ export default function AdminDashboard() {
          detalle se vaciaba justo después de guardar, como si el turno
          se hubiera perdido. */
       setSelectedId(prev => (prev === editing.id ? data.newEventId : prev))
-      setStatus(`Turno de ${editing.nombre} movido al ${editDate} a las ${editTime}. Le avisamos por mail.`)
+      setStatus(`Turno de ${editing.nombre} reprogramado al ${shortDay(editDate)} a las ${editTime}. Le avisamos por mail.`)
       setEditing(null)
     } catch (err) {
       setEditError(err instanceof Error ? err.message : 'No se pudo mover el turno. Probá de nuevo.')
@@ -423,8 +495,13 @@ export default function AdminDashboard() {
       body: JSON.stringify({ eventId }),
     })
     if (res.ok) {
+      /* Puede ser un día entero o una franja: se saca de las dos listas. */
+      const eraFranja = blockedRanges.some(r => r.id === eventId)
       setBlockedDates(prev => prev.filter(b => b.id !== eventId))
-      setStatus('Día desbloqueado. Vuelve a estar disponible para reservar.')
+      setBlockedRanges(prev => prev.filter(r => r.id !== eventId))
+      setStatus(eraFranja ? 'Horario desbloqueado. Ya se puede reservar.' : 'Día desbloqueado. Ya se puede reservar.')
+    } else {
+      setStatus('No se pudo desbloquear. Probá de nuevo en un rato.', true)
     }
   }
 
@@ -516,6 +593,7 @@ export default function AdminDashboard() {
 
   const isHistory = filter === 'history'
   const isLoading = isHistory ? loadingHistory : loading
+  const listaError = isHistory ? historyError : agendaError
 
   /* El detalle se resuelve contra las dos listas y no contra la
      filtrada: cambiar de filtro no tiene por qué cerrar el turno que
@@ -556,7 +634,7 @@ export default function AdminDashboard() {
   )
 
   const botonSalir = (
-    <button onClick={handleLogout} className="btn-ghost" style={{ minHeight: 44, padding: '0 4px' }}>
+    <button onClick={handleLogout} className="btn-ghost">
       Cerrar sesión
     </button>
   )
@@ -567,7 +645,7 @@ export default function AdminDashboard() {
       {/* ─── Cabecera de celular ───
           En PC esto no existe: la marca y la sesión viven en la barra
           lateral. */}
-      <header className="panel-cabecera">
+      <header className="panel-cabecera" inert={sheetOpen}>
         <div className="flex items-center gap-3 min-w-0">
           {logo}
           <span className="rotulo" style={{ letterSpacing: '.14em', flexShrink: 0 }}>Admin</span>
@@ -579,7 +657,7 @@ export default function AdminDashboard() {
       </header>
 
       {/* ─── Barra lateral ─── */}
-      <aside className="panel-lateral">
+      <aside className="panel-lateral" inert={sheetOpen}>
         <div className="panel-marca">
           {logo}
           <span className="rotulo" style={{ letterSpacing: '.14em', flexShrink: 0 }}>Admin</span>
@@ -604,12 +682,17 @@ export default function AdminDashboard() {
       </aside>
 
       {/* ─── Agenda — la columna del medio ─── */}
-      <main className="panel-agenda">
+      {/* Con una hoja abierta, lo de atrás queda inerte: el Tab no puede
+          salirse del diálogo y perderse detrás del velo. */}
+      <main className="panel-agenda" inert={sheetOpen}>
         <h1 className="sr-only">Panel admin — Barber Höhle</h1>
 
-        {/* Una sola región de anuncios para todo el panel: las acciones
-            cambian la pantalla en silencio y hay que contarlas. */}
-        <p role="status" aria-live="polite" className="sr-only">{status}</p>
+        {/* Una sola región de anuncios para todo el panel, y ahora también
+            a la vista: las acciones cambian la pantalla en silencio y hay
+            que contarlas. */}
+        <p role="status" aria-live="polite" className="aviso" data-error={aviso?.error || undefined}>
+          {aviso?.texto}
+        </p>
 
         {seccion === 'agenda' ? (
           <>
@@ -625,20 +708,8 @@ export default function AdminDashboard() {
               ] as [string, string][])
                 .map(([label, valor]) => (
                   <div key={label}>
-                    {/* El término va antes en el DOM para que el lector diga
-                       "Hoy, 3" y no "3… Hoy"; el orden visual lo da flex. */}
-                    <dt className="rotulo" style={{ order: 2, marginTop: 9 }}>{label}</dt>
-                    <dd
-                      className="mono"
-                      style={{
-                        order: 1, margin: 0, lineHeight: 1, color: 'var(--text)', fontWeight: 500,
-                        /* La plata trae cinco o seis dígitos y un signo; al
-                           mismo cuerpo que un "3" desbordaría la columna. */
-                        fontSize: valor.length > 4 ? 19 : 28,
-                      }}
-                    >
-                      {valor}
-                    </dd>
+                    <dt className="rotulo">{label}</dt>
+                    <dd>{valor}</dd>
                   </div>
                 ))}
             </dl>
@@ -684,8 +755,8 @@ export default function AdminDashboard() {
                   </button>
                 ))}
               </div>
-              <button onClick={fetchEvents} className="link-btn" style={{ flexShrink: 0 }}>
-                Recargar
+              <button onClick={fetchEvents} disabled={loading} className="link-btn" style={{ flexShrink: 0 }}>
+                {loading ? 'Cargando…' : 'Recargar'}
               </button>
             </div>
 
@@ -773,7 +844,7 @@ export default function AdminDashboard() {
                               key={ev.id}
                               className="mono"
                               style={{
-                                fontSize: 9.5, lineHeight: 1.5, paddingTop: 3,
+                                fontSize: 10.5, lineHeight: 1.5, paddingTop: 3,
                                 borderTop: '1px solid var(--border-soft)', color: 'var(--text)',
                                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                               }}
@@ -800,12 +871,35 @@ export default function AdminDashboard() {
                     <div key={i} style={{ height: 168, border: '1px solid var(--border-soft)', opacity: .5 }} />
                   ))}
                 </div>
+              ) : listaError ? (
+                /* Un error no es una agenda vacía: decir «no tenés turnos»
+                   cuando no se pudo leer es mentirle. */
+                <div style={{ padding: '44px 0', textAlign: 'center' }}>
+                  <p className="nota" style={{ margin: 0, color: 'var(--text)' }}>
+                    {isHistory ? 'No se pudo cargar el historial.' : 'No se pudo cargar la agenda.'} Revisá la conexión.
+                  </p>
+                  <button
+                    onClick={() => {
+                      if (isHistory) { setHistoryLoaded(false); setHistoryError(false); cargarHistorial() }
+                      else fetchEvents()
+                    }}
+                    className="link-btn"
+                    style={{ marginTop: 18 }}
+                  >
+                    Reintentar
+                  </button>
+                </div>
               ) : grouped.length === 0 ? (
                 <div style={{ padding: '44px 0', textAlign: 'center' }}>
-                  <p className="rotulo" style={{ lineHeight: 1.8, margin: 0 }}>{emptyText}</p>
-                  {searching && (
+                  <p className="nota" style={{ margin: 0 }}>{emptyText}</p>
+                  {searching ? (
                     <button onClick={() => setSearch('')} className="link-btn" style={{ marginTop: 18 }}>
                       Borrar la búsqueda
+                    </button>
+                  ) : filter !== 'upcoming' && !isHistory && (
+                    /* Un vacío deja con un paso a mano, no en la nada. */
+                    <button onClick={() => handleFilterChange('upcoming')} className="link-btn" style={{ marginTop: 18 }}>
+                      Ver los próximos turnos
                     </button>
                   )}
                 </div>
@@ -935,10 +1029,11 @@ export default function AdminDashboard() {
                                 <button
                                   className="btn-outline turno-sena"
                                   disabled={confirmando === ev.id}
-                                  onClick={() => confirmarAMano(ev)}
-                                  aria-label={`Confirmar que recibí la seña del turno de ${ev.nombre}`}
+                                  onClick={() => tocarSena(ev)}
+                                  aria-label={botonSena(ev)}
+                                  data-armado={armado === ev.id || undefined}
                                 >
-                                  {confirmando === ev.id ? 'Confirmando…' : 'Recibí la seña — confirmar'}
+                                  {botonSena(ev, false)}
                                 </button>
                               )}
                             </div>
@@ -948,7 +1043,7 @@ export default function AdminDashboard() {
                                 {tel && (
                                   <>
                                     <a href={`tel:${tel}`} className="btn-ghost turno-tel"
-                                      aria-label={`Llamar a ${ev.nombre}`}>
+                                      aria-label={`${telVisible(ev.whatsapp)} — llamar a ${ev.nombre}`}>
                                       {telVisible(ev.whatsapp)}
                                     </a>
                                     <a href={`https://wa.me/${tel}`}
@@ -960,7 +1055,7 @@ export default function AdminDashboard() {
                                 )}
                                 {ev.email && (
                                   <a href={`mailto:${ev.email}`} className="btn-ghost turno-mail"
-                                    aria-label={`Escribirle a ${ev.nombre} por mail`}>
+                                    aria-label={`${ev.email} — escribirle a ${ev.nombre}`}>
                                     {ev.email}
                                   </a>
                                 )}
@@ -972,16 +1067,16 @@ export default function AdminDashboard() {
                                     onClick={() => { setCancelTarget(ev); setCancelReason('') }}
                                     disabled={cancelling === ev.id}
                                     className="btn-ghost"
-                                    aria-label={`Cancelar el turno de ${ev.nombre}`}
+                                    aria-label={`Cancelar turno de ${ev.nombre}`}
                                   >
-                                    {cancelling === ev.id ? 'Cancelando…' : 'Cancelar'}
+                                    {cancelling === ev.id ? 'Cancelando…' : 'Cancelar turno'}
                                   </button>
                                   <button
                                     onClick={() => openEdit(ev)}
                                     className="btn-outline btn-sm"
-                                    aria-label={`Modificar el turno de ${ev.nombre}`}
+                                    aria-label={`Reprogramar turno de ${ev.nombre}`}
                                   >
-                                    Modificar
+                                    Reprogramar
                                   </button>
                                 </div>
                               )}
@@ -1022,36 +1117,26 @@ export default function AdminDashboard() {
                   onClick={handleSaveSettings}
                   disabled={savingSettings || maxDailyInput === maxDaily}
                   className="btn-cta"
-                  style={{ flexShrink: 0, minWidth: 130 }}
+                  style={{ flexShrink: 0, minWidth: 150 }}
                 >
-                  {savingSettings ? 'Guardando…' : 'Guardar'}
+                  {savingSettings ? 'Guardando…' : 'Guardar tope'}
                 </button>
               </div>
-              <p className="mono" style={{ fontSize: 10.5, letterSpacing: '.06em', color: 'var(--text-meta)', margin: '12px 0 0' }}>
-                AHORA MISMO EL TOPE ES DE {maxDaily} TURNOS POR DÍA
+              <p className="nota">
+                {maxDaily === null
+                  ? 'No se pudo leer el tope guardado. Recargá la página antes de cambiarlo.'
+                  : `Ahora mismo el tope es de ${maxDaily} turnos por día.`}
               </p>
             </section>
 
-            {/* ─── Días bloqueados ─── */}
+            {/* ─── Días bloqueados ───
+                Bloquear es lo que se viene a hacer acá, así que el
+                formulario está a la vista. Lo que se pliega es la lista de
+                lo ya bloqueado, que se consulta de vez en cuando. */}
             <section style={{ marginTop: 44, maxWidth: 560 }}>
-              <button
-                onClick={() => setShowBlocked(v => !v)}
-                aria-expanded={showBlocked}
-                aria-controls="dias-bloqueados"
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-                  width: '100%', minHeight: 44, background: 'none', border: 'none',
-                  padding: '0 0 10px', borderBottom: '1px solid var(--border)', cursor: 'pointer',
-                }}
-              >
-                <span className="rotulo" style={{ color: 'var(--text)' }}>Días y horarios bloqueados</span>
-                <span className="rotulo">
-                  {showBlocked ? 'Ocultar' : `Mostrar (${blockedDates.length + blockedRanges.length})`}
-                </span>
-              </button>
+              <h2 className="rotulo rotulo-rule">Bloquear días u horarios</h2>
 
-              {showBlocked && (
-                <div id="dias-bloqueados" style={{ marginTop: 20 }}>
+                <div>
                   <div style={{ display: 'flex', gap: 14 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <label className="field-label" htmlFor="block-from">Desde</label>
@@ -1106,17 +1191,19 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  <p className="rotulo" style={{ lineHeight: 1.8, marginTop: 12 }}>
+                  <p className="nota">
                     {blockHoraDesde && blockHoraHasta
-                      ? 'Se bloquea sólo esa franja'
-                      : 'Sin horas se bloquea el día completo'}
+                      ? 'Se bloquea sólo esa franja; el resto del día se sigue reservando.'
+                      : 'Sin horas se bloquea el día completo.'}
                   </p>
 
+                  {/* Outline y no oro: en Ajustes el botón pleno es el del
+                      tope, y el sistema lleva uno solo por pantalla. */}
                   <button
                     onClick={handleBlockDate}
                     disabled={!blockFrom || blockingDate}
-                    className="btn-cta"
-                    style={{ width: '100%', marginTop: 14 }}
+                    className="btn-outline"
+                    style={{ width: '100%', marginTop: 16 }}
                   >
                     {blockingDate
                       ? 'Bloqueando…'
@@ -1129,9 +1216,22 @@ export default function AdminDashboard() {
                       : 'Bloquear el día'}
                   </button>
 
-                  <div style={{ marginTop: 26 }}>
+                  <div style={{ marginTop: 32 }}>
+                    <button
+                      className="fila-toggle"
+                      onClick={() => setShowBlocked(v => !v)}
+                      aria-expanded={showBlocked}
+                      aria-controls="dias-bloqueados"
+                    >
+                      <span className="rotulo" style={{ color: 'var(--text)' }}>
+                        Ya bloqueado ({blockedDates.length + blockedRanges.length})
+                      </span>
+                      <span className="rotulo">{showBlocked ? 'Ocultar' : 'Ver'}</span>
+                    </button>
+                    {showBlocked && (
+                    <div id="dias-bloqueados">
                     {blockedDates.length === 0 && blockedRanges.length === 0 ? (
-                      <p className="rotulo" style={{ lineHeight: 1.8 }}>Nada bloqueado</p>
+                      <p className="nota">Nada bloqueado.</p>
                     ) : (
                       <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                       {blockedRanges.map(r => {
@@ -1149,7 +1249,7 @@ export default function AdminDashboard() {
                               onClick={() => handleUnblock(r.id)}
                               className="btn-ghost"
                               aria-label={`Desbloquear ${label}`}
-                              style={{ minHeight: 44, flexShrink: 0 }}
+                              style={{ flexShrink: 0 }}
                             >
                               Desbloquear
                             </button>
@@ -1173,7 +1273,7 @@ export default function AdminDashboard() {
                               onClick={() => handleUnblock(b.id)}
                               className="btn-ghost"
                               aria-label={`Desbloquear el ${label}`}
-                              style={{ minHeight: 44, flexShrink: 0 }}
+                              style={{ flexShrink: 0 }}
                             >
                               Desbloquear
                             </button>
@@ -1182,9 +1282,10 @@ export default function AdminDashboard() {
                       })}
                       </ul>
                     )}
+                    </div>
+                    )}
                   </div>
                 </div>
-              )}
             </section>
           </>
         )}
@@ -1193,7 +1294,7 @@ export default function AdminDashboard() {
       {/* ─── Detalle del turno — la tercera columna ───
           Sólo existe en PC. En celular la tarjeta ya muestra lo mismo
           en el lugar donde se la lee. */}
-      <aside className="panel-detalle" aria-label="Detalle del turno">
+      <aside className="panel-detalle" aria-label="Detalle del turno" inert={sheetOpen}>
         {selected ? (
           <div className="detalle-cuerpo">
             <div className="rotulo">{selEsPasado ? 'Turno pasado' : 'Turno'}</div>
@@ -1232,9 +1333,11 @@ export default function AdminDashboard() {
                 className="btn-outline"
                 style={{ width: '100%', marginTop: 12 }}
                 disabled={confirmando === selected.id}
-                onClick={() => confirmarAMano(selected)}
+                onClick={() => tocarSena(selected)}
+                aria-label={botonSena(selected)}
+                data-armado={armado === selected.id || undefined}
               >
-                {confirmando === selected.id ? 'Confirmando…' : 'Recibí la seña — confirmar'}
+                {botonSena(selected, false)}
               </button>
             )}
 
@@ -1274,7 +1377,7 @@ export default function AdminDashboard() {
                 <span className="kv-k">Teléfono</span>
                 <span className="kv-v">
                   <a href={`tel:${soloDigitos(selected.whatsapp)}`} className="btn-ghost turno-tel"
-                    aria-label={`Llamar a ${selected.nombre}`}>
+                    aria-label={`${telVisible(selected.whatsapp)} — llamar a ${selected.nombre}`}>
                     {telVisible(selected.whatsapp)}
                   </a>
                 </span>
@@ -1297,7 +1400,7 @@ export default function AdminDashboard() {
                 <span className="kv-k">Mail</span>
                 <span className="kv-v">
                   <a href={`mailto:${selected.email}`} className="btn-ghost turno-mail"
-                    aria-label={`Escribirle a ${selected.nombre} por mail`}>
+                    aria-label={`${selected.email} — escribirle a ${selected.nombre}`}>
                     {selected.email}
                   </a>
                 </span>
@@ -1327,17 +1430,17 @@ export default function AdminDashboard() {
                 <button
                   onClick={() => openEdit(selected)}
                   className="btn-outline"
-                  aria-label={`Reprogramar el turno de ${selected.nombre}`}
+                  aria-label={`Reprogramar turno de ${selected.nombre}`}
                 >
                   Reprogramar
                 </button>
                 <button
                   onClick={() => { setCancelTarget(selected); setCancelReason('') }}
                   disabled={cancelling === selected.id}
-                  className="btn-ghost"
-                  aria-label={`Cancelar el turno de ${selected.nombre}`}
+                  className="btn-outline btn-danger"
+                  aria-label={`Cancelar turno de ${selected.nombre}`}
                 >
-                  {cancelling === selected.id ? 'Cancelando…' : 'Cancelar el turno'}
+                  {cancelling === selected.id ? 'Cancelando…' : 'Cancelar turno'}
                 </button>
               </div>
             )}
@@ -1350,7 +1453,7 @@ export default function AdminDashboard() {
       {/* ─── Pestañas de celular ───
           Son la misma navegación que la barra lateral, abajo, al
           alcance del pulgar. */}
-      <nav className="panel-tabs" aria-label="Secciones del panel">
+      <nav className="panel-tabs" aria-label="Secciones del panel" inert={sheetOpen}>
         {SECCIONES.map(s => (
           <button
             key={s.key}
@@ -1394,10 +1497,11 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <p className="mono" style={{ fontSize: 10.5, lineHeight: 1.7, color: 'var(--text-meta)', margin: '18px 0 0' }}>
-              EL TURNO SE BORRA DEL CALENDARIO Y EL HORARIO QUEDA LIBRE.
-              <br />
-              AL CLIENTE LE LLEGA UN MAIL AVISÁNDOLE. NO SE PUEDE DESHACER.
+            <p className="nota" style={{ marginTop: 18 }}>
+              El turno se borra del calendario y el horario queda libre. Al cliente le llega un mail avisándole.
+            </p>
+            <p style={{ margin: '8px 0 0', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+              No se puede deshacer.
             </p>
 
             <div style={{ marginTop: 22 }}>
@@ -1415,24 +1519,27 @@ export default function AdminDashboard() {
               />
             </div>
 
-            <div style={{ display: 'flex', gap: 10, marginTop: 26 }}>
+            {cancelError && <p className="error-caja" role="alert">{cancelError}</p>}
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
               <button onClick={closeSheets} className="btn-outline" style={{ flex: 1 }}>
                 Volver
               </button>
+              {/* Rojo y no oro: el oro es «Guardar», y esto borra. */}
               <button
                 onClick={confirmCancel}
                 disabled={!!cancelling}
-                className="btn-cta"
+                className="btn-outline btn-danger"
                 style={{ flex: 2 }}
               >
-                {cancelling ? 'Cancelando…' : 'Cancelar el turno'}
+                {cancelling ? 'Cancelando…' : cancelError ? 'Probar de nuevo' : 'Cancelar turno'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ─── Hoja: modificar turno ─── */}
+      {/* ─── Hoja: reprogramar turno ─── */}
       {editing && (
         <div
           className="sheet-overlay"
@@ -1448,7 +1555,7 @@ export default function AdminDashboard() {
               className="font-display"
               style={{ fontSize: 30, fontWeight: 800, lineHeight: 1, letterSpacing: '-.04em', color: 'var(--text)', margin: '12px 0 0' }}
             >
-              Modificar turno
+              ¿A cuándo pasa el turno de {editing.nombre.split(' ')[0]}?
             </h2>
 
             <div style={{ margin: '20px 0 0' }}>
@@ -1515,14 +1622,7 @@ export default function AdminDashboard() {
               )}
             </div>
 
-            {editError && (
-              <p className="mono" role="alert" style={{
-                fontSize: 11, lineHeight: 1.6, color: 'var(--text)',
-                border: '1px solid var(--text)', padding: '11px 13px', margin: '22px 0 0',
-              }}>
-                {editError}
-              </p>
-            )}
+            {editError && <p className="error-caja" role="alert">{editError}</p>}
 
             <div style={{ display: 'flex', gap: 10, marginTop: 28 }}>
               <button onClick={closeSheets} className="btn-outline" style={{ flex: 1 }}>
@@ -1687,6 +1787,11 @@ function Cobros() {
   const [error, setError] = useState(false)
   /* El mes en curso abierto de entrada: es el que se viene a mirar. */
   const [abierto, setAbierto] = useState<string | null>(null)
+  /* El mes encendido en el gráfico. Va aparte del abierto porque el gráfico
+     muestra los doce meses y el registro sólo los que tuvieron cobros:
+     tocar un mes en cero lo lee en el gráfico sin cerrar lo que estaba
+     abierto abajo. */
+  const [elegido, setElegido] = useState<string | null>(null)
 
   /* Cada «Recargar» sube la vuelta y el efecto vuelve a pedir. El estado se
      toca sólo cuando llega la respuesta, y una respuesta vieja que llega
@@ -1735,26 +1840,18 @@ function Cobros() {
       </div>
 
       {error ? (
-        <p className="mono" role="alert" style={{ fontSize: 12, color: 'var(--text)', margin: '8px 0 0' }}>
+        <p className="error-caja" role="alert">
           No se pudieron calcular los cobros. Probá recargar en un rato.
         </p>
       ) : !resumen ? (
-        <p className="rotulo" style={{ lineHeight: 1.8 }}>Sumando los turnos…</p>
+        <p className="nota">Sumando los turnos…</p>
       ) : (
         <>
           <dl className="cifras">
             {cifras.map(([label, valor]) => (
               <div key={label}>
-                <dt className="rotulo" style={{ order: 2, marginTop: 9 }}>{label}</dt>
-                <dd
-                  className="mono"
-                  style={{
-                    order: 1, margin: 0, lineHeight: 1, color: 'var(--text)', fontWeight: 500,
-                    fontSize: valor.length > 4 ? 19 : 28,
-                  }}
-                >
-                  {valor}
-                </dd>
+                <dt className="rotulo">{label}</dt>
+                <dd>{valor}</dd>
               </div>
             ))}
           </dl>
@@ -1762,18 +1859,20 @@ function Cobros() {
           {/* Lo agendado que todavía no pasó. Va aparte y no sumado: es
               plata que entra sólo si no se cae nada. */}
           {(resumen.estaSemana.previsto > 0 || resumen.esteMes.previsto > 0) && (
-            <p className="mono" style={{ fontSize: 10.5, letterSpacing: '.06em', color: 'var(--text-meta)', margin: '12px 0 0', lineHeight: 1.7 }}>
-              POR COBRAR SI NO SE CAE NADA: {money(resumen.estaSemana.previsto)} ESTA SEMANA
-              · {money(resumen.esteMes.previsto)} EN LO QUE QUEDA DEL MES
+            <p className="nota">
+              Por cobrar si no se cae ningún turno: <b className="mono" style={{ color: 'var(--text)', fontWeight: 500 }}>{money(resumen.estaSemana.previsto)}</b> esta
+              semana y <b className="mono" style={{ color: 'var(--text)', fontWeight: 500 }}>{money(resumen.esteMes.previsto)}</b> en lo que queda del mes.
             </p>
           )}
 
           <GraficoMensual
             meses={resumen.meses}
-            elegido={abierto}
+            elegido={elegido ?? abierto}
             onElegir={mes => {
+              setElegido(mes)
+              if (!resumen.meses.some(m => m.mes === mes)) return
               setAbierto(mes)
-              document.getElementById(`cobros-mes-${mes}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              document.getElementById(`cobros-mes-${mes}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
             }}
           />
 
@@ -1782,7 +1881,7 @@ function Cobros() {
             <h3 className="rotulo rotulo-rule">Registro de los últimos 12 meses</h3>
 
             {resumen.meses.length === 0 ? (
-              <p className="rotulo" style={{ lineHeight: 1.8 }}>Todavía no hay turnos cobrados.</p>
+              <p className="nota">Todavía no hay turnos cobrados.</p>
             ) : (
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {resumen.meses.map(m => {
@@ -1802,7 +1901,7 @@ function Cobros() {
                       }}
                     >
                       <button
-                        onClick={() => setAbierto(abiertoEste ? null : m.mes)}
+                        onClick={() => { setAbierto(abiertoEste ? null : m.mes); setElegido(abiertoEste ? null : m.mes) }}
                         aria-expanded={abiertoEste}
                         aria-controls={id}
                         style={{
@@ -1841,7 +1940,7 @@ function Cobros() {
                             href={`/api/admin/ingresos/planilla?mes=${m.mes}`}
                             download
                             className="btn-outline btn-sm"
-                            style={{ display: 'inline-flex', marginTop: 14, textDecoration: 'none' }}
+                            style={{ display: 'inline-flex', marginTop: 14 }}
                           >
                             Descargar {nombreDelMes(m.mes).toLowerCase()} en Excel
                           </a>
@@ -1853,8 +1952,8 @@ function Cobros() {
               </ul>
             )}
 
-            <p className="rotulo" style={{ lineHeight: 1.8, marginTop: 16 }}>
-              Suma servicio y viático de cada turno que ya pasó. Los cancelados no cuentan.
+            <p className="nota" style={{ marginTop: 16 }}>
+              Suma servicio y viático de cada turno reservado por la web que ya pasó. Los cancelados no cuentan.
             </p>
           </section>
         </>

@@ -15,18 +15,24 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const res = await fetch('/api/admin/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
-    })
-    if (res.ok) {
-      router.push('/admin')
-    } else {
-      const data = await res.json()
-      setError(data.error ?? 'No pudimos entrar. Probá de nuevo en unos segundos.')
-      setLoading(false)
+    /* Sin red, o con una respuesta que no es JSON, el botón quedaba en
+       «Entrando…» para siempre. Cualquier falla termina en un mensaje. */
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      })
+      if (res.ok) {
+        router.push('/admin')
+        return
+      }
+      const data = await res.json().catch(() => ({}))
+      setError(data.error ?? 'No pudimos entrar. Revisá la contraseña y probá de nuevo.')
+    } catch {
+      setError('No hay conexión. Revisá internet y probá de nuevo.')
     }
+    setLoading(false)
   }
 
   return (
@@ -96,10 +102,7 @@ export default function LoginPage() {
             />
 
             {error && (
-              <p id="admin-pass-error" role="alert" className="mono" style={{
-                fontSize: 11, lineHeight: 1.6, color: 'var(--text)',
-                border: '1px solid var(--text)', padding: '11px 13px', margin: '18px 0 0',
-              }}>
+              <p id="admin-pass-error" role="alert" className="error-caja">
                 {error}
               </p>
             )}

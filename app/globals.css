@@ -79,6 +79,11 @@
   --border-soft:   #1F1A15;
   --border-strong: #6E6155;
 
+  /* Lo que no tiene vuelta atrás: cancelar un turno. Es el único color
+     fuera de las dos tintas y el oro, y existe para que lo destructivo
+     no se vea igual que «Guardar». 6.1–6.6:1 sobre las tres superficies. */
+  --peligro:       #E0785C;
+
   /* El botón primario es el único fondo dorado que el sistema
      permite, y va uno por pantalla (regla 01). */
   --btn-bg:       #C9974A;
@@ -159,6 +164,8 @@ html.papel {
      que lo reemplazó arreglaba eso y se quedaba en 2.83:1 sobre la
      barra lateral, donde ahora vive el botón de cerrar sesión. */
   --border-strong: #82817E;   /* lateral 3.03 · fila 3.21 · fondo 3.30 · tarjeta 3.58 */
+
+  --peligro:       #B3261E;   /* 5.1–6.0:1 sobre las superficies de papel */
 
   --btn-bg:       #0C0C0D;
   --btn-bg-hover: #2A2A28;
@@ -553,12 +560,10 @@ html.papel .roca::after { content: none; }
   letter-spacing: -.01em;
   border: 1px solid var(--btn-bg);
   padding: 17px 26px;
-  transition: opacity .15s, background .15s;
+  transition: opacity .15s, background .15s, border-color .15s, scale .1s;
   display: flex; align-items: center; justify-content: center; gap: 8px;
   line-height: 1;
 }
-.btn-cta:hover:not(:disabled) { background: var(--btn-bg-hover); border-color: var(--btn-bg-hover); }
-.btn-cta:active:not(:disabled) { opacity: .86; }
 .btn-cta:disabled { opacity: .45; }
 
 .btn-outline {
@@ -571,13 +576,29 @@ html.papel .roca::after { content: none; }
   font-weight: 600;
   letter-spacing: -.01em;
   padding: 15px 24px;
-  transition: background .15s, color .15s;
+  transition: background .15s, color .15s, border-color .15s, scale .1s;
   display: flex; align-items: center; justify-content: center; gap: 8px;
   text-decoration: none;
   line-height: 1;
 }
-.btn-outline:hover:not(:disabled) { background: var(--text); color: var(--on-primary); }
 .btn-outline:disabled { opacity: .45; }
+
+/* Destructivo — la forma del outline con la tinta de peligro. Va sólo
+   donde algo se borra y no vuelve. */
+.btn-danger { color: var(--peligro); border-color: var(--peligro); }
+
+/* El hover sólo donde hay mouse: en el teléfono quedaba pegado después
+   del toque, y un «Volver» encendido le ganaba al botón principal. */
+@media (hover: hover) {
+  .btn-cta:hover:not(:disabled) { background: var(--btn-bg-hover); border-color: var(--btn-bg-hover); }
+  .btn-outline:hover:not(:disabled) { background: var(--text); color: var(--on-primary); }
+  .btn-danger:hover:not(:disabled) { background: var(--peligro); border-color: var(--peligro); color: var(--on-primary); }
+}
+
+/* Al apretar, todos ceden un poco: es la respuesta de que el toque llegó. */
+.btn-cta:active:not(:disabled),
+.btn-outline:active:not(:disabled),
+.btn-ghost:active:not(:disabled) { scale: .97; }
 
 /* Compacto — acciones dentro de una fila de lista. Sigue midiendo
    44px de alto: se achica el texto, no el área de toque. */
@@ -585,11 +606,14 @@ html.papel .roca::after { content: none; }
   font-size: 11px;
   padding: 0 12px;
   min-height: 44px;
+  min-width: 44px;
   white-space: nowrap;
 }
 
 /* Terciario — sin caja, apenas un subrayado. En un sistema sin color
    el subrayado es lo único que dice "esto se toca". */
+/* Mide 44px de alto como cualquier control: el subrayado es lo que se
+   ve, el área de toque es el renglón entero. */
 .btn-ghost {
   background: none;
   border: none;
@@ -599,11 +623,15 @@ html.papel .roca::after { content: none; }
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 500;
-  padding: 4px 2px;
+  min-height: 44px;
+  padding: 0 2px;
+  display: inline-flex; align-items: center; gap: 6px;
   text-decoration: none;
-  transition: color .15s, border-color .15s;
+  transition: color .15s, border-color .15s, scale .1s;
 }
-.btn-ghost:hover { color: var(--text); border-color: var(--text); }
+@media (hover: hover) {
+  .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--text); }
+}
 .btn-ghost:disabled { opacity: .45; }
 
 /* =============================================
@@ -698,6 +726,9 @@ html.papel .roca::after { content: none; }
 }
 .w-input::placeholder { color: var(--text-faint); font-weight: 400; }
 .w-input:focus { border-bottom-color: var(--text); }
+/* Con teclado, el filete engorda a 2px: un cambio de color de 1px no
+   alcanza para ver dónde está uno. */
+.w-input:focus-visible { box-shadow: inset 0 -1px 0 var(--text); }
 textarea.w-input { line-height: 1.5; }
 .w-input[type="tel"], .w-input.mono { font-family: var(--font-mono); }
 
@@ -708,7 +739,7 @@ textarea.w-input { line-height: 1.5; }
 .slot-legend {
   display: flex; flex-wrap: wrap; align-items: center; gap: 14px;
   font-family: var(--font-mono);
-  font-size: 9.5px; font-weight: 500; letter-spacing: .1em;
+  font-size: 10.5px; font-weight: 500; letter-spacing: .1em;
   text-transform: uppercase;
   color: var(--text-meta);
 }
@@ -836,18 +867,23 @@ textarea.w-input { line-height: 1.5; }
   border-bottom: 1px solid var(--border-strong);
   transition: color .18s, border-color .18s;
 }
-.link-btn:hover { color: var(--text); border-color: var(--text); }
+@media (hover: hover) {
+  .link-btn:hover:not(:disabled) { color: var(--text); border-color: var(--text); }
+}
+.link-btn:disabled { opacity: .45; }
 
 /* =============================================
    CONTROL SEGMENTADO — filtros del panel
    Sin riel ni pastilla: rótulos mono en fila, el activo
    se invierte en tinta plena.
    ============================================= */
+/* Sin overflow:hidden: recortaba el anillo de foco de cada botón. El foco
+   se dibuja adentro, que es donde entra. */
 .seg {
   display: flex;
   border: 1px solid var(--border-strong);
-  overflow: hidden;
 }
+.seg > button:focus-visible { outline-offset: -3px; }
 .seg > button {
   flex: 1;
   min-height: 44px;
@@ -864,8 +900,67 @@ textarea.w-input { line-height: 1.5; }
   transition: background .16s, color .16s;
 }
 .seg > button:last-child { border-right: none; }
-.seg > button:hover:not([aria-pressed="true"]) { background: var(--hover); color: var(--text); }
+@media (hover: hover) {
+  .seg > button:hover:not([aria-pressed="true"]) { background: var(--hover); color: var(--text); }
+}
 .seg > button[aria-pressed="true"] { background: var(--acento); color: var(--on-acento); }
+
+/* =============================================
+   AVISO — el resultado de cada acción del panel
+   Abajo, arriba de las pestañas en celular. Es la única región
+   de anuncios: siempre está en el DOM, aunque vacía, para que el
+   lector la tenga registrada antes de que hable.
+   ============================================= */
+.aviso {
+  position: fixed; z-index: 150;
+  left: 16px; right: 16px;
+  bottom: calc(64px + env(safe-area-inset-bottom));
+  margin: 0 auto; max-width: 480px;
+  padding: 13px 16px;
+  background: var(--surface-alta);
+  border: 1px solid var(--text);
+  border-left-width: 3px;
+  color: var(--text);
+  font-size: 13.5px; line-height: 1.45;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+  animation: aviso-entra .2s ease-out;
+}
+.aviso[data-error] { border-color: var(--peligro); }
+.aviso:empty { display: none; }
+@media (min-width: 1024px) { .aviso { bottom: 24px; } }
+@keyframes aviso-entra { from { opacity: 0; translate: 0 8px; } }
+@media (prefers-reduced-motion: reduce) { .aviso { animation: none; } }
+
+/* Una frase de ayuda. Las oraciones no van en mayúsculas mono: esa
+   letra es para rótulos de dos palabras, no para leer. */
+.nota {
+  margin: 12px 0 0;
+  font-size: 12.5px; line-height: 1.55;
+  color: var(--text-mut);
+}
+
+/* Un error que se queda a la vista, junto a lo que falló. */
+.error-caja {
+  margin: 18px 0 0;
+  padding: 11px 13px;
+  border: 1px solid var(--peligro);
+  border-left-width: 3px;
+  font-size: 13px; line-height: 1.5;
+  color: var(--text);
+}
+
+/* Un renglón que abre y cierra lo de abajo. */
+.fila-toggle {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; min-height: 44px;
+  background: none; border: none;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+@media (hover: hover) {
+  .fila-toggle:hover .rotulo { color: var(--text); }
+}
 
 /* =============================================
    HOJA INFERIOR — modales del panel
@@ -924,6 +1019,19 @@ textarea.w-input { line-height: 1.5; }
   border-inline-start: 1px solid var(--border-soft);
 }
 .cifras > div:nth-child(odd) { border-inline-start: none; }
+/* El término va antes en el DOM, para que el lector diga «Hoy, 3» y no
+   «3… Hoy»; el orden visual lo da flex. Todas las cifras de la fila miden
+   lo mismo: un «3» a 28px al lado de «$17.000» a 19px parecía otra jerarquía. */
+.cifras dt { order: 2; margin-top: 9px; }
+.cifras dd {
+  order: 1; margin: 0;
+  font-family: var(--font-mono);
+  font-size: clamp(19px, 5.4cqi, 24px);
+  font-weight: 500; line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  white-space: nowrap;
+}
 .cifras > div:nth-child(-n+2) { border-bottom: 1px solid var(--border-soft); }
 
 @media (min-width: 560px) {
@@ -1020,7 +1128,7 @@ textarea.w-input { line-height: 1.5; }
 .turno-dir b {
   display: block;
   font-family: var(--font-mono);
-  font-size: 9.5px; font-weight: 500;
+  font-size: 10.5px; font-weight: 500;
   letter-spacing: .12em; text-transform: uppercase;
   color: var(--text-meta);
   margin-bottom: 4px;
@@ -1045,6 +1153,9 @@ textarea.w-input { line-height: 1.5; }
   min-height: 44px;
   margin-top: 13px;
 }
+/* Armado: el primer toque lo invierte en tinta plena y cambia el texto,
+   para que el segundo toque sea una decisión y no un roce. */
+.btn-outline[data-armado] { background: var(--text); color: var(--on-primary); }
 
 /* Pie: contacto a la izquierda, turno a la derecha. Dos grupos
    separados porque son dos decisiones distintas —hablarle o
@@ -1062,14 +1173,7 @@ textarea.w-input { line-height: 1.5; }
 }
 .turno-acciones { margin-left: auto; }
 
-/* El área de toque sigue siendo de 44px aunque el texto sea chico.
-   Se declara acá y no en cada botón: eran seis `style` inline
-   repitiendo lo mismo. */
-.turno-pie .btn-ghost {
-  min-height: 44px;
-  display: inline-flex; align-items: center;
-  white-space: nowrap;
-}
+.turno-pie .btn-ghost { white-space: nowrap; }
 
 /* El teléfono va en mono: es un dato que se lee dígito a dígito. */
 .turno-tel {
@@ -1183,14 +1287,18 @@ textarea.w-input { line-height: 1.5; }
   background: none;
   border: none;
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 500;
   letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--text-meta);
   transition: color .16s;
 }
-.panel-tabs button[aria-current="page"] { color: var(--acento-txt); }
+.panel-tabs button[aria-current="page"] {
+  color: var(--acento-txt);
+  font-weight: 600;
+  box-shadow: inset 0 2px 0 var(--acento-borde);
+}
 /* Las pestañas se reparten la fila solas: cuántas son lo decide la
    navegación, no esta hoja. */
 .panel-tabs { grid-auto-flow: column; grid-auto-columns: 1fr; }
@@ -1350,7 +1458,7 @@ textarea.w-input { line-height: 1.5; }
 .agenda-srv { font-size: 12.5px; }
 .agenda-donde {
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 10.5px;
   font-weight: 500;
   letter-spacing: .1em;
   text-transform: uppercase;
@@ -1376,7 +1484,7 @@ textarea.w-input { line-height: 1.5; }
    sin pagar y uno cerrado se leerían igual. */
 .marca-sena {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 10.5px;
   font-weight: 500;
   letter-spacing: .1em;
   text-transform: uppercase;
