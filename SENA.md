@@ -177,7 +177,7 @@ número: cambiar el plazo no deja seis pantallas mintiendo.
 ## 6. Lo decidido, para no rediscutirlo
 
 - **La seña es el 50%** del servicio (`DEPOSIT_PERCENT`). Sobre un corte de
-  $16.000 son $8.000; sobre el domicilio de $40.000, $20.000.
+  $19.000 son $9.500; sobre el domicilio de $45.000, $22.500.
 - **El viático no entra en la seña.** La seña es la mitad del servicio; el
   traslado se paga entero en el turno.
 - **La tabla de zonas está confirmada** por Santiago el 31 de agosto de 2026,
@@ -185,10 +185,9 @@ número: cambiar el plazo no deja seis pantallas mintiendo.
   arreglo `ZONAS`, y en ningún otro lado.
 - **Al que no está en la lista no lo dejamos afuera.** Elige «No está mi
   barrio», reserva igual, y en el calendario queda `Viático: A CONVENIR`.
-- **Los precios son los de siempre** — $16.000, $19.000 y $40.000. El 1 de
-  septiembre de 2026 subieron $1.000 para absorber la comisión de Mercado Pago
-  y volvieron a bajar el mismo día, cuando Mercado Pago se dio de baja: sin
-  comisión que absorber, el aumento no tenía motivo.
+- **Los precios** son $19.000 el corte, $23.000 corte y barba y $45.000 a
+  domicilio desde el 19 de octubre de 2026 (antes $17.000, $20.000 y $40.000).
+  Viven en `lib/constants.ts`, arreglo `SERVICES`.
 
 ## Dónde está cada cosa
 

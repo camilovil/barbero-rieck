@@ -1260,10 +1260,10 @@ export function previewEmails(): { id: string; nombre: string; asunto: string; h
       servicio: 'Corte — $16.000', modalidad: LOCATION_LABELS.local, direccion: '', nota: '', viatico: 0,
       start: at(11, 0), end: at(11, 40) },
     { id: 'a2', nombre: 'Nico F.', email: 'n@correo.com', whatsapp: '+5491100000002',
-      servicio: 'Corte y barba — $19.000', modalidad: LOCATION_LABELS.local, direccion: '', nota: '', viatico: 0,
+      servicio: 'Corte y barba — $23.000', modalidad: LOCATION_LABELS.local, direccion: '', nota: '', viatico: 0,
       start: at(12, 0), end: at(13, 0) },
     { id: 'a3', nombre: 'Emiliano V.', email: 'e@correo.com', whatsapp: '+5491100000003',
-      servicio: 'Corte (incluye barba) — $40.000', modalidad: LOCATION_LABELS.domicilio,
+      servicio: 'Corte (incluye barba) — $45.000', modalidad: LOCATION_LABELS.domicilio,
       direccion: 'Av. Cabildo 2200, Belgrano', nota: '', viatico: 10000,
       start: at(15, 0), end: at(17, 0) },
   ]

@@ -1,20 +1,17 @@
 import type { Location, Service } from '@/types/booking'
 import { diaBA } from './format.ts'
 
-/* Estos precios subieron $1.000 el 1 de septiembre de 2026 para absorber la
-   comisión de Mercado Pago, y volvieron a bajar el mismo día: Mercado Pago se
-   dio de baja y la seña pasó a cobrarse por transferencia, que no tiene
-   comisión. Sin comisión que absorber, el aumento no tenía motivo.
-
-   Queda escrito para que a nadie le parezca que estos números se movieron sin
-   razón: se movieron dos veces y volvieron a donde estaban. */
+/* Precios vigentes desde el 19 de octubre de 2026: Corte $19.000, Corte y
+   barba $23.000, domicilio $45.000. Antes eran $17.000, $20.000 y $40.000.
+   Los turnos ya reservados guardan su precio en el evento del calendario, así
+   que Cobros sigue sumando lo que se cobró de verdad. */
 export const SERVICES: Record<Location, Service[]> = {
   local: [
-    { name: 'Corte', duration: 40, price: 17000 },
-    { name: 'Corte y barba', duration: 60, price: 20000 },
+    { name: 'Corte', duration: 40, price: 19000 },
+    { name: 'Corte y barba', duration: 60, price: 23000 },
   ],
   domicilio: [
-    { name: 'Corte (incluye barba)', duration: 120, price: 40000 },
+    { name: 'Corte (incluye barba)', duration: 120, price: 45000 },
   ],
 }
 
