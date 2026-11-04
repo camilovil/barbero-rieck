@@ -20,6 +20,15 @@ export function inicioDeSlot(date: Date, time: string): Date {
   return new Date(`${diaBA(date)}T${time}:00${BA_OFFSET}`)
 }
 
+/* Los horarios del día que ya empezaron. Sin esto, a las tres de la tarde la
+   grilla seguía ofreciendo el de las once: el cliente lo elegía, llenaba sus
+   datos y recién al confirmar le decían que ya había pasado. Mismo criterio
+   que esa respuesta (motivoParaNoTomarlo): un horario pasó cuando su
+   comienzo quedó atrás. */
+export function slotsPasados(date: Date, location: Location, ahora = new Date()): string[] {
+  return TIME_SLOTS[location].filter((time) => inicioDeSlot(date, time) < ahora)
+}
+
 /* Cuánto ocupa un turno según la modalidad. No es la duración del servicio:
    es lo que la grilla le reserva. A domicilio Santiago viaja, así que un
    turno le come dos horas de agenda aunque el corte dure cuarenta minutos. */

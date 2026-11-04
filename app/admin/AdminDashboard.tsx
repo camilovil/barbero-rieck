@@ -52,6 +52,28 @@ function shortDay(iso: string): string {
   return new Date(y, m - 1, d).toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })
 }
 
+/* "2026-11-05" → "el jueves 5 de noviembre", y "hoy" o "mañana" cuando
+   toca. Es lo que dice el botón de bloquear: un bloqueo para hoy terminó
+   cargado para mañana y el botón sólo decía «el 5 de noviembre», que a la
+   una de la mañana no avisa de nada. */
+function diaParaBloquear(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  const dia = new Date(y, m - 1, d)
+  const largo = dia.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }).replace(',', '')
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
+  const faltan = Math.round((dia.getTime() - hoy.getTime()) / 86_400_000)
+  if (faltan === 0) return `hoy, ${largo}`
+  if (faltan === 1) return `mañana, ${largo}`
+  return `el ${largo}`
+}
+
+/* El texto del botón y del aviso de después, para que los dos digan lo mismo. */
+function queSeBloquea(desde: string, hasta: string, horaDesde: string, horaHasta: string): string {
+  const franja = horaDesde && horaHasta ? `${horaDesde}–${horaHasta} ` : ''
+  if (hasta && hasta !== desde) return `${franja}del ${shortDay(desde)} al ${shortDay(hasta)}`
+  return `${franja}${diaParaBloquear(desde)}`
+}
+
 function isDomicilio(modalidad: string): boolean {
   return !!modalidad?.toLowerCase().includes('domicilio')
 }
@@ -371,9 +393,10 @@ export default function AdminDashboard() {
     })
     if (res.ok) {
       await fetchBlockedDates()
+      const que = queSeBloquea(blockFrom, blockTo, blockHoraDesde, blockHoraHasta)
       setStatus(franja
-        ? `Franja bloqueada de ${blockHoraDesde} a ${blockHoraHasta}. El resto del día sigue disponible.`
-        : 'Días bloqueados. Ya no se pueden reservar turnos.')
+        ? `Bloqueado ${que}. El resto del día sigue disponible.`
+        : `Bloqueado ${que}. Ya no se pueden reservar turnos.`)
       setBlockFrom('')
       setBlockTo('')
       setBlockHoraDesde('')
@@ -1144,7 +1167,16 @@ export default function AdminDashboard() {
                         id="block-from"
                         type="date"
                         value={blockFrom}
-                        onChange={e => { setBlockFrom(e.target.value); if (!blockTo || e.target.value > blockTo) setBlockTo(e.target.value) }}
+                        onChange={e => {
+                          /* «Hasta» acompaña a «Desde» mientras nadie lo
+                             haya movido aparte. Antes sólo lo seguía hacia
+                             adelante: elegir el 12 y corregir al 11 dejaba
+                             «Hasta» en el 12 y se bloqueaban los dos días,
+                             que es lo que pasó el 11 de septiembre. */
+                          const v = e.target.value
+                          if (!blockTo || blockTo === blockFrom || v > blockTo) setBlockTo(v)
+                          setBlockFrom(v)
+                        }}
                         min={toDateParam(new Date())}
                         className="w-input mono"
                       />
@@ -1207,12 +1239,8 @@ export default function AdminDashboard() {
                   >
                     {blockingDate
                       ? 'Bloqueando…'
-                      : blockHoraDesde && blockHoraHasta && blockFrom
-                      ? `Bloquear ${blockHoraDesde}–${blockHoraHasta}${blockTo && blockTo !== blockFrom ? ` del ${shortDay(blockFrom)} al ${shortDay(blockTo)}` : ` el ${shortDay(blockFrom)}`}`
-                      : blockTo && blockTo !== blockFrom
-                      ? `Bloquear del ${shortDay(blockFrom)} al ${shortDay(blockTo)}`
                       : blockFrom
-                      ? `Bloquear el ${shortDay(blockFrom)}`
+                      ? `Bloquear ${queSeBloquea(blockFrom, blockTo, blockHoraDesde, blockHoraHasta)}`
                       : 'Bloquear el día'}
                   </button>
 

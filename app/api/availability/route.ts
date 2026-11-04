@@ -3,6 +3,7 @@ import { getDayAvailability, expirePendingEvents } from '@/lib/googleCalendar'
 import { isDepositEnabled } from '@/lib/flags'
 import { BLOCKED_SLOTS, TIME_SLOTS } from '@/lib/constants'
 import { diaDeAgenda } from '@/lib/format'
+import { slotsPasados } from '@/lib/agenda'
 import type { Location } from '@/types/booking'
 
 export async function GET(req: NextRequest) {
@@ -18,6 +19,8 @@ export async function GET(req: NextRequest) {
   if (isNaN(date.getTime())) {
     return NextResponse.json({ error: 'Fecha inválida' }, { status: 400 })
   }
+
+  const pasados = slotsPasados(date, location)
 
   try {
     /* Primero soltamos los turnos sin seña que se vencieron, para que el
@@ -39,11 +42,12 @@ export async function GET(req: NextRequest) {
     }
 
     // Los estáticos son horarios que nunca se venden (almuerzo, etc.)
-    const blocked = Array.from(new Set([...BLOCKED_SLOTS, ...dia.blocked]))
+    const blocked = Array.from(new Set([...BLOCKED_SLOTS, ...pasados, ...dia.blocked]))
     return NextResponse.json({ blocked })
   } catch (err) {
     console.error('[api/availability] error:', err)
-    // Fallback: devolver solo los slots estáticos para no romper la UI
-    return NextResponse.json({ blocked: BLOCKED_SLOTS })
+    /* Sin Google no sabemos qué está tomado, pero lo que ya pasó no depende
+       de Google: eso se tapa igual. */
+    return NextResponse.json({ blocked: Array.from(new Set([...BLOCKED_SLOTS, ...pasados])) })
   }
 }
