@@ -1,119 +1,93 @@
-import { Fragment } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { CASA_KICKER, CASA_META, SERVICES, TIME_SLOTS } from '@/lib/constants'
+import { SERVICES, TIME_SLOTS } from '@/lib/constants'
+import styles from './Portada.module.css'
 
-/* La puerta de entrada. Una sola pantalla, un solo botón: pedir turno.
-   Todo lo demás —precios, horarios, dirección— es referencia y va
-   abajo o al costado, nunca compitiendo con el botón.
-
-   Tres anchos, un solo plano: en celular el lockup manda y el hero se
-   ancla al pie; de 720 aparece el titular; de 1200 entra la barra de
-   arriba y los precios pasan a una columna al costado. Lo que cambia
-   es la disposición, no el contenido.
-
-   El diseño dibuja además una barra con SERVICIOS, LA BARBERÍA y MIS
-   TURNOS. Sólo queda «La casa», que existe como sección de esta misma
-   página: las otras dos no son pantallas de esta app y no se crean
-   links muertos —el mismo criterio que se usó para la barra lateral
-   del panel—. */
+/* Portada de campaña. Precios y horarios vienen del catálogo real;
+   todos los llamados a reservar abren el flujo existente. */
 export default function Portada() {
-  const precios = [
-    ...SERVICES.local.map(s => ({ ...s, donde: 'en el studio' })),
-    ...SERVICES.domicilio.map(s => ({ ...s, donde: 'a domicilio' })),
+  const servicios = [
+    ...SERVICES.local.map(s => ({ ...s, donde: 'En el studio' })),
+    ...SERVICES.domicilio.map(s => ({ ...s, donde: 'A domicilio' })),
   ]
 
   return (
-    <div className="portada">
-      {/* Sólo de 1200 para arriba. En anchos chicos el lockup del hero
-          hace este trabajo y una barra más sería repetirlo. */}
-      <div className="portada-barra">
-        {/* Mismos 44px de área de toque que el resto de los controles. */}
-        <Link
-          href="/"
-          aria-label="Barber Höhle — inicio"
-          style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, lineHeight: 0 }}
-        >
-          <Image
-            className="portada-barra-logo portada-marca"
-            src="/logo-white.png"
-            alt=""
-            width={1522}
-            height={253}
-            sizes="186px"
-            priority
-          />
-        </Link>
-        <nav className="portada-nav">
-          <a href="#la-casa">La casa</a>
-          <Link className="btn-cta" href="/reservar">Pedir turno</Link>
-        </nav>
-      </div>
+    <main className={styles.home}>
+      <section className={styles.hero} aria-labelledby="sunset-titulo">
+        <Image className={styles.art} src="/sunset-barbershop.webp" alt="" fill sizes="100vw" preload />
+        <div className={styles.scrim} aria-hidden="true" />
 
-      <div className="portada-hero">
-        <div>
-          <Image
-            className="portada-logo portada-marca"
-            src="/logo-white.png"
-            alt=""
-            width={1522}
-            height={253}
-            sizes="(min-width: 720px) 186px, 150px"
-            priority
-          />
-          <p className="portada-kicker">{CASA_KICKER}</p>
+        <header className={styles.header}>
+          <Link href="/" className={styles.brand} aria-label="Barber Höhle — inicio">
+            <Image src="/logo-white.png" alt="" width={1522} height={253} sizes="170px" preload />
+          </Link>
+          <span className={styles.edition}>Sunset<br />Edition</span>
+          <nav className={styles.nav} aria-label="Navegación principal">
+            <a href="#servicios" className={styles.navLink}>Servicios</a>
+            <a href="#la-casa" className={styles.navLink}>La casa</a>
+            <Link href="/reservar" className={styles.navCta}>Pedir turno <span aria-hidden="true">↗</span></Link>
+          </nav>
+        </header>
 
-          {/* El h1 de la página. En celular se esconde a la vista pero
-              se sigue leyendo: ahí el que dice la marca es el lockup,
-              que va con alt vacío por ser decorativo.
-
-              Dice lo que la pantalla viene a hacer. El sistema de diseño
-              proponía «Un solo sillón.», que es una frase de marca y
-              además afirma algo del negocio; acá el titular es la
-              acción, igual que en cada paso del flujo. */}
-          <h1 className="portada-titular font-display">
-            Reservá<br />tu turno
-          </h1>
-
-          <p className="portada-bajada">
-            Reservá en menos de un minuto. Elegís servicio, horario y listo.
-          </p>
-
-          <Link className="btn-cta portada-cta" href="/reservar">Pedir turno</Link>
-
-          {/* Los separadores son hermanos de los datos, no parte de
-              ellos: el aire lo pone el `gap` del flex y meter además un
-              espacio adentro del span lo descompensa de un lado. */}
-          <p className="portada-meta">
-            {CASA_META.map((dato, i) => (
-              <Fragment key={dato}>
-                {i > 0 && <i aria-hidden="true">·</i>}
-                <span>{dato}</span>
-              </Fragment>
-            ))}
-          </p>
+        <div className={styles.heroBody}>
+          <div className={styles.copy}>
+            <p className={styles.eyebrow}><span aria-hidden="true" /> Buenos Aires. Sunset vibes.</p>
+            <h1 id="sunset-titulo" className={styles.title}>
+              Nuevo look.<br />Misma<br /><span>esencia.</span>
+            </h1>
+            <p className={styles.description}>
+              Tu próxima misión: un buen corte. Elegí tu horario y dejá el resto en manos de Santiago.
+            </p>
+            <Link href="/reservar" className={`btn-cta ${styles.cta}`}>
+              Reservar mi turno <span aria-hidden="true">↗</span>
+            </Link>
+            <p className={styles.ctaNote}>Sin cuenta. Sin vueltas. A tu estilo.</p>
+          </div>
+          <div className={styles.sceneCaption}>
+            <span className={styles.sceneLine} aria-hidden="true" />
+            <span>Otro clima.<br /><b>La misma casa.</b></span>
+          </div>
         </div>
 
-        {/* La columna de precios existe sólo de 1200 para arriba, donde
-            sobra ancho. Abajo de eso los precios están en el paso 2 del
-            flujo, que es donde se eligen. */}
-        <div className="portada-precios">
-          <h2 className="rotulo rotulo-rule">Precios</h2>
-          {precios.map(s => (
-            <div className="portada-precio" key={`${s.donde}-${s.name}`}>
-              <span className="portada-precio-n">
-                {s.name} <span style={{ color: 'var(--text-meta)' }}>· {s.donde}</span>
-              </span>
-              <span className="portada-precio-v">${s.price.toLocaleString('es-AR')}</span>
-            </div>
+        <div className={styles.heroFoot}>
+          <span>Belgrano, Buenos Aires <span aria-hidden="true">↗</span></span>
+          <span className={styles.hours}>Lun – Sáb / {TIME_SLOTS.local[0]} – {TIME_SLOTS.local[TIME_SLOTS.local.length - 1]}</span>
+          <a href="#servicios">Explorá la casa <span aria-hidden="true">↓</span></a>
+        </div>
+      </section>
+
+      <div className={styles.strip} aria-hidden="true">
+        <span>Buen corte. Buena vida.</span><i>✳</i><span>Höhle Sunset Edition</span><i>✳</i><span>Buen corte. Buena vida.</span><i>✳</i><span>Höhle Sunset Edition</span>
+      </div>
+
+      <section id="servicios" className={styles.services} aria-labelledby="servicios-titulo">
+        <div className={styles.sectionHead}>
+          <div>
+            <p className={styles.sectionLabel}>El menú de la casa / 01</p>
+            <h2 id="servicios-titulo">Elegí tu próximo look.</h2>
+          </div>
+          <p>Corte, barba y buena mano.<br />En el studio o donde estés.</p>
+        </div>
+        <div className={styles.serviceGrid}>
+          {servicios.map((servicio, i) => (
+            <article className={styles.service} key={`${servicio.donde}-${servicio.name}`}>
+              <div className={styles.serviceTop}>
+                <span className={styles.serviceNumber}>0{i + 1}</span>
+                <span className={styles.serviceLocation}>{servicio.donde}</span>
+              </div>
+              <h3>{servicio.name}</h3>
+              <div className={styles.serviceBottom}>
+                <span className={styles.price}>${servicio.price.toLocaleString('es-AR')}</span>
+                <span className={styles.duration}>{servicio.duration} min</span>
+              </div>
+            </article>
           ))}
-          <p className="portada-horario">
-            Lun – Sáb · {TIME_SLOTS.local[0]} – {TIME_SLOTS.local[TIME_SLOTS.local.length - 1]}
-            <br />
-            Domingos cerrado
-          </p>
         </div>
-      </div>
-    </div>
+        <div className={styles.servicesFoot}>
+          <span>Tu estilo, en buenas manos.</span>
+          <Link href="/reservar">Elegir mi turno <span aria-hidden="true">↗</span></Link>
+        </div>
+      </section>
+    </main>
   )
 }

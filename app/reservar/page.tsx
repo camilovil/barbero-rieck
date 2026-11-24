@@ -3,18 +3,14 @@ import AppHeader from '@/components/AppHeader'
 import PieDeLaCasa from '@/components/PieDeLaCasa'
 import FondoCueva from '@/components/FondoCueva'
 import { isDepositEnabled, isViaticoEnabled } from '@/lib/flags'
+import SunsetTheme from '@/components/SunsetTheme'
 
 interface Props {
   searchParams: Promise<{ modalidad?: string; servicio?: string }>
 }
 
-/* El flujo de reserva. Vivía en la raíz hasta que la portada tomó ese
-   lugar; se mudó entero, sin tocarle nada, y la raíz redirige acá
-   cuando el link ya trae modalidad o servicio.
-
-   Acá NO va la roca: la foto de marca ya se usó en la portada, que es
-   la pantalla de marca. Esto es la herramienta —elegir y confirmar— y
-   el fondo negro plano es lo que deja leer la grilla de horarios. */
+/* La campaña cambia el marco visual. El estado, los parámetros de entrada
+   y las banderas del flujo de reserva siguen siendo los originales. */
 export default async function Reservar({ searchParams }: Props) {
   const params = await searchParams
   const initialLocation =
@@ -22,38 +18,42 @@ export default async function Reservar({ searchParams }: Props) {
   const initialServicio = params.servicio ?? null
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <FondoCueva />
-      <AppHeader />
+    <SunsetTheme>
+      <div className="min-h-screen flex flex-col">
+        <FondoCueva />
+        <AppHeader sunset />
 
-      {/* El flujo es la página. Ocupa exactamente lo que queda de
-          pantalla bajo la cabecera y no cambia de alto entre pasos:
-          nunca hay que scrollear para llegar al botón. */}
-      <main
-        className="px-4 sm:px-6"
-        style={{
-          paddingTop: 'var(--header-h)',
-          height: '100dvh',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        {/* El alto lo decide `.flow-card`: pantalla completa en celular,
-            al tamaño del contenido en escritorio. */}
-        <div className="flow-card max-w-2xl mx-auto w-full">
-          {/* Qué cobra la web lo decide el servidor: el flujo no puede leer
-              variables de entorno, y no queremos copias públicas que se
-              desincronicen de las de verdad. */}
-          <BookingFlow
-            initialLocation={initialLocation}
-            initialServicio={initialServicio}
-            senaActiva={isDepositEnabled()}
-            viaticoActivo={isViaticoEnabled()}
-          />
-        </div>
-      </main>
+        {/* Sólo el cuerpo del flujo hace scroll; el CTA sigue al alcance. */}
+        <main
+          className="sunset-booking-main px-4 sm:px-6"
+          style={{
+            paddingTop: 'var(--header-h)',
+            height: '100dvh',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <h1 className="sr-only">Reservá tu turno en Barber Höhle</h1>
+          <div className="sunset-booking-layout">
+            <aside className="sunset-booking-aside">
+              <span className="sunset-edition">Höhle · Sunset Edition</span>
+              <h2>UN BUEN<br />CORTE.<br /><span>OTRA ENERGÍA.</span></h2>
+              <p>Elegí dónde, qué y cuándo. Santiago se encarga de tu próximo look.</p>
+              <span className="sunset-booking-note">BELGRANO, BUENOS AIRES<br />TU ESTILO, EN BUENAS MANOS.</span>
+            </aside>
+            <div className="flow-card max-w-2xl mx-auto w-full">
+              <BookingFlow
+                initialLocation={initialLocation}
+                initialServicio={initialServicio}
+                senaActiva={isDepositEnabled()}
+                viaticoActivo={isViaticoEnabled()}
+              />
+            </div>
+          </div>
+        </main>
 
-      <PieDeLaCasa />
-    </div>
+        <PieDeLaCasa />
+      </div>
+    </SunsetTheme>
   )
 }

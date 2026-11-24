@@ -11,7 +11,7 @@ import Image from 'next/image'
    `roca` prende la foto de marca detrás de la banda. Va sólo en la
    portada: el turno 8a la deja aparecer una vez y de ahí en adelante
    el fondo es negro plano. Cancelar y reprogramar no la llevan. */
-export default function AppHeader({ roca = false }: { roca?: boolean }) {
+export default function AppHeader({ roca = false, sunset = false }: { roca?: boolean; sunset?: boolean }) {
   return (
     <header
       className={roca ? 'roca' : undefined}
@@ -31,6 +31,7 @@ export default function AppHeader({ roca = false }: { roca?: boolean }) {
       }}
     >
       <div
+        className={sunset ? 'sunset-header-inner' : undefined}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
           maxWidth: 672, margin: '0 auto',
@@ -57,6 +58,7 @@ export default function AppHeader({ roca = false }: { roca?: boolean }) {
             style={{ width: 148, height: 'auto', display: 'block' }}
           />
         </Link>
+        {sunset && <span className="sunset-edition">Sunset Edition</span>}
       </div>
     </header>
   )

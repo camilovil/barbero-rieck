@@ -1,0 +1,279 @@
+.theme {
+  --app-bg: #161122;
+  --surface: #1d162b;
+  --surface-alta: #251c35;
+  --surface-baja: #110d1a;
+  --hover: #30213e;
+  --overlay: rgb(17 13 26 / 85%);
+  --text: #fff4e6;
+  --text-mut: #d4c5d8;
+  --text-meta: #b9a4c2;
+  --text-faint: #ab94b6;
+  --off: #a18cab;
+  --on-primary: #21132c;
+  --border: #44334f;
+  --border-soft: #36283f;
+  --border-strong: #937c9e;
+  --peligro: #ff9b87;
+  --btn-bg: #ffb4b9;
+  --btn-bg-hover: #ffd0c3;
+  --acento: #ffb4b9;
+  --on-acento: #21132c;
+  --acento-txt: #ffc9bc;
+  --acento-borde: #ffb4b9;
+  --acento-borde-mut: #b77e9e;
+  --sel-bg: #3a2545;
+  --sel-fg: #fff4e6;
+  --sel-fg-mut: #dcc3df;
+  --sel-borde: #ffb4b9;
+  --trama: #ffb4b9;
+  --trama-op: .22;
+  --sunset-mint: #b5e4d0;
+  --sunset-peach: #ffc99c;
+  --sunset-pink: #ffacd1;
+  --sunset-shadow: rgb(12 7 22 / 32%);
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  color: var(--text);
+  background: var(--app-bg);
+}
+
+.theme :global(.btn-cta) {
+  min-height: 50px;
+  border-radius: 4px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.theme :global(.btn-outline) {
+  border-radius: 4px;
+}
+
+.theme :global(.splash) {
+  background-image: linear-gradient(rgb(22 17 34 / 66%), rgb(22 17 34 / 86%)), url('/sunset-barbershop.webp');
+}
+
+.theme :global(.navaja) {
+  box-shadow: 0 0 24px 4px var(--acento-borde-mut);
+}
+
+.theme :global(.fondo-cueva) {
+  background-image: url('/sunset-barbershop.webp');
+  background-position: center;
+}
+
+.theme :global(.fondo-cueva)::after {
+  background: linear-gradient(90deg, rgb(22 17 34 / 52%), rgb(22 17 34 / 86%));
+}
+
+.theme :global(.sunset-header-inner) {
+  max-width: 1240px !important;
+}
+
+.theme :global(.sunset-edition) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--sunset-mint);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.5;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.theme :global(.sunset-edition)::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.theme :global(.sunset-booking-main) {
+  min-height: 460px;
+  padding-bottom: 20px;
+}
+
+.theme :global(.sunset-booking-layout) {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+}
+
+.theme :global(.sunset-booking-aside) {
+  display: none;
+}
+
+.theme :global(.flow-card) {
+  position: relative;
+  border-color: var(--border);
+  box-shadow: 0 22px 70px var(--sunset-shadow);
+}
+
+.theme :global(.flow-card)::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--sunset-mint), var(--sunset-pink), var(--sunset-peach));
+}
+
+.theme :global(.flow-head) {
+  padding-top: 5px;
+}
+
+.theme :global(.stepbar) {
+  gap: 6px;
+}
+
+.theme :global(.stepbar > i) {
+  height: 3px;
+  border-radius: 2px;
+}
+
+.theme :global(.h-step) {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -.055em;
+}
+
+.theme :global(.opt-mark) {
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+}
+
+.theme :global(.opt-row.selected .opt-mark) {
+  background: var(--acento);
+  border-color: var(--acento);
+  color: var(--on-acento);
+}
+
+.theme :global(.slot), .theme :global(.day-chip) {
+  border-radius: 4px;
+}
+
+.theme :global(.w-input) {
+  border-bottom-color: var(--border-strong);
+}
+
+.theme :global(.cta-recap > span) {
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+}
+
+.theme :global(.daystrip) {
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.theme :global(#la-casa) {
+  position: relative;
+}
+
+.theme :global(#la-casa .trama) {
+  height: 3px !important;
+  opacity: 1;
+  background: linear-gradient(90deg, var(--sunset-pink), var(--sunset-peach), var(--sunset-mint));
+}
+
+@media (min-width: 640px) {
+  .theme :global(.sunset-booking-main) {
+    padding-top: calc(var(--header-h) + 24px) !important;
+    padding-bottom: 24px;
+  }
+
+  .theme :global(.flow-card) {
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .theme :global(.flow) {
+    --flow-pad: 30px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .theme :global(.sunset-booking-layout) {
+    align-items: center;
+    gap: 64px;
+  }
+
+  .theme :global(.flow-card) {
+    flex: 0 1 600px;
+    margin: auto 0 auto auto;
+  }
+
+  .theme :global(.sunset-booking-aside) {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    padding: 24px 0 24px 10px;
+  }
+
+  .theme :global(.sunset-booking-aside h2) {
+    font-size: clamp(42px, 4.5vw, 64px);
+    font-weight: 800;
+    letter-spacing: -.06em;
+    line-height: .98;
+    margin: 25px 0;
+  }
+
+  .theme :global(.sunset-booking-aside h2 span) {
+    color: var(--sunset-pink);
+  }
+
+  .theme :global(.sunset-booking-aside p) {
+    max-width: 31ch;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text-mut);
+  }
+
+  .theme :global(.sunset-booking-note) {
+    display: block;
+    margin-top: 48px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1.8;
+    letter-spacing: .1em;
+    color: var(--sunset-mint);
+  }
+}
+
+@media (max-width: 639px) {
+  .theme :global(.sunset-booking-main) {
+    padding-inline: 0;
+    padding-bottom: 0;
+  }
+
+  .theme :global(.flow-card) {
+    border-inline: none;
+  }
+
+  .theme :global(.cta-bar .btn-cta) {
+    padding-inline: 12px;
+    line-height: 1.35;
+  }
+
+  .theme :global(.sunset-edition) {
+    font-size: 8px;
+    letter-spacing: .04em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme *, .theme *::before, .theme *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
