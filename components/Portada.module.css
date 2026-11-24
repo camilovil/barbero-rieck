@@ -40,22 +40,6 @@
   flex-shrink: 0;
 }
 
-.brand img {
-  width: 170px;
-  height: auto;
-}
-
-.edition {
-  border-left: 1px solid rgb(255 244 230 / 32%);
-  padding-left: 22px;
-  color: var(--sunset-peach);
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: .16em;
-  line-height: 1.7;
-  text-transform: uppercase;
-}
-
 .nav {
   display: flex;
   align-items: center;
@@ -77,17 +61,21 @@
   color: var(--text);
 }
 
-.navCta {
-  gap: 24px;
-  border: 1px solid rgb(255 244 230 / 65%);
-  border-radius: 4px;
-  padding: 0 20px;
-  color: var(--text);
-  background: rgb(22 17 34 / 45%);
+.nav .navCta {
+  min-height: 46px;
+  padding: 0 26px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--on-primary);
+  background: linear-gradient(115deg, var(--sunset-peach), var(--sunset-pink));
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.3;
+  transition: filter 150ms, scale 100ms;
 }
 
-.navCta span {
-  font-size: 18px;
+.navCta:active {
+  scale: .96;
 }
 
 .heroBody {
@@ -116,14 +104,6 @@
   text-transform: uppercase;
 }
 
-.eyebrow > span {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-  flex-shrink: 0;
-}
-
 .title {
   font-size: clamp(64px, 6.9vw, 112px);
   line-height: .92;
@@ -148,23 +128,17 @@
 
 .cta {
   width: fit-content;
-  gap: 40px !important;
-  padding: 19px 24px !important;
+  min-width: 220px;
+  padding: 19px 28px !important;
   font-size: 13px !important;
   background: linear-gradient(110deg, var(--sunset-pink), var(--sunset-peach)) !important;
   border: 0 !important;
 }
 
-.cta > span {
-  font-size: 24px;
-  font-weight: 400;
-  line-height: .6;
-}
-
 .ctaNote {
   color: var(--text-mut);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.6;
   margin-top: 14px;
 }
@@ -217,10 +191,6 @@
   margin-block: -10px;
   color: var(--text);
   text-decoration: none;
-}
-
-.heroFoot a span {
-  font-size: 19px;
 }
 
 .strip {
@@ -360,28 +330,20 @@
 }
 
 .servicesFoot a {
-  display: inline-flex;
-  align-items: center;
-  gap: 20px;
-  min-height: 44px;
-  color: var(--text);
-  font-weight: 600;
+  min-width: 180px;
+  min-height: 50px;
+  color: var(--on-primary);
+  font-weight: 800;
   text-decoration: none;
 }
 
-.servicesFoot a span {
-  font-size: 20px;
-  color: var(--sunset-pink);
-}
-
 @media (hover: hover) {
-  .navLink:hover, .heroFoot a:hover, .servicesFoot a:hover {
+  .navLink:hover, .heroFoot a:hover {
     color: var(--sunset-pink);
   }
 
-  .navCta:hover {
-    background: var(--surface);
-    border-color: var(--sunset-pink);
+  .nav .navCta:hover {
+    filter: brightness(1.08);
   }
 
   .cta:hover {
@@ -423,10 +385,6 @@
   .nav {
     gap: 24px;
   }
-
-  .service {
-    padding: 20px;
-  }
 }
 
 @media (max-width: 639px) {
@@ -440,16 +398,6 @@
     gap: 14px;
   }
 
-  .brand img {
-    width: 126px;
-  }
-
-  .edition {
-    padding-left: 14px;
-    font-size: 7px;
-    letter-spacing: .1em;
-  }
-
   .nav {
     gap: 0;
   }
@@ -458,14 +406,10 @@
     display: none;
   }
 
-  .navCta {
-    padding-inline: 12px;
-    font-size: 9px !important;
-    gap: 8px;
-  }
-
-  .navCta span {
-    font-size: 16px;
+  .nav .navCta {
+    min-height: 44px;
+    padding-inline: 16px;
+    font-size: 11px;
   }
 
   .art {
@@ -483,7 +427,7 @@
   }
 
   .eyebrow {
-    font-size: 8px;
+    font-size: 10px;
     letter-spacing: .08em;
     margin-bottom: 18px;
   }
@@ -503,18 +447,18 @@
   .cta {
     min-height: 54px;
     width: 100%;
-    justify-content: space-between !important;
+    justify-content: center !important;
   }
 
   .ctaNote {
-    font-size: 8px;
+    font-size: 10px;
     margin-top: 12px;
   }
 
   .heroFoot {
     margin-inline: 6%;
     padding-block: 18px;
-    font-size: 7px;
+    font-size: 10px;
     line-height: 1.6;
     letter-spacing: .04em;
     gap: 12px;
@@ -526,10 +470,6 @@
 
   .heroFoot a {
     gap: 10px;
-  }
-
-  .heroFoot a span {
-    font-size: 16px;
   }
 
   .strip {
@@ -572,22 +512,19 @@
   }
 
   .servicesFoot {
-    font-size: 10px;
-    gap: 12px;
+    font-size: 12px;
+    gap: 20px;
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
   }
 
   .servicesFoot > span {
-    max-width: 15ch;
+    max-width: none;
     line-height: 1.6;
   }
 
   .servicesFoot a {
     gap: 12px;
-  }
-}
-
-@media (max-width: 359px) {
-  .edition {
-    display: none;
   }
 }

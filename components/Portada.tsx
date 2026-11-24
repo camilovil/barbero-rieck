@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { SERVICES, TIME_SLOTS } from '@/lib/constants'
 import styles from './Portada.module.css'
+import SunsetBrand from './SunsetBrand'
 
 /* Portada de campaña. Precios y horarios vienen del catálogo real;
    todos los llamados a reservar abren el flujo existente. */
@@ -19,27 +20,26 @@ export default function Portada() {
 
         <header className={styles.header}>
           <Link href="/" className={styles.brand} aria-label="Barber Höhle — inicio">
-            <Image src="/logo-white.png" alt="" width={1522} height={253} sizes="170px" preload />
+            <SunsetBrand />
           </Link>
-          <span className={styles.edition}>Sunset<br />Edition</span>
           <nav className={styles.nav} aria-label="Navegación principal">
             <a href="#servicios" className={styles.navLink}>Servicios</a>
             <a href="#la-casa" className={styles.navLink}>La casa</a>
-            <Link href="/reservar" className={styles.navCta}>Pedir turno <span aria-hidden="true">↗</span></Link>
+            <Link href="/reservar" className={styles.navCta}>Pedir turno</Link>
           </nav>
         </header>
 
         <div className={styles.heroBody}>
           <div className={styles.copy}>
-            <p className={styles.eyebrow}><span aria-hidden="true" /> Buenos Aires. Sunset vibes.</p>
+            <p className={styles.eyebrow}>Modo GTA</p>
             <h1 id="sunset-titulo" className={styles.title}>
               Nuevo look.<br />Misma<br /><span>esencia.</span>
             </h1>
             <p className={styles.description}>
-              Tu próxima misión: un buen corte. Elegí tu horario y dejá el resto en manos de Santiago.
+              Elegí tu horario. Santiago se encarga del corte.
             </p>
             <Link href="/reservar" className={`btn-cta ${styles.cta}`}>
-              Reservar mi turno <span aria-hidden="true">↗</span>
+              Reservar mi turno
             </Link>
             <p className={styles.ctaNote}>Sin cuenta. Sin vueltas. A tu estilo.</p>
           </div>
@@ -50,20 +50,20 @@ export default function Portada() {
         </div>
 
         <div className={styles.heroFoot}>
-          <span>Belgrano, Buenos Aires <span aria-hidden="true">↗</span></span>
+          <span>Belgrano, Buenos Aires</span>
           <span className={styles.hours}>Lun – Sáb / {TIME_SLOTS.local[0]} – {TIME_SLOTS.local[TIME_SLOTS.local.length - 1]}</span>
-          <a href="#servicios">Explorá la casa <span aria-hidden="true">↓</span></a>
+          <a href="#servicios">Conocé los servicios</a>
         </div>
       </section>
 
       <div className={styles.strip} aria-hidden="true">
-        <span>Buen corte. Buena vida.</span><i>✳</i><span>Höhle Sunset Edition</span><i>✳</i><span>Buen corte. Buena vida.</span><i>✳</i><span>Höhle Sunset Edition</span>
+        <span>Buen corte. Buena vida.</span><i>✳</i><span>Barber Höhle</span><i>✳</i><span>Buen corte. Buena vida.</span><i>✳</i><span>Barber Höhle</span>
       </div>
 
       <section id="servicios" className={styles.services} aria-labelledby="servicios-titulo">
         <div className={styles.sectionHead}>
           <div>
-            <p className={styles.sectionLabel}>El menú de la casa / 01</p>
+            <p className={styles.sectionLabel}>Los servicios</p>
             <h2 id="servicios-titulo">Elegí tu próximo look.</h2>
           </div>
           <p>Corte, barba y buena mano.<br />En el studio o donde estés.</p>
@@ -85,7 +85,7 @@ export default function Portada() {
         </div>
         <div className={styles.servicesFoot}>
           <span>Tu estilo, en buenas manos.</span>
-          <Link href="/reservar">Elegir mi turno <span aria-hidden="true">↗</span></Link>
+          <Link href="/reservar" className="btn-cta">Elegir mi turno</Link>
         </div>
       </section>
     </main>

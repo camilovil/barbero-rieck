@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration'
 import { getAppUrl } from '@/lib/url'
 import './globals.css'
+import './gta-palette.css'
 
 /* Montserrat es la voz única del sistema: el logotipo ya es
    Montserrat en peso alto, así que la interfaz es el mismo
@@ -97,6 +98,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   if (location.pathname.indexOf('/admin') === 0) {
                     if (localStorage.getItem('hohle-theme') === 'papel') {
                       document.documentElement.classList.add('papel');
+                    }
+                    if (localStorage.getItem('hohle-gta') === '1') {
+                      document.documentElement.classList.remove('papel');
+                      document.documentElement.classList.add('modo-gta');
                     }
                     return;
                   }

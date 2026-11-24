@@ -1,0 +1,63 @@
+/* Paleta compartida por la campaña y el tema optativo del panel. */
+
+.gta-palette,
+html.modo-gta {
+  color-scheme: dark;
+  --app-bg: #161122;
+  --surface: #1d162b;
+  --surface-alta: #251c35;
+  --surface-baja: #110d1a;
+  --hover: #30213e;
+  --overlay: rgb(17 13 26 / 85%);
+  --text: #fff4e6;
+  --text-mut: #d4c5d8;
+  --text-meta: #b9a4c2;
+  --text-faint: #ab94b6;
+  --off: #a18cab;
+  --on-primary: #21132c;
+  --border: #44334f;
+  --border-soft: #36283f;
+  --border-strong: #937c9e;
+  --peligro: #ff9b87;
+  --btn-bg: #ffb4b9;
+  --btn-bg-hover: #ffd0c3;
+  --acento: #ffb4b9;
+  --on-acento: #21132c;
+  --acento-txt: #ffc9bc;
+  --acento-borde: #ffb4b9;
+  --acento-borde-mut: #b77e9e;
+  --sel-bg: #3a2545;
+  --sel-fg: #fff4e6;
+  --sel-fg-mut: #dcc3df;
+  --sel-borde: #ffb4b9;
+  --trama: #ffb4b9;
+  --trama-op: .22;
+  --sunset-mint: #b5e4d0;
+  --sunset-peach: #ffc99c;
+  --sunset-pink: #ffacd1;
+  --sunset-shadow: rgb(12 7 22 / 32%);
+}
+
+html.modo-gta .roca::before {
+  background-image: url('/sunset-barbershop.webp');
+}
+
+html.modo-gta .roca::after {
+  background: linear-gradient(180deg, rgb(22 17 34 / 60%), rgb(22 17 34 / 90%));
+}
+
+.admin-login-header,
+.panel-cabecera,
+.panel-lateral-pie {
+  flex-wrap: wrap;
+}
+
+.panel-cabecera > div:last-child {
+  margin-inline-start: auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.gta-palette) {
+    scroll-behavior: smooth;
+  }
+}

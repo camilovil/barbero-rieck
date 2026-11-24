@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import SunsetBrand from './SunsetBrand'
 
 /* El lockup es indivisible: la tijera está fusionada con la «b»,
    no se puede aislar. Por eso el header lleva el logotipo entero
@@ -48,7 +49,7 @@ export default function AppHeader({ roca = false, sunset = false }: { roca?: boo
           aria-label="Barber Höhle — inicio"
           style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, lineHeight: 0 }}
         >
-          <Image
+          {sunset ? <SunsetBrand /> : <Image
             src="/logo-white.png"
             alt=""
             width={1522}
@@ -56,9 +57,9 @@ export default function AppHeader({ roca = false, sunset = false }: { roca?: boo
             sizes="148px"
             priority
             style={{ width: 148, height: 'auto', display: 'block' }}
-          />
+          />}
         </Link>
-        {sunset && <span className="sunset-edition">Sunset Edition</span>}
+        {sunset && <span className="sunset-edition">Modo GTA</span>}
       </div>
     </header>
   )

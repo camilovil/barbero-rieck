@@ -7,8 +7,9 @@ import { useEffect, useState } from 'react'
    el local iluminado y a pleno sol el negro no se lee.
 
    Sin clase, el sistema es la cueva; `papel` es la variante. */
-function aplicar(papel: boolean) {
-  document.documentElement.classList.toggle('papel', papel)
+function aplicar(papel: boolean, gta: boolean) {
+  document.documentElement.classList.toggle('papel', papel && !gta)
+  document.documentElement.classList.toggle('modo-gta', gta)
 }
 
 /* El panel monta DOS conmutadores —el de la barra lateral en PC y el
@@ -20,14 +21,19 @@ const AVISO = 'hohle-theme-cambio'
 
 export default function ThemeToggle() {
   const [papel, setPapel] = useState(false)
+  const [gta, setGta] = useState(false)
 
   useEffect(() => {
     const guardado = localStorage.getItem('hohle-theme') === 'papel'
+    const guardadoGta = localStorage.getItem('hohle-gta') === '1'
     setPapel(guardado)
-    aplicar(guardado)
+    setGta(guardadoGta)
+    aplicar(guardado, guardadoGta)
 
     function sincronizar(e: Event) {
-      setPapel((e as CustomEvent<boolean>).detail)
+      const tema = (e as CustomEvent<{ papel: boolean; gta: boolean }>).detail
+      setPapel(tema.papel)
+      setGta(tema.gta)
     }
     window.addEventListener(AVISO, sincronizar)
 
@@ -36,25 +42,49 @@ export default function ThemeToggle() {
        se la llevaría puesta. */
     return () => {
       window.removeEventListener(AVISO, sincronizar)
-      aplicar(false)
+      aplicar(false, false)
     }
   }, [])
 
   function toggle() {
-    const next = !papel
+    const next = gta || !papel
     localStorage.setItem('hohle-theme', next ? 'papel' : 'hohle')
-    aplicar(next)
+    localStorage.setItem('hohle-gta', '0')
+    aplicar(next, false)
     // El aviso es síncrono: también actualiza a este mismo conmutador.
-    window.dispatchEvent(new CustomEvent(AVISO, { detail: next }))
+    window.dispatchEvent(new CustomEvent(AVISO, { detail: { papel: next, gta: false } }))
+  }
+
+  function toggleGta() {
+    const next = !gta
+    localStorage.setItem('hohle-gta', next ? '1' : '0')
+    aplicar(papel, next)
+    window.dispatchEvent(new CustomEvent(AVISO, { detail: { papel, gta: next } }))
   }
 
   /* El toggle es el propio sistema en miniatura: un círculo partido,
      sin ícono ni color. */
   return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
     <button
+      type="button"
+      onClick={toggleGta}
+      aria-pressed={gta}
+      style={{
+        minHeight: 44, padding: '0 12px', borderRadius: 4,
+        border: '1px solid var(--border-strong)',
+        background: gta ? 'var(--acento)' : 'transparent',
+        color: gta ? 'var(--on-acento)' : 'var(--text)',
+        fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600,
+      }}
+    >
+      Modo GTA{gta && <span aria-hidden="true"> ✓</span>}
+    </button>
+    <button
+      type="button"
       onClick={toggle}
-      aria-label={papel ? 'Cambiar al tema Höhle, oscuro' : 'Cambiar al tema claro'}
-      title={papel ? 'Höhle' : 'Papel'}
+      aria-label={papel && !gta ? 'Cambiar al tema Höhle, oscuro' : 'Cambiar al tema claro'}
+      title={papel && !gta ? 'Höhle' : 'Papel'}
       style={{
         /* 44px de área de toque, como todo control del sistema. La caja
            visible sigue midiendo 32 —el recuadro se dibuja abajo, en el
@@ -87,11 +117,12 @@ export default function ThemeToggle() {
             width: 14, height: 14, borderRadius: '50%',
             border: '1px solid var(--text)',
             background: 'linear-gradient(90deg, var(--text) 0 50%, transparent 50% 100%)',
-            transform: papel ? 'rotate(180deg)' : 'none',
+            transform: papel && !gta ? 'rotate(180deg)' : 'none',
             transition: 'transform .3s ease',
           }}
         />
       </span>
     </button>
+    </span>
   )
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
+import SunsetBrand from './SunsetBrand'
 
 /* La apertura. Un filo de oro cruza la pantalla y descubre el logotipo
    a su paso; al salir por el borde derecho entra el pie y la capa se
@@ -22,7 +23,7 @@ const PASOS = { revela: 80, apaga: 760, entrega: 1250, fin: 1750 }
    CSS, así que acá lo único que hay que acortar son los tiempos. */
 const PASOS_QUIETOS = { revela: 0, apaga: 0, entrega: 260, fin: 400 }
 
-export default function Splash({ pie }: { pie: string }) {
+export default function Splash({ pie, sunset = false }: { pie: string; sunset?: boolean }) {
   const [fase, setFase] = useState<'quieta' | 'revelada' | 'apagada' | 'sale'>('quieta')
   const [fuera, setFuera] = useState(false)
 
@@ -38,7 +39,7 @@ export default function Splash({ pie }: { pie: string }) {
 
     /* La portada se pide ya, en paralelo con la animación: para cuando
        la capa se abra, la foto tiene que estar. */
-    new window.Image().src = '/portada-cueva.webp'
+    new window.Image().src = sunset ? '/sunset-barbershop.webp' : '/portada-cueva.webp'
 
     const previo = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -69,7 +70,7 @@ export default function Splash({ pie }: { pie: string }) {
       timers.forEach(clearTimeout)
       document.body.style.overflow = previo
     }
-  }, [])
+  }, [sunset])
 
   if (fuera) return null
 
@@ -84,7 +85,8 @@ export default function Splash({ pie }: { pie: string }) {
       data-apagada={apagada ? '1' : '0'}
       data-sale={fase === 'sale' ? '1' : '0'}
     >
-      <div className="splash-caja">
+      <div className={sunset ? 'sunset-splash-brand' : 'splash-caja'}>
+        {sunset ? <SunsetBrand intro /> : (
         <Image
           className="splash-logo"
           src="/logo-white.png"
@@ -94,8 +96,9 @@ export default function Splash({ pie }: { pie: string }) {
           sizes="(min-width: 1200px) 420px, (min-width: 720px) 340px, 250px"
           priority
         />
+        )}
       </div>
-      <div className="navaja" />
+      {!sunset && <div className="navaja" />}
       <p className="splash-pie">{pie}</p>
     </div>
   )

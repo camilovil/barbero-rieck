@@ -46,7 +46,7 @@ export default function LoginPage() {
           fijo se le montaba encima al rótulo «Admin», que ocupa esa
           misma esquina. */}
       <header className="roca" style={{ borderBottom: '1px solid var(--border)' }}>
-        <div style={{
+        <div className="admin-login-header" style={{
           maxWidth: 384, margin: '0 auto', padding: '16px 24px 15px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
         }}>

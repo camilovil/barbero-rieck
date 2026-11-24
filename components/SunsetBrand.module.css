@@ -1,0 +1,116 @@
+.brand {
+  position: relative;
+  display: inline-block;
+  width: 180px;
+  max-width: 100%;
+  line-height: 1;
+}
+
+.wordmark {
+  position: relative;
+  display: block;
+}
+
+.wordmark img {
+  display: block;
+  width: 100%;
+  height: auto;
+  opacity: 0;
+}
+
+.ink {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(175deg, #fff4e6 22%, #ffd2b5 52%, #ff95ba 83%);
+  mask: url('/logo-white.png') center / contain no-repeat;
+}
+
+.intro {
+  width: min(440px, 78vw);
+  padding-block: 110px 45px;
+  isolation: isolate;
+}
+
+.intro .wordmark {
+  animation: reveal 900ms cubic-bezier(.2, .7, .2, 1) both;
+}
+
+.sun {
+  position: absolute;
+  z-index: -1;
+  width: 62%;
+  aspect-ratio: 1;
+  left: 22%;
+  top: 0;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ffc99c, #fb83ae 52%, #6e3b87);
+  mask-image: repeating-linear-gradient(0deg, transparent 0 3px, #000 3px 14px);
+  opacity: .55;
+  animation: sunrise 1100ms cubic-bezier(.2, .7, .2, 1) both;
+}
+
+.caption {
+  display: block;
+  margin-top: 27px;
+  color: #fff4e6;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.6;
+  letter-spacing: .18em;
+  text-align: center;
+  text-transform: uppercase;
+  animation: caption 450ms ease-out 550ms both;
+}
+
+@keyframes reveal {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(10px);
+  }
+
+  to {
+    clip-path: inset(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes sunrise {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(.96);
+  }
+
+  to {
+    opacity: .55;
+    transform: none;
+  }
+}
+
+@keyframes caption {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .brand {
+    width: 140px;
+  }
+
+  .intro {
+    width: 78vw;
+    padding-block: 82px 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand *, .brand {
+    animation: none !important;
+  }
+}

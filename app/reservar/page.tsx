@@ -1,6 +1,6 @@
 import BookingFlow from '@/components/BookingFlow'
 import AppHeader from '@/components/AppHeader'
-import PieDeLaCasa from '@/components/PieDeLaCasa'
+import SunsetFooter from '@/components/SunsetFooter'
 import FondoCueva from '@/components/FondoCueva'
 import { isDepositEnabled, isViaticoEnabled } from '@/lib/flags'
 import SunsetTheme from '@/components/SunsetTheme'
@@ -36,7 +36,7 @@ export default async function Reservar({ searchParams }: Props) {
           <h1 className="sr-only">Reservá tu turno en Barber Höhle</h1>
           <div className="sunset-booking-layout">
             <aside className="sunset-booking-aside">
-              <span className="sunset-edition">Höhle · Sunset Edition</span>
+              <span className="sunset-edition">Con Santiago Rieck</span>
               <h2>UN BUEN<br />CORTE.<br /><span>OTRA ENERGÍA.</span></h2>
               <p>Elegí dónde, qué y cuándo. Santiago se encarga de tu próximo look.</p>
               <span className="sunset-booking-note">BELGRANO, BUENOS AIRES<br />TU ESTILO, EN BUENAS MANOS.</span>
@@ -52,7 +52,7 @@ export default async function Reservar({ searchParams }: Props) {
           </div>
         </main>
 
-        <PieDeLaCasa />
+        <SunsetFooter />
       </div>
     </SunsetTheme>
   )

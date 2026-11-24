@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import Portada from '@/components/Portada'
-import PieDeLaCasa from '@/components/PieDeLaCasa'
+import SunsetFooter from '@/components/SunsetFooter'
 import Splash from '@/components/Splash'
 import { CASA_LEMA } from '@/lib/constants'
 import SunsetTheme from '@/components/SunsetTheme'
@@ -25,9 +25,9 @@ export default async function Home({ searchParams }: Props) {
 
   return (
     <SunsetTheme>
-      <Splash pie={CASA_LEMA} />
+      <Splash pie={CASA_LEMA} sunset />
       <Portada />
-      <PieDeLaCasa />
+      <SunsetFooter />
     </SunsetTheme>
   )
 }

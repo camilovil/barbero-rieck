@@ -1,37 +1,4 @@
 .theme {
-  --app-bg: #161122;
-  --surface: #1d162b;
-  --surface-alta: #251c35;
-  --surface-baja: #110d1a;
-  --hover: #30213e;
-  --overlay: rgb(17 13 26 / 85%);
-  --text: #fff4e6;
-  --text-mut: #d4c5d8;
-  --text-meta: #b9a4c2;
-  --text-faint: #ab94b6;
-  --off: #a18cab;
-  --on-primary: #21132c;
-  --border: #44334f;
-  --border-soft: #36283f;
-  --border-strong: #937c9e;
-  --peligro: #ff9b87;
-  --btn-bg: #ffb4b9;
-  --btn-bg-hover: #ffd0c3;
-  --acento: #ffb4b9;
-  --on-acento: #21132c;
-  --acento-txt: #ffc9bc;
-  --acento-borde: #ffb4b9;
-  --acento-borde-mut: #b77e9e;
-  --sel-bg: #3a2545;
-  --sel-fg: #fff4e6;
-  --sel-fg-mut: #dcc3df;
-  --sel-borde: #ffb4b9;
-  --trama: #ffb4b9;
-  --trama-op: .22;
-  --sunset-mint: #b5e4d0;
-  --sunset-peach: #ffc99c;
-  --sunset-pink: #ffacd1;
-  --sunset-shadow: rgb(12 7 22 / 32%);
   position: relative;
   isolation: isolate;
   min-height: 100dvh;
@@ -53,6 +20,11 @@
 .theme :global(.splash) {
   background-image: linear-gradient(rgb(22 17 34 / 66%), rgb(22 17 34 / 86%)), url('/sunset-barbershop.webp');
 }
+
+/* Al volver desde Reservar, el atributo del documento puede seguir en
+   «entra». La apertura nueva sólo se muestra mientras se la espera. */
+.theme :global(.splash[data-sale='0']) { display: none; }
+:global(html[data-apertura='espera']) .theme :global(.splash[data-sale='0']) { display: block; }
 
 .theme :global(.navaja) {
   box-shadow: 0 0 24px 4px var(--acento-borde-mut);
@@ -84,12 +56,15 @@
 }
 
 .theme :global(.sunset-edition)::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: currentColor;
+  content: none;
+}
+
+.theme :global(.sunset-splash-brand) {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(440px, 78vw);
+  transform: translate(-50%, -50%);
 }
 
 .theme :global(.sunset-booking-main) {
