@@ -1,17 +1,32 @@
-# Höhle · Modo GTA
+# Barber Höhle · Campaña temporal
 
 Campaña temporal sobre la estética de la app de reservas.
 
 ## Cambios
 
-- Portada tropical con ilustración original y rótulo discreto «Modo GTA».
+- Portada tropical con ilustración original, sin rótulos que expliquen la temática.
 - Servicios en tarjetas simples sin fotografías ni ilustraciones.
 - Botones sin flechas; navegación a Servicios y La casa con desplazamiento suave, salvo con movimiento reducido.
 - Pie con dirección, Cómo llegar, Instagram, horarios y el portfolio https://camilovillanueva.com.
 - Logo original con una única capa de tinta degradada; sin sombra duplicada. Apertura breve con sol a rayas y alternativa sin movimiento.
-- Panel administrativo: botón Modo GTA optativo. Guarda la preferencia y mantiene los temas claro y oscuro.
+- Panel administrativo: botón Temática optativo. Guarda la preferencia y mantiene los temas claro y oscuro.
 - Story de campaña: `assets/social/hohle-modo-gta-story.jpg`, 1080 × 1920.
 - Logo animado reutilizable: `public/hohle-logo-animated.svg`.
+- Favicons e íconos de instalación: monograma Hö con tinta rosa/durazno sobre violeta, incluidos ICO 16/32/48 y variante maskable con zona segura.
+- Compartidos: `public/og-gta-v1.jpg`, 1200 × 630, reutiliza el arte y el logo originales; tipografía renderizada con Next ImageResponse.
+- Exportación HD: `assets/social/hohle-modo-gta-story-hd.png`, 2160 × 3840, ampliada desde el PNG original, sin compresión destructiva JPEG.
+
+## Actualización de íconos y compartidos
+
+`node scripts/generate-gta-assets.mjs` regenera ICO, SVG, PNG de instalación y las dos versiones de Open Graph. La URL activa de compartido y las URLs de íconos están versionadas para no reutilizar las de la campaña anterior. No cambia el ID, la URL de inicio ni el funcionamiento de las apps instaladas.
+
+Para exportar de nuevo la story HD, pasar como primer argumento el PNG fuente aprobado. La exportación amplía y guarda la imagen en PNG; no agrega detalle nativo a la ilustración original.
+
+### Edición final de la story
+
+Se retiró el rótulo de la web, metadatos y story. Edición realizada con la herramienta integrada imagegen y este prompt:
+
+> Edit this existing Instagram Story poster with an extremely minimal localized change: REMOVE ONLY the small words 'Modo GTA' underneath the 'barber Höhle' logo. Seamlessly fill that caption's area with the identical surrounding dark plum-purple background. Keep the existing Höhle logo, its scissors motif, all other lettering, font sizes, positions, colors, layout, palm trees, sky, barbershop illustration, lighting, bottom call to action, URL 'barberhohle.com', and 'Belgrano, Buenos Aires' exactly as they are. The headline must remain 'NUEVO LOOK. MISMA ESENCIA.'. Do not add any replacement caption or any new elements. Do not rebrand, redesign, recompose, restyle, or move anything. Preserve the vertical 9:16 ratio and as much original detail as possible. The only visual difference must be that the small 'Modo GTA' caption no longer exists.
 
 ## Aislamiento
 

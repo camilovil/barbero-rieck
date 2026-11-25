@@ -39,15 +39,16 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Barber Höhle · Turnos online',
-    description: 'Reservá tu turno con Santiago Rieck. Corte, barba y combo. En el local o a domicilio.',
+    description: 'Nuevo look. Misma esencia. Reservá tu turno con Santiago Rieck, en el studio o a domicilio.',
     url: SITIO,
     siteName: 'Barber Höhle',
     images: [
       {
-        url: '/og-image.png',
+        url: '/og-gta-v1.jpg',
         width: 1200,
         height: 630,
-        alt: 'Barber Höhle — Turnos online',
+        type: 'image/jpeg',
+        alt: 'Barber Höhle — Nuevo look, misma esencia.',
       },
     ],
     locale: 'es_AR',
@@ -56,13 +57,13 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Barber Höhle · Turnos online',
-    description: 'Reservá tu turno con Santiago Rieck. Corte, barba y combo.',
-    images: ['/og-image.png'],
+    description: 'Nuevo look. Misma esencia. Reservá tu turno con Santiago Rieck.',
+    images: [{ url: '/og-gta-v1.jpg', alt: 'Barber Höhle — Nuevo look, misma esencia.' }],
   },
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0A0908',
+  themeColor: '#161122',
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
@@ -121,13 +122,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
         <meta name="mobile-web-app-capable" content="yes" />
-        {/* El ícono nunca lleva transparencia: fondo tinta con glifo papel
-            en todo, salvo apple-touch, que va invertido para no
-            desaparecer en el dock oscuro de iOS. */}
-        <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        {/* URLs versionadas para renovar los íconos de la campaña.
+            Todos llevan fondo opaco, incluso el apple-touch. */}
+        <link rel="icon" type="image/svg+xml" href="/icon.svg?v=gta-v1" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=gta-v1" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=gta-v1" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=gta-v1" />
       </head>
       <body className="min-h-full flex flex-col antialiased">
         {children}

@@ -70,6 +70,7 @@ export default function ThemeToggle() {
       type="button"
       onClick={toggleGta}
       aria-pressed={gta}
+      aria-label={gta ? 'Desactivar temática especial' : 'Activar temática especial'}
       style={{
         minHeight: 44, padding: '0 12px', borderRadius: 4,
         border: '1px solid var(--border-strong)',
@@ -78,7 +79,7 @@ export default function ThemeToggle() {
         fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600,
       }}
     >
-      Modo GTA{gta && <span aria-hidden="true"> ✓</span>}
+      Temática{gta && <span aria-hidden="true"> ✓</span>}
     </button>
     <button
       type="button"

@@ -31,7 +31,6 @@ export default function Portada() {
 
         <div className={styles.heroBody}>
           <div className={styles.copy}>
-            <p className={styles.eyebrow}>Modo GTA</p>
             <h1 id="sunset-titulo" className={styles.title}>
               Nuevo look.<br />Misma<br /><span>esencia.</span>
             </h1>

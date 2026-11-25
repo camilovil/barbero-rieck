@@ -8,15 +8,15 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: '/',
     display: 'standalone',
     orientation: 'portrait',
-    background_color: '#0A0908',
-    theme_color: '#0A0908',
+    background_color: '#161122',
+    theme_color: '#161122',
     categories: ['lifestyle', 'beauty'],
     icons: [
-      { src: '/favicon.ico', sizes: '48x48', type: 'image/x-icon' },
-      { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-      { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-      { src: '/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-      { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      { src: '/favicon.ico?v=gta-v1', sizes: '48x48', type: 'image/x-icon' },
+      { src: '/icon-192.png?v=gta-v1', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: '/icon-512.png?v=gta-v1', sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: '/maskable-512.png?v=gta-v1', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      { src: '/apple-touch-icon.png?v=gta-v1', sizes: '180x180', type: 'image/png' },
     ],
   }
 }

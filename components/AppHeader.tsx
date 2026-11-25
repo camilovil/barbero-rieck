@@ -59,7 +59,6 @@ export default function AppHeader({ roca = false, sunset = false }: { roca?: boo
             style={{ width: 148, height: 'auto', display: 'block' }}
           />}
         </Link>
-        {sunset && <span className="sunset-edition">Modo GTA</span>}
       </div>
     </header>
   )
