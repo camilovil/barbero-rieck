@@ -25,6 +25,10 @@
   mask: url('/logo-white.png') center / contain no-repeat;
 }
 
+:global(html.papel) .adaptive .ink {
+  background: var(--text);
+}
+
 .intro {
   width: min(440px, 78vw);
   padding-block: 110px 45px;
@@ -40,7 +44,9 @@
   z-index: -1;
   width: 62%;
   aspect-ratio: 1;
-  left: 22%;
+  /* La tijera sobresale a la izquierda. Sol y leyenda comparten el
+     centro óptico de las letras, al 55% del ancho del lockup. */
+  left: 24%;
   top: 0;
   border-radius: 50%;
   background: linear-gradient(180deg, #ffc99c, #fb83ae 52%, #6e3b87);
@@ -51,6 +57,8 @@
 
 .caption {
   display: block;
+  width: 90%;
+  margin-inline-start: 10%;
   margin-top: 27px;
   color: #fff4e6;
   font-family: var(--font-mono);

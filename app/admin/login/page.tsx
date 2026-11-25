@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
+import SunsetBrand from '@/components/SunsetBrand'
 import { useRouter } from 'next/navigation'
 import ThemeToggle from '@/components/ThemeToggle'
 
@@ -50,16 +50,9 @@ export default function LoginPage() {
           maxWidth: 384, margin: '0 auto', padding: '16px 24px 15px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
         }}>
-          <span style={{ display: 'block', width: 130 }}>
+          <span style={{ display: 'block', width: 130, flexShrink: 0, lineHeight: 0 }}>
             <span className="sr-only">barber Höhle</span>
-            <span className="logo-ink">
-              <Image src="/logo-black.png" alt="" width={1522} height={253} sizes="130px" priority
-                style={{ width: '100%', height: 'auto', display: 'block' }} />
-            </span>
-            <span className="logo-paper">
-              <Image src="/logo-white.png" alt="" width={1522} height={253} sizes="130px" priority
-                style={{ width: '100%', height: 'auto', display: 'block' }} />
-            </span>
+            <SunsetBrand adaptToPaper />
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
             <span className="rotulo" style={{ letterSpacing: '.14em' }}>Admin</span>

@@ -4,6 +4,12 @@ Campaña temporal sobre la estética de la app de reservas.
 
 ## Cambios
 
+Criterio visual del cliente: no usar emojis ni caracteres decorativos que
+puedan convertirse en emojis en iOS. Los separadores son formas CSS.
+El admin usa la misma marca renovada de la web, con tinta oscura en papel.
+El sol y la leyenda del logo de apertura comparten el centro óptico de las
+letras; la tijera que sobresale no desplaza la leyenda hacia la izquierda.
+
 - Portada tropical con ilustración original, sin rótulos que expliquen la temática.
 - Servicios en tarjetas simples sin fotografías ni ilustraciones.
 - Botones sin flechas; navegación a Servicios y La casa con desplazamiento suave, salvo con movimiento reducido.

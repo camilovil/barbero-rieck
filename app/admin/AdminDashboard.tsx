@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import Image from 'next/image'
+import SunsetBrand from '@/components/SunsetBrand'
 import { useRouter } from 'next/navigation'
 import type { BookingEvent } from '@/lib/googleCalendar'
 import type { MesCobrado, ResumenIngresos } from '@/lib/ingresos'
@@ -643,16 +643,9 @@ export default function AdminDashboard() {
      celular. El alt va en un .sr-only aparte: la variante que el tema
      oculta no aportaría su alt al árbol de accesibilidad. */
   const logo = (
-    <span style={{ display: 'block', width: 118, flexShrink: 0 }}>
+    <span style={{ display: 'block', width: 118, flexShrink: 0, lineHeight: 0 }}>
       <span className="sr-only">barber Höhle</span>
-      <span className="logo-ink">
-        <Image src="/logo-black.png" alt="" width={1522} height={253} sizes="118px" priority
-          style={{ width: '100%', height: 'auto', display: 'block' }} />
-      </span>
-      <span className="logo-paper">
-        <Image src="/logo-white.png" alt="" width={1522} height={253} sizes="118px" priority
-          style={{ width: '100%', height: 'auto', display: 'block' }} />
-      </span>
+      <SunsetBrand adaptToPaper />
     </span>
   )
 

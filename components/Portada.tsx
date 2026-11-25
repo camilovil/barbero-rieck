@@ -56,7 +56,7 @@ export default function Portada() {
       </section>
 
       <div className={styles.strip} aria-hidden="true">
-        <span>Buen corte. Buena vida.</span><i>✳</i><span>Barber Höhle</span><i>✳</i><span>Buen corte. Buena vida.</span><i>✳</i><span>Barber Höhle</span>
+        <span>Buen corte. Buena vida.</span><span className={styles.stripDivider} /><span>Barber Höhle</span><span className={styles.stripDivider} /><span>Buen corte. Buena vida.</span><span className={styles.stripDivider} /><span>Barber Höhle</span>
       </div>
 
       <section id="servicios" className={styles.services} aria-labelledby="servicios-titulo">

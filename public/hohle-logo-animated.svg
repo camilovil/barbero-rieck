@@ -18,7 +18,7 @@
 @media(prefers-reduced-motion:reduce){.halo,.mark,.caption{animation:none}}
 </style>
 <rect width="1000" height="500" fill="#161122"/>
-<g class="halo"><circle cx="500" cy="205" r="170" fill="url(#sun)" mask="url(#sun-mask)"/></g>
+<g class="halo"><circle cx="545" cy="205" r="170" fill="url(#sun)" mask="url(#sun-mask)"/></g>
 <g class="mark"><rect x="90" y="240" width="820" height="137" fill="url(#ink)" mask="url(#brand-mask)"/></g>
-<text class="caption" x="500" y="439" text-anchor="middle" fill="#fff4e6" font-family="monospace" font-size="17" letter-spacing="4">BELGRANO, BUENOS AIRES</text>
+<text class="caption" x="545" y="439" text-anchor="middle" fill="#fff4e6" font-family="monospace" font-size="17" letter-spacing="4">BELGRANO, BUENOS AIRES</text>
 </svg>

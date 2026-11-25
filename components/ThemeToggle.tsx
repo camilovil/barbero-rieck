@@ -79,7 +79,7 @@ export default function ThemeToggle() {
         fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600,
       }}
     >
-      Temática{gta && <span aria-hidden="true"> ✓</span>}
+      Temática
     </button>
     <button
       type="button"
