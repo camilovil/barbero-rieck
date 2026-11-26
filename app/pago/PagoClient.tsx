@@ -7,6 +7,7 @@ import AppHeader from '@/components/AppHeader'
 import TurnoTracker from '@/components/TurnoTracker'
 import { DEPOSIT_HOLD_LABEL } from '@/lib/constants'
 import type { DatosDeTransferencia } from '@/lib/transferencia'
+import styles from './Pago.module.css'
 
 type Estado = 'consultando' | 'pendiente' | 'pagado' | 'vencido' | 'error'
 
@@ -19,7 +20,7 @@ function Estado_({ rotulo, titulo, children }: { rotulo: string; titulo: string;
     <div>
       <div className="rotulo">{rotulo}</div>
       <h2
-        className="font-display"
+        className={`font-display ${styles.title}`}
         style={{
           fontSize: 'clamp(30px, 9vw, 38px)', fontWeight: 800, lineHeight: 1,
           letterSpacing: '-.04em', color: 'var(--text)', margin: '14px 0 0',
@@ -146,16 +147,12 @@ export default function PagoClient({ datos }: { datos: DatosDeTransferencia }) {
     : null
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'var(--app-bg)' }}>
-      <AppHeader />
+    <div className={`min-h-screen flex flex-col ${styles.page}`}>
+      <AppHeader sunset />
 
-      <main className="flex-1 px-4 sm:px-6 pb-14" style={{ paddingTop: `calc(env(safe-area-inset-top) + ${HEADER_H + 32}px)` }}>
-        <div className="max-w-md mx-auto">
-          <div style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            padding: '26px 20px 24px',
-          }}>
+      <main className={`flex-1 px-4 sm:px-6 pb-14 ${styles.main}`} style={{ paddingTop: `calc(env(safe-area-inset-top) + ${HEADER_H + 32}px)` }}>
+        <div className={styles.layout}>
+          <div className={styles.card}>
 
             {estado === 'consultando' && (
               <div className="rotulo" style={{ padding: '40px 0', textAlign: 'center', lineHeight: 1.8 }}>

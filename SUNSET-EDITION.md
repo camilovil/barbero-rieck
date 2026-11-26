@@ -36,7 +36,9 @@ Se retiró el rótulo de la web, metadatos y story. Edición realizada con la he
 
 ## Aislamiento
 
-La paleta se define una sola vez en `app/gta-palette.css`. La usan el contenedor `gta-palette` en portada/reserva y, sólo al activarlo, `html.modo-gta` en el panel. El tema del panel se limpia al salir.
+La paleta se define una sola vez en `app/gta-palette.css`. La usan el contenedor `gta-palette` en portada/reserva/pago y, sólo al activarlo, `html.modo-gta` en el panel. El tema del panel se limpia al salir.
+
+La pantalla `/pago` comparte el logo degradado, fondo tropical y paleta de la campaña en todos sus estados: carga, seña pendiente, confirmación, vencimiento y error. Su tarjeta y botones se presentan con CSS local; no cambia la consulta del pago, los datos de transferencia, el portapapeles ni el enlace al comprobante.
 
 El estado del turno, catálogo, precios, horarios, pagos, APIs, reglas de negocio, integraciones, dependencias y credenciales no se modifican. Los precios y horarios visibles siguen leyendo `lib/constants.ts`.
 

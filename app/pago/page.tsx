@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import FondoCueva from '@/components/FondoCueva'
 import PagoClient from './PagoClient'
 import { datosDeTransferencia } from '@/lib/transferencia'
+import SunsetTheme from '@/components/SunsetTheme'
 
 /* El alias se lee acá, en el servidor, y baja como prop. Un componente de
    cliente no puede leer process.env: recibiría undefined y la pantalla se
@@ -19,7 +20,7 @@ export default function PagoPage() {
   const datos = datosDeTransferencia()
 
   return (
-    <>
+    <SunsetTheme>
       <FondoCueva />
       <Suspense fallback={
         <div className="min-h-screen flex items-center justify-center text-sm" style={{ color: 'var(--text-mut)' }}>
@@ -28,6 +29,6 @@ export default function PagoPage() {
       }>
         <PagoClient datos={datos} />
       </Suspense>
-    </>
+    </SunsetTheme>
   )
 }

@@ -1,0 +1,66 @@
+.page {
+  position: relative;
+}
+
+.main {
+  width: 100%;
+}
+
+.layout {
+  width: 100%;
+  max-width: 520px;
+  margin-inline: auto;
+}
+
+.card {
+  position: relative;
+  overflow: hidden;
+  padding: 30px 26px 26px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 22px 70px var(--sunset-shadow);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--sunset-mint), var(--sunset-pink), var(--sunset-peach));
+}
+
+.title {
+  text-wrap: balance;
+}
+
+.card :global(.rotulo) {
+  color: var(--sunset-peach);
+}
+
+.card :global(.btn-cta) {
+  background: linear-gradient(110deg, var(--sunset-pink), var(--sunset-peach));
+  border-color: transparent;
+  line-height: 1.35;
+}
+
+.card :global(.btn-outline) {
+  border-color: var(--border-strong);
+}
+
+.card :global(.btn-cta):active,
+.card :global(.btn-outline):active {
+  scale: .96;
+}
+
+@media (hover: hover) {
+  .card :global(.btn-cta):hover {
+    background: linear-gradient(110deg, var(--sunset-peach), var(--sunset-pink));
+  }
+}
+
+@media (max-width: 639px) {
+  .card {
+    padding: 26px 20px 24px;
+  }
+}
